@@ -14,6 +14,7 @@ public class MethodFilter extends RequestFilter {
 			String requestMethod = callbacks.getHelpers().analyzeRequest(messageInfo.getRequest()).getMethod();
 			for(String method : filterMethods) {
 				if(requestMethod.toLowerCase().equals(method.toLowerCase()) && !method.trim().equals("")) {
+					incrementFiltered();
 					return true;
 				}
 			}

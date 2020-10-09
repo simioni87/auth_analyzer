@@ -1,5 +1,6 @@
 package com.protect7.authanalyzer.gui;
 
+import java.io.PrintWriter;
 import java.util.HashMap;
 import javax.swing.table.AbstractTableModel;
 
@@ -9,6 +10,7 @@ import com.protect7.authanalyzer.util.CurrentConfig;
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;
 import burp.IRequestInfo;
+import burp.st;
 
 public class RequestTableModel extends AbstractTableModel {
 
@@ -54,7 +56,19 @@ public class RequestTableModel extends AbstractTableModel {
 	public Object getValueAt(int row, int column) {
 		if (originalRequestResponseMap.size() > row) {
 			IHttpRequestResponse messageInfoOriginal = originalRequestResponseMap.get(row+1);
-			IRequestInfo request = callbacks.getHelpers().analyzeRequest(messageInfoOriginal.getRequest());
+			IRequestInfo request = null;
+			if(messageInfoOriginal != null) {
+				request = callbacks.getHelpers().analyzeRequest(messageInfoOriginal.getRequest());
+			}
+			else {
+				PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
+				stdout.println("ERROR: Cannot find map key: " + row+1 + ". Avaliable Key Sets: ");
+				for(Integer key :originalRequestResponseMap.keySet()) {
+					stdout.println(key);
+				}
+				stdout.close();
+				return null;
+			}
 			if(column == 0) {
 				return row + 1;
 			}

@@ -12,11 +12,9 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
-
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;
 import burp.IHttpService;
@@ -48,30 +46,37 @@ public class CenterPanel extends JPanel {
 		clearTableButton.addActionListener(e -> {
 			config.clearSessionRequestMaps();
 			tableModel.clearRequestMap();
+			currentRow = -1;
 		});
 		tableConfigPanel.add(clearTableButton);
 		tablePanel.add(new JScrollPane(table), BorderLayout.CENTER);
 		tablePanel.add(tableConfigPanel, BorderLayout.SOUTH);
 		
 		initTabbedPane();
+		
+		tabbedPane.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
 		JSplitPane  splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablePanel, tabbedPane);
 		splitPane.setResizeWeight(0.5);
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
-				
+
 		ListSelectionModel selectionModel = table.getSelectionModel();
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
 
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
-				if (table.getSelectedRow() != -1) {
+				if(table.getSelectedRow() == -1) {
+					currentRow = -1;
+				}
+				else {
 					if(table.getSelectedRow() != currentRow) {
 						currentRow = table.getSelectedRow();
 						changeRequestResponseView(table, tableModel);
 					}
 				}
 			}
+			
 		});
 	}
 	
@@ -84,10 +89,10 @@ public class CenterPanel extends JPanel {
 		for(Session session : config.getSessions()) {
 			tabbedPane.add(session.getName() + " Request", new JPanel());
 			session.setTabbedPaneRequestIndex(tabbedPane.getTabCount() - 1);
-
 			tabbedPane.add(session.getName() + " Response", new JPanel());
 			session.setTabbedPaneResponseIndex(tabbedPane.getTabCount() - 1);
 		}
+		currentRow = -1;
 	}
 	
 	private void initTabbedPane() {
@@ -108,7 +113,6 @@ public class CenterPanel extends JPanel {
 	}
 
 	private void changeRequestResponseView(JTable table, RequestTableModel tableModel) {
-		System.out.println(table.getSelectedRow());
 		if(table.getSelectedRow() != -1) {
 			currentRequestResponseKey = (int) tableModel.getValueAt(table.convertRowIndexToModel(table.getSelectedRow()), 0);			
 			

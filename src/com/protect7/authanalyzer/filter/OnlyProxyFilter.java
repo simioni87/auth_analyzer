@@ -11,6 +11,9 @@ public class OnlyProxyFilter extends RequestFilter {
 			if(toolFlag == IBurpExtenderCallbacks.TOOL_PROXY) {
 				return false;
 			}
+			else if(toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER) {
+				incrementFiltered();
+			}
 		}
 		else {
 			//Only allow Repeater beside of Proxy

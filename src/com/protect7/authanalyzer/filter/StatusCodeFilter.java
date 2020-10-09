@@ -13,6 +13,7 @@ public class StatusCodeFilter extends RequestFilter {
 			String statusCode = String.valueOf(messageInfo.getStatusCode());
 			for (String stringLiteral : filterStringLiterals) {
 				if (statusCode.equals(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
+					incrementFiltered();
 					return true;
 				}
 			}

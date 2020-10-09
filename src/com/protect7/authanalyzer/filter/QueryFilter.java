@@ -14,6 +14,7 @@ public class QueryFilter extends RequestFilter {
 				String query = messageInfo.getUrl().getQuery().toString().toLowerCase();
 				for(String stringLiteral : filterStringLiterals) {
 					if(query.contains(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
+						incrementFiltered();
 						return true;
 					}
 				}

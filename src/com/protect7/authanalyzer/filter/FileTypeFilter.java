@@ -15,7 +15,8 @@ public class FileTypeFilter extends RequestFilter {
 			String url = messageInfo.getUrl().toString().toLowerCase();
 			for(String fileType : filterFileTypes) {
 				if(url.endsWith(fileType.toLowerCase()) && !fileType.equals("") || 
-						(fileType.toLowerCase().equals(response.getInferredMimeType().toLowerCase()) && !fileType.trim().equals(""))) {					
+						(fileType.toLowerCase().equals(response.getInferredMimeType().toLowerCase()) && !fileType.trim().equals(""))) {
+					incrementFiltered();
 					return true;
 				}
 			}

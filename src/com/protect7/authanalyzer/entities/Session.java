@@ -1,6 +1,9 @@
 package com.protect7.authanalyzer.entities;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+
+import com.protect7.authanalyzer.gui.StatusPanel;
 
 public class Session {
 
@@ -12,14 +15,19 @@ public class Session {
 	private int tabbedPaneResponseIndex;
 	private String csrfTokenValue = "";
 	private final boolean filterRequestsWithSameHeader;
+	private final ArrayList<Rule> rules;
 	private HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
+	private final StatusPanel statusPanel;
 
-	public Session(String name, String headersToReplace, String csrfTokenToReplace, String csrfTokenValue, boolean filterRequestsWithSameHeader) {
+	public Session(String name, String headersToReplace, String csrfTokenToReplace, String csrfTokenValue, 
+			boolean filterRequestsWithSameHeader, ArrayList<Rule> rules, StatusPanel statusPanel) {
 		this.name = name;
 		this.headersToReplace = headersToReplace;
 		this.csrfTokenName = csrfTokenToReplace;
 		this.manuelCsrfTokenValue = csrfTokenValue;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
+		this.rules = rules;
+		this.statusPanel = statusPanel;
 	}
 
 	public String getName() {
@@ -80,5 +88,13 @@ public class Session {
 
 	public boolean isFilterRequestsWithSameHeader() {
 		return filterRequestsWithSameHeader;
+	}
+
+	public ArrayList<Rule> getRules() {
+		return rules;
+	}
+
+	public StatusPanel getStatusPanel() {
+		return statusPanel;
 	}
 }

@@ -13,6 +13,7 @@ public class PathFilter extends RequestFilter {
 			String url = messageInfo.getUrl().getPath().toString().toLowerCase();	
 			for(String stringLiteral : filterStringLiterals) {
 				if(url.contains(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
+					incrementFiltered();
 					return true;
 				}
 			}

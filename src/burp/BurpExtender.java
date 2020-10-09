@@ -25,6 +25,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 			stdout.println("Version " + Version.VERSION);
 			stdout.println("Protect7 GmbH");
 			stdout.println("www.protect7.com");
+			stdout.close();
 
 		} catch (ClassNotFoundException e) {
 			PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -34,6 +35,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 			stdout.println("2. Link lib in Burp: Extender -> Options -> Java Environment");
 			stdout.println("");
 			stdout.println("Unload Auth Anayzer");
+			stdout.close();
 			callbacks.unloadExtension();
 		}
 	}

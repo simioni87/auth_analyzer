@@ -13,8 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
-import javax.swing.ToolTipManager;
-
+import com.protect7.authanalyzer.entities.Rule;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.filter.FileTypeFilter;
 import com.protect7.authanalyzer.filter.InScopeFilter;
@@ -97,42 +96,41 @@ public class ConfigurationPanel extends JPanel {
 		sessionButtonPanel.add(createSessionButton);
 		sessionButtonPanel.add(renameSessionButton);
 		sessionButtonPanel.add(removeSessionButton);
-		
-		
+			
 		JPanel filterPanel = new JPanel();
 		filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
 
-		JCheckBox onlyInScopeButton = new JCheckBox("Only In Scope");
+		JCheckBox onlyInScopeButton = new JCheckBox("Only In Scope (0)");
 		onlyInScopeButton.setSelected(true);
 		addFilter(new InScopeFilter(), onlyInScopeButton, "Only In Scope requests are analyzed", "");		
 		filterPanel.add(onlyInScopeButton);
 
-		JCheckBox onlyProxyButton = new JCheckBox("Only Proxy Traffic");
+		JCheckBox onlyProxyButton = new JCheckBox("Only Proxy Traffic (0)");
 		onlyProxyButton.setSelected(true);
 		addFilter(new OnlyProxyFilter(), onlyProxyButton, "Analyze only proxy traffic. Unselect to analyze repeater and proxy traffic.", "");		
 		filterPanel.add(onlyProxyButton);
 
-		JCheckBox fileTypeFilterButton = new JCheckBox("Exclude Filetypes");
+		JCheckBox fileTypeFilterButton = new JCheckBox("Exclude Filetypes (0)");
 		fileTypeFilterButton.setSelected(true);
 		addFilter(new FileTypeFilter(), fileTypeFilterButton, "Excludes every specified filetype.", "Enter filetypes to filter. Comma separated.\r\neg: jpg, png, js");
 		filterPanel.add(fileTypeFilterButton);
 
-		JCheckBox methodFilterButton = new JCheckBox("Exclude HTTP Methods");
+		JCheckBox methodFilterButton = new JCheckBox("Exclude HTTP Methods (0)");
 		methodFilterButton.setSelected(true);
 		addFilter(new MethodFilter(), methodFilterButton, "Excludes every specified http method.", "Enter HTTP methods to filter. Comma separated.\r\neg: OPTIONS, TRACE");
 		filterPanel.add(methodFilterButton);
 
-		JCheckBox statusCodeFilterButton = new JCheckBox("Exclude Status Codes");
+		JCheckBox statusCodeFilterButton = new JCheckBox("Exclude Status Codes (0)");
 		statusCodeFilterButton.setSelected(true);
 		addFilter(new StatusCodeFilter(), statusCodeFilterButton, "Excludes every specified status code.", "Enter status codes to filter. Comma separated.\r\neg: 204, 304");
 		filterPanel.add(statusCodeFilterButton);
 		
-		JCheckBox pathFilterButton = new JCheckBox("Exclude Paths");
+		JCheckBox pathFilterButton = new JCheckBox("Exclude Paths (0)");
 		pathFilterButton.setSelected(false);
 		addFilter(new PathFilter(), pathFilterButton, "Excludes every path that contains one of the specified string literals.", "Enter String literals for paths to be excluded. Comma separated.\r\neg: log, libraries");
 		filterPanel.add(pathFilterButton);
 		
-		JCheckBox queryFilterButton = new JCheckBox("Exclude Queries / Params");
+		JCheckBox queryFilterButton = new JCheckBox("Exclude Queries / Params (0)");
 		queryFilterButton.setSelected(false);
 		addFilter(new QueryFilter(), queryFilterButton, "Excludes every GET query that contains one of the specified string literals.", "Enter string literals for queries to be excluded. Comma separated.\r\neg: log, core");
 		filterPanel.add(queryFilterButton);
@@ -144,7 +142,7 @@ public class ConfigurationPanel extends JPanel {
 		pauseButton.setText(PAUSE_TEXT);
 		pauseButton.setEnabled(false);
 		pauseButton.addActionListener(e -> pauseButtonPressed(centerPanel));
-
+		
 		add(sessionButtonPanel);
 		add(Box.createHorizontalStrut(30));
 		add(sessionTabbedPane);
@@ -155,7 +153,7 @@ public class ConfigurationPanel extends JPanel {
 		add(pauseButton);
 
 		//ToolTipManager.sharedInstance().setInitialDelay(0);
-		ToolTipManager.sharedInstance().setDismissDelay(60000);
+		//ToolTipManager.sharedInstance().setDismissDelay(60000);
 
 	}
 	
@@ -192,13 +190,7 @@ public class ConfigurationPanel extends JPanel {
 		else {
 			if (config.isRunning() || pauseButton.getText().equals(PLAY_TEXT)) {
 				for(String session : sessionPanelMap.keySet()) {
-					sessionPanelMap.get(session).getHeadersToReplaceText().setEnabled(true);
-					sessionPanelMap.get(session).getCsrfTokenToReplaceText().setEnabled(true);
-					if (!sessionPanelMap.get(session).getDetermineValueAutoButton().isSelected()) {
-						sessionPanelMap.get(session).getCsrfTokenValueText().setEnabled(true);
-					}
-					sessionPanelMap.get(session).getDetermineValueAutoButton().setEnabled(true);
-					sessionPanelMap.get(session).getFilterRequestsWithSameHeader().setEnabled(true);
+					sessionPanelMap.get(session).setStopped();
 				}
 				createSessionButton.setEnabled(true);
 				renameSessionButton.setEnabled(true);
@@ -211,18 +203,20 @@ public class ConfigurationPanel extends JPanel {
 			} else {
 				// Comitt Settings to Config
 				config.clearSessionList();
-				for(String session : sessionPanelMap.keySet()) {
-					sessionPanelMap.get(session).getHeadersToReplaceText().setEnabled(false);
-					sessionPanelMap.get(session).getCsrfTokenToReplaceText().setEnabled(false);
-					sessionPanelMap.get(session).getCsrfTokenValueText().setEnabled(false);
-					sessionPanelMap.get(session).getDetermineValueAutoButton().setEnabled(false);
-					sessionPanelMap.get(session).getFilterRequestsWithSameHeader().setEnabled(false);
-					
+				for(String session : sessionPanelMap.keySet()) {				
 					SessionPanel sessionPanel = sessionPanelMap.get(session);
 					Session newSession = new Session(session, sessionPanel.getHeadersToReplaceText().getText(), 
 							sessionPanel.getCsrfTokenToReplaceText().getText(), sessionPanel.getCsrfTokenValueText().getText(), 
-							sessionPanel.getFilterRequestsWithSameHeader().isSelected());
+							sessionPanel.getFilterRequestsWithSameHeader().isSelected(), sessionPanel.getRules(), sessionPanel.getStatusPanel());
 					config.addSession(newSession);
+					for(Rule rule : sessionPanel.getRules()) {
+						rule.setReplacementValue(null);
+					}
+					sessionPanel.setRunning();
+					sessionPanel.getStatusPanel().init(newSession);
+				}
+				for(RequestFilter filter : config.getRequestFilterList()) {
+					filter.resetFilteredAmount();
 				}
 				centerPanel.initCenterPanel();
 				createSessionButton.setEnabled(false);
@@ -241,12 +235,14 @@ public class ConfigurationPanel extends JPanel {
 			config.setRunning(false);
 			pauseButton.setText(PLAY_TEXT);
 			startStopButton.setText(ANALYZER_PAUSED_TEXT);
+			startStopButton.setBackground(Color.ORANGE);
 			pauseButton.setToolTipText("Currently Paused");
 		}
 		else {
 			config.setRunning(true);
 			pauseButton.setText(PAUSE_TEXT);
 			startStopButton.setText(ANALYZER_STARTED_TEXT);
+			startStopButton.setBackground(Color.GREEN);
 			pauseButton.setToolTipText("Currently Running");
 		}
 	}

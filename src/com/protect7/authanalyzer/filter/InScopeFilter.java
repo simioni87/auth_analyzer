@@ -8,6 +8,7 @@ public class InScopeFilter extends RequestFilter {
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo) {
 		if(isSelected && !callbacks.isInScope(messageInfo.getUrl())) {
+			incrementFiltered();
 			return true;
 		}
 		return false;

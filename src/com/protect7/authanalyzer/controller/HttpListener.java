@@ -27,6 +27,7 @@ public class HttpListener implements IHttpListener {
 			for(int i=0; i<config.getRequestFilterList().size(); i++) {
 				RequestFilter filter = config.getRequestFilterAt(i);
 				if(filter.filterRequest(callbacks, toolFlag, messageInfo)) {
+					System.out.println(i);
 					isFiltered = true;
 					break;
 				}
