@@ -170,10 +170,10 @@ public class SessionPanel extends JPanel {
 	
 	private void modifyGrepAndReplace(Rule rule, RuleLabel ruleLabel) {
 		JTextField grepAt = new JTextField(5);
-		String grepAtText = "from [" + rule.getGrepFromString() + "] to [" + rule.getGrepToString() + "]";
+		String grepAtText = "from [" + rule.getGrepFromString() + "] to [" + escapeIfLinefeed(rule.getGrepToString()) + "]";
 		grepAt.setText(grepAtText);
 		JTextField replaceAt = new JTextField(5);
-		String replaceAtText = "from [" + rule.getReplaceFromString() + "] to [" + rule.getReplaceToString() + "]";
+		String replaceAtText = "from [" + rule.getReplaceFromString() + "] to [" + escapeIfLinefeed(rule.getReplaceToString()) + "]";
 		replaceAt.setText(replaceAtText);
 
 		JPanel inputPanel = new JPanel();
@@ -214,7 +214,7 @@ public class SessionPanel extends JPanel {
 	private JLabel getRuleInfoLabel() {
 		JLabel infoLabel = new JLabel("<html><h3>Information:</h3><p>The value between the defined <strong>GREP RULE</strong> will be grepped from every response (header and body) within the current Session.<br>"
 				+ "The value between the defined <strong>REPLACE RULE</strong> will be replaced, with previously grepped value, within every request (header and body) within current Session.<br>"
-				+ "No regular expressions accepted. Use the syntax 'from [TEXT] to [EOF]' to declare a value must be grepped or replaced to the end of request / response. Use '\n' to declare CRLF.<br><br>"
+				+ "No regular expressions accepted. Use the syntax 'from [TEXT] to [EOF]' to declare a value must be grepped or replaced to the end of request / response. Use '\\n' to declare CRLF.<br><br>"
 				+ "<h3>How to (syntax examples):</h3> <h4>Grep Rule:</h4><p>from [name=\"_requestVerificationToken\" value=\"] to [\" />]</p><br>"
 				+ "<h4>Replace Rule:</h4><p>from [_RequestVerificationToken=] to [&]</p><br><br></html>");
 		return infoLabel;
@@ -354,7 +354,7 @@ public class SessionPanel extends JPanel {
 		private String getDisplayText() {
 			String startString = "<html><p style='border:1px solid gray; margin-top:10px; padding:5px; background-color:white;'><strong>Rule " + id + ": </strong> ";
 			String ruleString = "GREP RULE: from [" + rule.getGrepFromString() + "] to [" + rule.getGrepToString() + "] --- " +
-			"REPLACE RULE: from [" + rule.getReplaceFromString() + "] to [" + rule.getReplaceToString() + "]";
+			"REPLACE RULE: from [" + escapeIfLinefeed(rule.getReplaceFromString()) + "] to [" + escapeIfLinefeed(rule.getReplaceToString()) + "]";
 			String completeString = startString + ruleString;
 			if(completeString.length() > 210) {
 				completeString = completeString.substring(0, 210) + "...";
@@ -366,7 +366,7 @@ public class SessionPanel extends JPanel {
 		private String getDisplayTextMouseOver() {
 			String startString = "<html><p style='border:1px solid gray; margin-top:10px; padding:5px; background-color:black;color:white;display:inline;'><strong>Rule " + id + ": </strong>";
 			String ruleString = "GREP RULE: from [" + rule.getGrepFromString() + "] to [" + rule.getGrepToString() + "] --- " +
-			"REPLACE RULE: from [" + rule.getReplaceFromString() + "] to [" + rule.getReplaceToString() + "]";
+			"REPLACE RULE: from [" + escapeIfLinefeed(rule.getReplaceFromString()) + "] to [" + escapeIfLinefeed(rule.getReplaceToString()) + "]";
 			String completeString = startString + ruleString;
 			if(completeString.length() > 243) {
 				completeString = completeString.substring(0, 243) + "...";
@@ -376,4 +376,12 @@ public class SessionPanel extends JPanel {
 		}
 	}
 	
+	private String escapeIfLinefeed(String text) {
+		if(text.equals("\n")) {
+			return "\\n";
+		}
+		else {
+			return text;
+		}
+	}
 }
