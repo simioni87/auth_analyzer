@@ -214,7 +214,7 @@ public class SessionPanel extends JPanel {
 	private JLabel getRuleInfoLabel() {
 		JLabel infoLabel = new JLabel("<html><h3>Information:</h3><p>The value between the defined <strong>GREP RULE</strong> will be grepped from every response (header and body) within the current Session.<br>"
 				+ "The value between the defined <strong>REPLACE RULE</strong> will be replaced, with previously grepped value, within every request (header and body) within current Session.<br>"
-				+ "No regular expressions accepted. Use '\\n' to declare end of string.<br><br>"
+				+ "No regular expressions accepted. Use the syntax 'from [TEXT] to [EOF]' to declare a value must be grepped or replaced to the end of request / response. Use '\n' to declare CRLF.<br><br>"
 				+ "<h3>How to (syntax examples):</h3> <h4>Grep Rule:</h4><p>from [name=\"_requestVerificationToken\" value=\"] to [\" />]</p><br>"
 				+ "<h4>Replace Rule:</h4><p>from [_RequestVerificationToken=] to [&]</p><br><br></html>");
 		return infoLabel;
@@ -232,8 +232,9 @@ public class SessionPanel extends JPanel {
 			if(split2Grep.length == 2 && split3Grep.length == 1) {
 				grepFromString = split2Grep[0];
 				grepToString = split3Grep[0];
-				if(grepToString.trim().equals("\\n")) {
-					grepToString = "\\n";
+				// The charset '\n' of JTextArea is escaped but must not be for proper work
+				if(grepToString.trim().equals("\\n")) {					
+					grepToString = "\n";
 				}
 			}
 		}
@@ -244,8 +245,9 @@ public class SessionPanel extends JPanel {
 			if(split2Replace.length == 2 && split3Replace.length == 1) {
 				replaceFromString = split2Replace[0];
 				replaceToString = split3Replace[0];
+				// The charset '\n' of JTextArea is escaped but must not be for proper work
 				if(replaceToString.trim().equals("\\n")) {
-					replaceToString = "\\n";
+					replaceToString = "\n";
 				}
 			}
 		}

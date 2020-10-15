@@ -28,7 +28,12 @@ public class RequestController {
 
 	public RequestController(IBurpExtenderCallbacks callbacks) {
 		this.callbacks = callbacks;
-		this.stdout = new PrintWriter(callbacks.getStdout(), true);
+		if(callbacks != null) {
+			this.stdout = new PrintWriter(callbacks.getStdout(), true);
+		}
+		else {
+			this.stdout = new PrintWriter(System.out, true);
+		}
 	}
 
 	public synchronized void analyze(IHttpRequestResponse originalMessageInfo) {
@@ -44,27 +49,12 @@ public class RequestController {
 			String originalMessageBody = getRequestBodyAsString(originalMessageInfo);
 			
 			int mapId = config.getTableModel().getFullMapSize() + 1;
-			boolean filtered = false;
 			boolean success = true;
 			for(Session session : config.getSessions()) {
-				if(session.isFilterRequestsWithSameHeader()) {
-					ArrayList<String> headers = (ArrayList<String>) originalRequestInfo.getHeaders();
-					String[] headersToReplace = session.getHeadersToReplace().split("\n");
-					boolean requestContainsHeader = true;
-					for (String headerToReplace : headersToReplace) {
-						if(!headers.contains(headerToReplace)) {
-							requestContainsHeader = false;
-						}
-					}
-					if(requestContainsHeader) {
-						filtered = true;
-						success = false;
-						stdout.println("INFO: Request filtered due to same header");
-						// Update Session Panel
-						session.getStatusPanel().incrementAmountOfFitleredRequests();
-					}
+				if(session.isFilterRequestsWithSameHeader() && isSameHeader(originalRequestInfo, session)) {
+					success = false;
 				}
-				if(!filtered) {
+				else {
 					stdout.println("INFO: Handle Session: " + session.getName());
 					stdout.println("INFO: Modify Request Body");
 					String modifiedMessageBody = getModifiedMessageBody(originalMessageBody, originalRequestInfo.getContentType() , session);
@@ -112,26 +102,45 @@ public class RequestController {
 			}
 		}
 	}
-
-	//need content-length, header as string
-	private ArrayList<String> getModifiedHeaders(IRequestInfo originalRequestInfo, Session session, int bodyLength) {
+	
+	public boolean isSameHeader(IRequestInfo originalRequestInfo, Session session) {
 		ArrayList<String> headers = (ArrayList<String>) originalRequestInfo.getHeaders();
 		String[] headersToReplace = session.getHeadersToReplace().split("\n");
+		boolean requestContainsHeader = true;
 		for (String headerToReplace : headersToReplace) {
-			String[] headerKeyValuePair = headerToReplace.split(":");
+			if(!headers.contains(headerToReplace)) {
+				requestContainsHeader = false;
+			}
+		}
+		if(requestContainsHeader) {
+			stdout.println("INFO: Request filtered due to same header");
+			// Update Session Panel
+			session.getStatusPanel().incrementAmountOfFitleredRequests();
+			return true;
+		}
+		return false;
+	}
+
+	//need content-length, header as string
+	public ArrayList<String> getModifiedHeaders(IRequestInfo originalRequestInfo, Session session, int bodyLength) {
+		ArrayList<String> headers = (ArrayList<String>) originalRequestInfo.getHeaders();
+		String[] headersToReplace = session.getHeadersToReplace().replace("\r", "").split("\n");
+		for (String headerToReplace : headersToReplace) {
+			String trimmedHeaderToReplace = headerToReplace.trim();
+			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
 			if (headerKeyValuePair.length > 1) {
 				String headerKey = headerKeyValuePair[0];
 				boolean headerReplaced = false;
 				for (int i = 0; i < headers.size(); i++) {
 					if (headers.get(i).startsWith(headerKey)) {
-						headers.set(i, headerToReplace);
+						headers.set(i, trimmedHeaderToReplace);
 						headerReplaced = true;
 						break;
 					}
 				}
 				//Set new header if it not occurs
 				if (!headerReplaced) {
-					headers.add(headerToReplace);
+					headers.add(trimmedHeaderToReplace);
 				}
 			}
 		}
@@ -167,7 +176,7 @@ public class RequestController {
 	}
 
 	// Sets CSRF Token to Body
-	private String getModifiedMessageBody(String originalMessageBody, byte contentType, Session session) {
+	public String getModifiedMessageBody(String originalMessageBody, byte contentType, Session session) {
 		String messageBodyWithAppliedRules = applyRulesInBody(session, originalMessageBody); 
 		if(session.getCsrfTokenName().equals("")) {
 			return messageBodyWithAppliedRules;
@@ -238,7 +247,7 @@ public class RequestController {
 		}
 	}
 	
-	private void extractOriginalCsrfValue(IHttpRequestResponse messageInfo) {
+	public void extractOriginalCsrfValue(IHttpRequestResponse messageInfo) {
 		String csrfTokenName = config.getSessions().get(0).getCsrfTokenName();
 		if (!csrfTokenName.equals("")) {
 			IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
@@ -254,7 +263,7 @@ public class RequestController {
 		}
 	}
 
-	private void extractCurrentCsrfValue(IHttpRequestResponse messageInfo, Session session) {
+	public void extractCurrentCsrfValue(IHttpRequestResponse messageInfo, Session session) {
 		IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
 		String responseBody = getResponseBodyAsString(messageInfo);
 		if(responseBody.contains(session.getCsrfTokenName())) {
@@ -271,7 +280,7 @@ public class RequestController {
 		}
 	}
 	
-	private String getCsrfTokenValueFromInputField(String document, String csrfName) {
+	public String getCsrfTokenValueFromInputField(String document, String csrfName) {
 		Document doc = Jsoup.parse(document);
 		Elements csrfFields = doc.getElementsByAttributeValue("name", csrfName);
 		if (csrfFields.size() > 0) {
@@ -281,7 +290,7 @@ public class RequestController {
 		return "";
 	}
 
-	private String getCsrfTokenValueFromJson(String json, String csrfName) {
+	public String getCsrfTokenValueFromJson(String json, String csrfName) {
 		JsonElement jelement = new JsonParser().parse(json);
 		JsonObject jobject = null;
 		if(jelement.isJsonObject()) {
@@ -299,19 +308,26 @@ public class RequestController {
 	    return "";
 	}
 	
-	private String applyRulesInBody(Session session, String body) {
+	public String applyRulesInBody(Session session, String body) {
 		if(session.getRules().size() > 0) {
 			String messageAsString = body;
 			for(Rule rule : session.getRules()) {
 				if(rule.getReplacementValue() != null) {
 					int beginIndex = messageAsString.indexOf(rule.getReplaceFromString());
-					int endIndex = messageAsString.length();
-					if(!rule.getReplaceToString().equals("\\n")) {
-						endIndex = messageAsString.indexOf(rule.getReplaceToString(), beginIndex);
+					if(beginIndex != -1) {
+						beginIndex = beginIndex + rule.getReplaceFromString().length();
+					}
+					int endIndex = -1;
+					if(rule.getReplaceToString().equals("EOF")) {
+						endIndex = messageAsString.length();
+					}
+					else {
+						endIndex = messageAsString.indexOf(rule.getReplaceToString(), beginIndex);	
 					}
 					if(beginIndex != -1 && endIndex != -1) {
-						beginIndex = beginIndex + rule.getReplaceFromString().length();
-						messageAsString = messageAsString.substring(0, beginIndex) + rule.getReplacementValue() + messageAsString.substring(endIndex, messageAsString.length());
+						String beginString = messageAsString.substring(0, beginIndex);
+						String endString = messageAsString.substring(endIndex, messageAsString.length());
+						messageAsString = beginString + rule.getReplacementValue() + endString;
 					}				
 				}
 			}
@@ -320,20 +336,27 @@ public class RequestController {
 		return body;
 	}
 	
-	private String applyRulesInHeader(Session session, String header) {
+	public String applyRulesInHeader(Session session, String header) {
 		if(session.getRules().size() > 0) {
 			String messageAsString = header;
 			for(Rule rule : session.getRules()) {
 				if(rule.getReplacementValue() != null) {
 					int beginIndex = messageAsString.indexOf(rule.getReplaceFromString());
-					//Apply for every single header. Treat System.lineSeparator() as 'end of string'
-					int endIndex = messageAsString.length();
-					if(!rule.getReplaceToString().equals("\\n")) {
+					if(beginIndex != -1) {
+						beginIndex = beginIndex + rule.getReplaceFromString().length();
+					}
+					int endIndex = -1;
+					// Threat CR / LF as end of file (every header line is processed by its own). Also take escaped CR LF because
+					if(rule.getReplaceToString().equals("EOF") || rule.getReplaceToString().equals("\n")) {
+						endIndex = messageAsString.length();
+					}
+					else {
 						endIndex = messageAsString.indexOf(rule.getReplaceToString(), beginIndex);
 					}
 					if(beginIndex != -1 && endIndex != -1) {
-						beginIndex = beginIndex + rule.getReplaceFromString().length();
-						messageAsString = messageAsString.substring(0, beginIndex) + rule.getReplacementValue() + messageAsString.substring(endIndex, messageAsString.length());
+						String beginString = messageAsString.substring(0, beginIndex);
+						String endString = messageAsString.substring(endIndex, messageAsString.length());
+						messageAsString = beginString + rule.getReplacementValue() + endString;
 					}				
 				}
 			}
@@ -342,21 +365,24 @@ public class RequestController {
 		return header;
 	}
 
-	private void extractResponseRuleValues(Session session, byte[] response) {
+	public void extractResponseRuleValues(Session session, byte[] response) {
 		if(session.getRules().size() > 0) {
 			stdout.println("INFO: Extract rule values");
 			String messageAsString = new String(response);
 			for(Rule rule : session.getRules()) {
 				int beginIndex = messageAsString.indexOf(rule.getGrepFromString());
-				int endIndex;
-				if(rule.getGrepToString().equals("\\n")) {
-					endIndex = messageAsString.indexOf("\n", beginIndex);
+				if(beginIndex != -1) {
+					beginIndex = beginIndex + rule.getGrepFromString().length();
+				}
+				int endIndex = -1;
+				if(rule.getGrepToString().equals("EOF")) {
+					// Grep to end of file
+					endIndex = messageAsString.length();
 				}
 				else {
 					endIndex = messageAsString.indexOf(rule.getGrepToString(), beginIndex);
 				}
 				if(beginIndex != -1 && endIndex != -1) {
-					beginIndex = beginIndex + rule.getGrepFromString().length();
 					String value = messageAsString.substring(beginIndex, endIndex);
 					rule.setReplacementValue(value);
 					session.getStatusPanel().setRuleValue(rule, value);
@@ -374,7 +400,7 @@ public class RequestController {
 	 * - Both Responses have +-5% of response body length 
 	 *
 	 */
-	private BypassConstants analyzeResponses(IHttpRequestResponse originalMessageInfo,
+	public BypassConstants analyzeResponses(IHttpRequestResponse originalMessageInfo,
 			IHttpRequestResponse modifiedMessageInfo) {
 		try {
 			String originalMessageBody = getResponseBodyAsString(originalMessageInfo);
