@@ -1,5 +1,12 @@
 package com.protect7.authanalyzer.entities;
 
+/**
+ * This Entity holds a HTTP Message created by the RequestController. (A repeated request with modified content)
+ * 
+ * @author Simon Reinhart
+ */
+
+
 import com.protect7.authanalyzer.util.BypassConstants;
 
 import burp.IHttpRequestResponse;

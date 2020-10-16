@@ -2,6 +2,7 @@ package com.protect7.authanalyzer.gui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -146,18 +147,33 @@ public class SessionPanel extends JPanel {
 		replaceAt.setText("from [TEXT] to [TEXT]");
 
 		JPanel inputPanel = new JPanel();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
-		inputPanel.add(getRuleInfoLabel());
-		inputPanel.add(new JLabel("<html><strong>GREP RULE:</strong></html>"));
+		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
+		JPanel infoPanel = new JPanel();
+		infoPanel.add(getRuleInfoLabel());
+		inputPanel.add(infoPanel);
+		JPanel grepPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		grepPanel.add(new JLabel("<html><strong>GREP RULE:</strong></html>"));
+		JCheckBox grepInHeader = new JCheckBox("Header", true);
+		grepPanel.add(grepInHeader);
+		JCheckBox grepInBody = new JCheckBox("Body", true);
+		grepPanel.add(grepInBody);
+		inputPanel.add(grepPanel);
 		inputPanel.add(grepAt);
-		inputPanel.add(new JLabel(" ")); 
-		inputPanel.add(new JLabel("<html><strong>REPLACE RULE:</strong></html>"));
+		inputPanel.add(new JLabel(" "));
+		JPanel replacePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		replacePanel.add(new JLabel("<html><strong>REPLACE RULE:</strong></html>"));
+		JCheckBox replaceInHeader = new JCheckBox("Header", true);
+		replacePanel.add(replaceInHeader);
+		JCheckBox replaceInBody = new JCheckBox("Body", true);
+		replacePanel.add(replaceInBody);
+		inputPanel.add(replacePanel);
 		inputPanel.add(replaceAt);
 
 		int result = JOptionPane.showConfirmDialog(this, inputPanel, "Grep and Replace Rules",
 				JOptionPane.OK_CANCEL_OPTION);
 		if (result == JOptionPane.OK_OPTION) {
-			Rule rule = createRule("Rule " + ruleId, grepAt.getText(), replaceAt.getText());
+			Rule rule = createRule("Rule " + ruleId, grepAt.getText(), replaceAt.getText(), 
+					grepInHeader.isSelected(), grepInBody.isSelected(), replaceInHeader.isSelected(), replaceInBody.isSelected());
 			// Rule is null if input syntax incorrect
 			if(rule != null) {
 				rules.add(rule);
@@ -177,12 +193,26 @@ public class SessionPanel extends JPanel {
 		replaceAt.setText(replaceAtText);
 
 		JPanel inputPanel = new JPanel();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
-		inputPanel.add(getRuleInfoLabel());
-		inputPanel.add(new JLabel("<html><strong>GREP RULE:</strong></html>"));
+		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
+		JPanel infoPanel = new JPanel();
+		infoPanel.add(getRuleInfoLabel());
+		inputPanel.add(infoPanel);
+		JPanel grepPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		grepPanel.add(new JLabel("<html><strong>GREP RULE:</strong></html>"));
+		JCheckBox grepInHeader = new JCheckBox("Header", true);
+		grepPanel.add(grepInHeader);
+		JCheckBox grepInBody = new JCheckBox("Body", true);
+		grepPanel.add(grepInBody);
+		inputPanel.add(grepPanel);
 		inputPanel.add(grepAt);
-		inputPanel.add(new JLabel(" ")); 
-		inputPanel.add(new JLabel("<html><strong>REPLACE RULE:</strong></html>"));
+		inputPanel.add(new JLabel(" "));
+		JPanel replacePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		replacePanel.add(new JLabel("<html><strong>REPLACE RULE:</strong></html>"));
+		JCheckBox replaceInHeader = new JCheckBox("Header", true);
+		replacePanel.add(replaceInHeader);
+		JCheckBox replaceInBody = new JCheckBox("Body", true);
+		replacePanel.add(replaceInBody);
+		inputPanel.add(replacePanel);
 		inputPanel.add(replaceAt);
 
 		Object[] choices = {"Save Changes", "Delete Rule"};
@@ -191,7 +221,8 @@ public class SessionPanel extends JPanel {
 		
 		//Save Changes
 		if (result == 0) {
-			Rule newRule = createRule(ruleLabel.getRuleName(), grepAt.getText(), replaceAt.getText());
+			Rule newRule = createRule(ruleLabel.getRuleName(), grepAt.getText(), replaceAt.getText(), 
+					grepInHeader.isSelected(), grepInBody.isSelected(), replaceInHeader.isSelected(), replaceInBody.isSelected());
 			if(newRule != null) {
 				rules.remove(rule);
 				ruleLabel.setRule(newRule);
@@ -212,15 +243,16 @@ public class SessionPanel extends JPanel {
 	}
 	
 	private JLabel getRuleInfoLabel() {
-		JLabel infoLabel = new JLabel("<html><h3>Information:</h3><p>The value between the defined <strong>GREP RULE</strong> will be grepped from every response (header and body) within the current Session.<br>"
+		JLabel infoLabel = new JLabel("<html><h3>Information:</h3><p>The value between the defined <strong>GREP RULE</strong> will be grepped from every response (header and/or body) within the current Session.<br>"
 				+ "The value between the defined <strong>REPLACE RULE</strong> will be replaced, with previously grepped value, within every request (header and body) within current Session.<br>"
-				+ "No regular expressions accepted. Use the syntax 'from [TEXT] to [EOF]' to declare a value must be grepped or replaced to the end of request / response. Use '\\n' to declare CRLF.<br><br>"
+				+ "No regular expressions accepted. Use 'EOF' to declare a value must be grepped or replaced to the end of request / response. Use '\\n' to declare CRLF.<br><br>"
 				+ "<h3>How to (syntax examples):</h3> <h4>Grep Rule:</h4><p>from [name=\"_requestVerificationToken\" value=\"] to [\" />]</p><br>"
 				+ "<h4>Replace Rule:</h4><p>from [_RequestVerificationToken=] to [&]</p><br><br></html>");
 		return infoLabel;
 	}
 	
-	private Rule createRule(String ruleName, String grepRule, String replaceRule) {
+	private Rule createRule(String ruleName, String grepRule, String replaceRule, boolean grepFromHeader, boolean grepFromBody,
+			boolean replaceFromHeader, boolean replaceFromBody) {
 		String grepFromString = null;
 		String grepToString = null;
 		String replaceFromString = null;
@@ -254,7 +286,7 @@ public class SessionPanel extends JPanel {
 		if(grepFromString != null && grepToString != null && replaceFromString != null && replaceToString != null &&
 				!grepFromString.equals("") && !grepToString.equals("") && !replaceFromString.equals("") &&
 				!replaceToString.equals("")) {
-			return new Rule(ruleName, grepFromString, grepToString, replaceFromString, replaceToString);
+			return new Rule(ruleName, grepFromString, grepToString, replaceFromString, replaceToString, grepFromHeader, grepFromBody, replaceFromHeader, replaceFromBody);
 		}
 		return null;
 	}

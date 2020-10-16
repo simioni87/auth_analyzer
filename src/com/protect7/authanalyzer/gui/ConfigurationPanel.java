@@ -1,6 +1,5 @@
 package com.protect7.authanalyzer.gui;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,9 +28,9 @@ public class ConfigurationPanel extends JPanel {
 
 	private static final long serialVersionUID = -4278008236240529083L;
 	private CurrentConfig config = CurrentConfig.getCurrentConfig();
-	private final String ANALYZER_STOPPED_TEXT = "Analyzer Stopped";
-	private final String ANALYZER_STARTED_TEXT = "Analyzer Running";
-	private final String ANALYZER_PAUSED_TEXT = "Analyzer Paused";
+	private final String ANALYZER_STOPPED_TEXT = "<html><span style='color:red; font-weight: bold'>&#x26AB;</span> Analyzer Stopped</html>";
+	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running</html>";
+	private final String ANALYZER_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Analyzer Paused</html>";
 	private JButton startStopButton = new JButton();
 	private JButton pauseButton = new JButton();
 	private HashMap<String, SessionPanel> sessionPanelMap = new HashMap<>();
@@ -136,7 +135,6 @@ public class ConfigurationPanel extends JPanel {
 		filterPanel.add(queryFilterButton);
 
 		startStopButton.setText(ANALYZER_STOPPED_TEXT);
-		startStopButton.setBackground(Color.RED);
 		startStopButton.addActionListener(e -> startStopButtonPressed(centerPanel));
 		
 		pauseButton.setText(PAUSE_TEXT);
@@ -151,10 +149,6 @@ public class ConfigurationPanel extends JPanel {
 		add(Box.createHorizontalStrut(30));
 		add(startStopButton);
 		add(pauseButton);
-
-		//ToolTipManager.sharedInstance().setInitialDelay(0);
-		//ToolTipManager.sharedInstance().setDismissDelay(60000);
-
 	}
 	
 	
@@ -199,7 +193,6 @@ public class ConfigurationPanel extends JPanel {
 				pauseButton.setEnabled(false);
 				config.setRunning(false);
 				startStopButton.setText(ANALYZER_STOPPED_TEXT);
-				startStopButton.setBackground(Color.RED);
 			} else {
 				// Comitt Settings to Config
 				config.clearSessionList();
@@ -225,7 +218,6 @@ public class ConfigurationPanel extends JPanel {
 				pauseButton.setEnabled(true);
 				config.setRunning(true);
 				startStopButton.setText(ANALYZER_STARTED_TEXT);
-				startStopButton.setBackground(Color.GREEN);
 			}
 		}
 	}
@@ -235,14 +227,12 @@ public class ConfigurationPanel extends JPanel {
 			config.setRunning(false);
 			pauseButton.setText(PLAY_TEXT);
 			startStopButton.setText(ANALYZER_PAUSED_TEXT);
-			startStopButton.setBackground(Color.ORANGE);
 			pauseButton.setToolTipText("Currently Paused");
 		}
 		else {
 			config.setRunning(true);
 			pauseButton.setText(PAUSE_TEXT);
 			startStopButton.setText(ANALYZER_STARTED_TEXT);
-			startStopButton.setBackground(Color.GREEN);
 			pauseButton.setToolTipText("Currently Running");
 		}
 	}

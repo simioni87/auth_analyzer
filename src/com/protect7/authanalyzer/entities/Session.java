@@ -1,5 +1,11 @@
 package com.protect7.authanalyzer.entities;
 
+/**
+ * This Entity holds a session.
+ * 
+ * @author Simon Reinhart
+ */
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -10,7 +16,7 @@ public class Session {
 	private final String name;
 	private final String headersToReplace;
 	private final String csrfTokenName;
-	private final String manuelCsrfTokenValue;
+	private final String staticCsrfTokenValue;
 	private int tabbedPaneRequestIndex;
 	private int tabbedPaneResponseIndex;
 	private String csrfTokenValue = "";
@@ -24,7 +30,7 @@ public class Session {
 		this.name = name;
 		this.headersToReplace = headersToReplace;
 		this.csrfTokenName = csrfTokenToReplace;
-		this.manuelCsrfTokenValue = csrfTokenValue;
+		this.staticCsrfTokenValue = csrfTokenValue;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
 		this.rules = rules;
 		this.statusPanel = statusPanel;
@@ -43,8 +49,8 @@ public class Session {
 	}
 
 	public String getCurrentCsrftTokenValue() {
-		if (!getManuelCsrfTokenValue().equals("")) {
-			return getManuelCsrfTokenValue();
+		if (!getStaticCsrfTokenValue().equals("")) {
+			return getStaticCsrfTokenValue();
 		} else {
 			return csrfTokenValue;
 		}
@@ -54,8 +60,8 @@ public class Session {
 		this.csrfTokenValue = csrfTokenValue;
 	}
 
-	public String getManuelCsrfTokenValue() {
-		return manuelCsrfTokenValue;
+	public String getStaticCsrfTokenValue() {
+		return staticCsrfTokenValue;
 	}
 
 	public HashMap<Integer, AnalyzerRequestResponse> getRequestResponseMap() {

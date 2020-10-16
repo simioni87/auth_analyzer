@@ -1,5 +1,13 @@
 package com.protect7.authanalyzer.controller;
 
+/**
+ * The RequestController processes each HTTP message which is not previously rejected due to filter specification. The RequestController
+ * is extracts the defined values (CSRF Token and Grep Rules) and modifies the given HTTP Message for each session. Furthermore, the
+ * RequestController is responsible for analyzing the response and declare the BYPASS status according to the specified definitions.
+ * 
+ * @author Simon Reinhart
+ */
+
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import org.jsoup.Jsoup;
@@ -51,8 +59,11 @@ public class RequestController {
 			int mapId = config.getTableModel().getFullMapSize() + 1;
 			boolean success = true;
 			for(Session session : config.getSessions()) {
-				if(session.isFilterRequestsWithSameHeader() && isSameHeader(originalRequestInfo, session)) {
+				if(session.isFilterRequestsWithSameHeader() && isSameHeader((ArrayList<String>) originalRequestInfo.getHeaders(), session)) {
+					// No other session will be analyzed if one session has same header. The assumption is that the given request was send
+					// automatically be the defined session. We do not want to analyze this request. 
 					success = false;
+					break;
 				}
 				else {
 					stdout.println("INFO: Handle Session: " + session.getName());
@@ -67,11 +78,11 @@ public class RequestController {
 					stdout.println("INFO: Perform modified request");
 					IHttpRequestResponse modifiedMessageInfo = callbacks.makeHttpRequest(originalMessageInfo.getHttpService(), message);
 					
-					// Analyse Response of modified Request
+					// Analyze Response of modified Request
 					if (modifiedMessageInfo.getRequest() != null && modifiedMessageInfo.getResponse() != null) {
 						stdout.println("INFO: Verify Response");
 						// Extract CSRF Token
-						if (!session.getCsrfTokenName().equals("") && session.getManuelCsrfTokenValue().equals("")) {
+						if (!session.getCsrfTokenName().equals("") && session.getStaticCsrfTokenValue().equals("")) {
 							stdout.println("INFO: Extract CSRF Token");
 							extractCurrentCsrfValue(modifiedMessageInfo, session);
 						}
@@ -80,19 +91,23 @@ public class RequestController {
 						extractResponseRuleValues(session, modifiedMessageInfo.getResponse());
 
 						stdout.println("INFO: Analyze if BYPASSED");
-						BypassConstants bypassConstant = analyzeResponses(originalMessageInfo, modifiedMessageInfo);
+						BypassConstants bypassConstant = analyzeResponse(originalMessageInfo, modifiedMessageInfo);
 						if (bypassConstant != null) {
 							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(modifiedMessageInfo, bypassConstant);
 							session.putRequestResponse(mapId, analyzerRequestResponse);
 						}
 						else {
+							// Fail Save - Should no occur
 							success = false;
 							stdout.println("WARNING: Cannot analyze if BYPASSED.");
+							break;
 						}
 					}
 					else {
+						// Fail Save - Should no occur
 						success = false;
 						stdout.println("WARNING: Modified Request / Response has null value");
+						break;
 					}
 				}
 			}
@@ -103,8 +118,7 @@ public class RequestController {
 		}
 	}
 	
-	public boolean isSameHeader(IRequestInfo originalRequestInfo, Session session) {
-		ArrayList<String> headers = (ArrayList<String>) originalRequestInfo.getHeaders();
+	public boolean isSameHeader(ArrayList<String> headers, Session session) {
 		String[] headersToReplace = session.getHeadersToReplace().split("\n");
 		boolean requestContainsHeader = true;
 		for (String headerToReplace : headersToReplace) {
@@ -158,7 +172,7 @@ public class RequestController {
 		if (session.getCsrfTokenName().toLowerCase().startsWith("remove_token")) {
 			String[] csrfSplit = session.getCsrfTokenName().split("#");
 			if (csrfSplit.length > 0) {
-				//TODO replace in other headers as well
+				//Only replace in request query string
 				String modifiedHeader = headers.get(0).replace(csrfSplit[1],"dummyparam");
 				headers.set(0, modifiedHeader);
 			}
@@ -312,7 +326,7 @@ public class RequestController {
 		if(session.getRules().size() > 0) {
 			String messageAsString = body;
 			for(Rule rule : session.getRules()) {
-				if(rule.getReplacementValue() != null) {
+				if(rule.replaceInBody() && rule.getReplacementValue() != null) {
 					int beginIndex = messageAsString.indexOf(rule.getReplaceFromString());
 					if(beginIndex != -1) {
 						beginIndex = beginIndex + rule.getReplaceFromString().length();
@@ -340,7 +354,7 @@ public class RequestController {
 		if(session.getRules().size() > 0) {
 			String messageAsString = header;
 			for(Rule rule : session.getRules()) {
-				if(rule.getReplacementValue() != null) {
+				if(rule.replaceInHeader() && rule.getReplacementValue() != null) {
 					int beginIndex = messageAsString.indexOf(rule.getReplaceFromString());
 					if(beginIndex != -1) {
 						beginIndex = beginIndex + rule.getReplaceFromString().length();
@@ -369,23 +383,45 @@ public class RequestController {
 		if(session.getRules().size() > 0) {
 			stdout.println("INFO: Extract rule values");
 			String messageAsString = new String(response);
-			for(Rule rule : session.getRules()) {
-				int beginIndex = messageAsString.indexOf(rule.getGrepFromString());
-				if(beginIndex != -1) {
-					beginIndex = beginIndex + rule.getGrepFromString().length();
-				}
-				int endIndex = -1;
-				if(rule.getGrepToString().equals("EOF")) {
-					// Grep to end of file
-					endIndex = messageAsString.length();
-				}
-				else {
-					endIndex = messageAsString.indexOf(rule.getGrepToString(), beginIndex);
-				}
-				if(beginIndex != -1 && endIndex != -1) {
-					String value = messageAsString.substring(beginIndex, endIndex);
-					rule.setReplacementValue(value);
-					session.getStatusPanel().setRuleValue(rule, value);
+			int bodyOffset = -1;
+			bodyOffset = messageAsString.indexOf("\r\n\r\n");
+			if(bodyOffset == -1) {
+				bodyOffset = messageAsString.indexOf("\n\n");
+			}
+			if(bodyOffset == -1) {
+				bodyOffset = messageAsString.indexOf(System.lineSeparator());
+			}
+			if(bodyOffset != -1) {
+				String header = messageAsString.substring(0, bodyOffset);
+				String body = messageAsString.substring(bodyOffset).trim(); 
+				for(Rule rule : session.getRules()) {
+					String stringToCheck = "";
+					if(rule.grepInHeader() && !rule.grepInBody()) {
+						stringToCheck = header;
+					}
+					else if(!rule.grepInHeader() && rule.grepInBody()) {
+						stringToCheck = body;
+					}
+					else if(rule.grepInHeader() && rule.grepInBody()) {
+						stringToCheck = messageAsString;
+					}
+					int beginIndex = stringToCheck.indexOf(rule.getGrepFromString());
+					if(beginIndex != -1) {
+						beginIndex = beginIndex + rule.getGrepFromString().length();
+					}
+					int endIndex = -1;
+					if(rule.getGrepToString().equals("EOF")) {
+						// Grep to end of file
+						endIndex = stringToCheck.length();
+					}
+					else {
+						endIndex = stringToCheck.indexOf(rule.getGrepToString(), beginIndex);
+					}
+					if(beginIndex != -1 && endIndex != -1) {
+						String value = stringToCheck.substring(beginIndex, endIndex);
+						rule.setReplacementValue(value);
+						session.getStatusPanel().setRuleValue(rule, value);
+					}
 				}
 			}
 		}
@@ -393,19 +429,19 @@ public class RequestController {
 	
 	/*
 	 * Bypass if: 
-	 * - Both Responses have same Response Body
+	 * - Both Responses have same Response Body and Status Code
 	 * 
 	 * Potential Bypass if: 
 	 * - Both Responses have same Response Code 
 	 * - Both Responses have +-5% of response body length 
 	 *
 	 */
-	public BypassConstants analyzeResponses(IHttpRequestResponse originalMessageInfo,
+	public BypassConstants analyzeResponse(IHttpRequestResponse originalMessageInfo,
 			IHttpRequestResponse modifiedMessageInfo) {
 		try {
 			String originalMessageBody = getResponseBodyAsString(originalMessageInfo);
 			String modifiedMessageBody = getResponseBodyAsString(modifiedMessageInfo);
-			if (originalMessageBody.equals(modifiedMessageBody)) {
+			if (originalMessageBody.equals(modifiedMessageBody) && (originalMessageInfo.getStatusCode() == modifiedMessageInfo.getStatusCode())) {
 				return BypassConstants.BYPASSED;
 			}
 			if (originalMessageInfo.getStatusCode() == modifiedMessageInfo.getStatusCode()) {
@@ -416,7 +452,6 @@ public class RequestController {
 					return BypassConstants.POTENTIAL_BYPASSED;
 				}
 			}
-
 			return BypassConstants.NOT_BYPASSED;
 			
 		} catch (Exception e) {

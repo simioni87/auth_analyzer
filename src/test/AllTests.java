@@ -138,7 +138,7 @@ public class AllTests {
 			}
 		};
 		
-		Session session = new Session("session1", "Cookie: sessionCookie=replacedValue \n\r AnyHeader: AdditionalHeader ", "csrftoken", "session1tokenvalue", false, new ArrayList<>(), new StatusPanel());
+		Session session = new Session("session1", "Cookie: sessionCookie=replacedValue \r\n AnyHeader: AdditionalHeader ", "csrftoken", "session1tokenvalue", false, new ArrayList<>(), new StatusPanel());
 		RequestController requestController = new RequestController(null);
 		ArrayList<String> modifiedHeaders = requestController.getModifiedHeaders(requestInfo, session, 0);
 		Assert.assertEquals(modifiedHeaders.get(0),"GET /anysource?testparam1=testvalue1&csrftoken=session1tokenvalue&testparam2=testvalue2 HTTP/1.1");
@@ -164,11 +164,23 @@ public class AllTests {
 	}
 	
 	@Test
+	public void testIsSameHeader() {
+		ArrayList<String> headers = new ArrayList<String>();
+		headers.add("Cookie: session=session1");
+		headers.add("Any-Header: session=session1");
+		Session session = new Session("session1", "Cookie: session=session1", "csrftoken", "session1tokenvalue", false, new ArrayList<>(), new StatusPanel());
+		RequestController requestController = new RequestController(null);
+		Assert.assertTrue(requestController.isSameHeader(headers, session));
+		Session session2 = new Session("session1", "Cookie: session=session1\r\nAnother-Header: test", "csrftoken", "session1tokenvalue", false, new ArrayList<>(), new StatusPanel());
+		Assert.assertFalse(requestController.isSameHeader(headers, session2));
+	}
+	
+	@Test
 	public void testExtractResponseRuleValues() {
-		Rule rule1 = new Rule("1", "Set-Cookie: xsrftoken=", ";", "", "");
-		Rule rule2 = new Rule("2", "name=\"csrftoken\" value=\"", "\"", "", "");
-		Rule rule3 = new Rule("3", "endofdoctoken=", "EOF", "", "");
-		Rule rule4 = new Rule("4", "My-Secret-Value: ", "\r\n", "", "");
+		Rule rule1 = new Rule("1", "Set-Cookie: xsrftoken=", ";", "", "", true, true, true, true);
+		Rule rule2 = new Rule("2", "name=\"csrftoken\" value=\"", "\"", "", "", true, true, true, true);
+		Rule rule3 = new Rule("3", "endofdoctoken=", "EOF", "", "", true, true, true, true);
+		Rule rule4 = new Rule("4", "My-Secret-Value: ", "\r\n", "", "", true, true, true, true);
 		ArrayList<Rule> ruleList = new ArrayList<>();
 		ruleList.add(rule1);
 		ruleList.add(rule2);
@@ -192,16 +204,32 @@ public class AllTests {
 		Assert.assertEquals("supersecret3", rule3.getReplacementValue());
 		Assert.assertEquals("supersecret4", rule4.getReplacementValue());
 		// Test value can not be grepped
-		String response2 = "Set-Cookie: xsrf=;\r\n\r\n<html></html>";
+		String response2 = "Set-Cookie: xsrf=;\r\n\n<html></html>";
 		rule1.setReplacementValue("replacmentValue");
 		requestController.extractResponseRuleValues(session, response2.getBytes());
 		Assert.assertEquals("replacmentValue", rule1.getReplacementValue());
+		// Test only grep in header
+		rule1.setGrepInHeader(false);
+		rule1.setReplacementValue("anyvalue");
+		requestController.extractResponseRuleValues(session, response.getBytes());
+		Assert.assertEquals("anyvalue", rule1.getReplacementValue());
+		rule1.setGrepInHeader(true);
+		requestController.extractResponseRuleValues(session, response.getBytes());
+		Assert.assertEquals("supersecret1", rule1.getReplacementValue());
+		// Test only grep in body
+		rule3.setGrepInBody(false);
+		rule3.setReplacementValue("anyvalue");
+		requestController.extractResponseRuleValues(session, response.getBytes());
+		Assert.assertEquals("anyvalue", rule3.getReplacementValue());
+		rule3.setGrepInBody(true);
+		requestController.extractResponseRuleValues(session, response.getBytes());
+		Assert.assertEquals("supersecret3", rule3.getReplacementValue());
 	}
 	
 	@Test
 	public void testApplyRulesInBody() {
 		ArrayList<Rule> ruleList = new ArrayList<>();
-		Rule rule1 = new Rule("1", "", "", "&csrftoken=", "&");
+		Rule rule1 = new Rule("1", "", "", "&csrftoken=", "&", true, true, true, true);
 		rule1.setReplacementValue("csrfValueReplaced");
 		ruleList.add(rule1);
 		Session session = new Session("session1", "", "", "", false, ruleList, new StatusPanel());
@@ -220,7 +248,7 @@ public class AllTests {
 		String modifiedBody2 = requestController.applyRulesInBody(session, body2);
 		Assert.assertEquals("test=value&anyvar=anyvalue&test=value2", modifiedBody2);
 		//Test replace at end
-		Rule rule2 = new Rule("2", "", "", "&csrftoken=", "EOF");
+		Rule rule2 = new Rule("2", "", "", "&csrftoken=", "EOF", true, true, true, true);
 		rule2.setReplacementValue("csrfValueReplaced");
 		ruleList.add(rule2);
 		String body3 = "test=value&test=value2&csrftoken=valueToReplace";
@@ -231,7 +259,7 @@ public class AllTests {
 	@Test
 	public void testApplyRulesInHeader() {
 		ArrayList<Rule> ruleList = new ArrayList<>();
-		Rule rule1 = new Rule("1", "", "", "Cookie: session=", ";");
+		Rule rule1 = new Rule("1", "", "", "Cookie: session=", ";", true, true, true, true);
 		rule1.setReplacementValue("valueReplaced");
 		ruleList.add(rule1);
 		Session session = new Session("session1", "", "", "", false, ruleList, new StatusPanel());
@@ -245,7 +273,7 @@ public class AllTests {
 		String modifiedHeader2 = requestController.applyRulesInHeader(session, header2);
 		Assert.assertEquals("Cookie: session=valueToReplace", modifiedHeader2);
 		//Test Replace at end of Header
-		Rule rule2 = new Rule("2", "", "", "Cookie: session=", "\n");
+		Rule rule2 = new Rule("2", "", "", "Cookie: session=", "\n", true, true, true, true);
 		rule2.setReplacementValue("valueReplaced2");
 		ruleList.add(rule2);
 		String header3 = "Cookie: session=valueToReplace";

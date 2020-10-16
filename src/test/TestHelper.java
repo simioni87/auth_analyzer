@@ -50,6 +50,5 @@ public class TestHelper {
 			}
 		};
 		return parameter;
-	}
-
+	}	
 }

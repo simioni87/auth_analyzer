@@ -10,7 +10,6 @@ import com.protect7.authanalyzer.util.CurrentConfig;
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;
 import burp.IRequestInfo;
-import burp.st;
 
 public class RequestTableModel extends AbstractTableModel {
 
