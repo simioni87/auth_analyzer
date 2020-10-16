@@ -85,7 +85,13 @@ public class AllTests {
 		modifiedMessageBodyURLEncoded = requestController.getModifiedMessageBody(originalMessageBodyURLEncoded, IRequestInfo.CONTENT_TYPE_URL_ENCODED, session);		
 		Assert.assertEquals("blah=1&anyvar=2&anyvar2=3&dummyparam=orignaltokenvalue", modifiedMessageBodyURLEncoded);
 		modifiedMessageBodyJSON = requestController.getModifiedMessageBody(originalMessageBodyJSON, IRequestInfo.CONTENT_TYPE_JSON, session);		
-		Assert.assertEquals("{\"param\":\"value\",\"dummyparam\":\"orignaltokenvalue\",\"test\":0}", modifiedMessageBodyJSON);	
+		Assert.assertEquals("{\"param\":\"value\",\"dummyparam\":\"orignaltokenvalue\",\"test\":0}", modifiedMessageBodyJSON);
+		//Test when original csrf value was extracted
+		requestController.setOriginalCsrfTokenValue("originalValue");
+		session = new Session("session1", "", "csrftoken", "csrftokenvalue", false, new ArrayList<>(), new StatusPanel());
+		String originalMessageBodyURLEncoded2 = "blah=1&anyvar=2&anyname=originalValue&anyvar2=3";
+		String modifiedMessageBodyURLEncoded2 = requestController.getModifiedMessageBody(originalMessageBodyURLEncoded2, IRequestInfo.CONTENT_TYPE_MULTIPART, session);
+		Assert.assertEquals("blah=1&anyvar=2&anyname=csrftokenvalue&anyvar2=3", modifiedMessageBodyURLEncoded2);
     }
 	
 	@Test
@@ -137,7 +143,7 @@ public class AllTests {
 				return 0;
 			}
 		};
-		
+		// Test token replacement
 		Session session = new Session("session1", "Cookie: sessionCookie=replacedValue \r\n AnyHeader: AdditionalHeader ", "csrftoken", "session1tokenvalue", false, new ArrayList<>(), new StatusPanel());
 		RequestController requestController = new RequestController(null);
 		ArrayList<String> modifiedHeaders = requestController.getModifiedHeaders(requestInfo, session, 0);
@@ -146,7 +152,10 @@ public class AllTests {
 		Assert.assertEquals(modifiedHeaders.get(2),"Cookie: sessionCookie=replacedValue");
 		Assert.assertEquals(modifiedHeaders.get(3),"Content-Length: 0");
 		Assert.assertEquals(modifiedHeaders.get(4),"AnyHeader: AdditionalHeader");
-		
+		// Test remove token feature
+		Session session1 = new Session("session1", "", "remove_token#csrftoken", "session1tokenvalue", false, new ArrayList<>(), new StatusPanel());
+		ArrayList<String> modifiedHeaders1 = requestController.getModifiedHeaders(requestInfo, session1, 0);
+		Assert.assertEquals(modifiedHeaders1.get(0),"GET /anysource?testparam1=testvalue1&dummyparam=orignaltokenvalue&testparam2=testvalue2 HTTP/1.1");
 	}
 	
 	@Test

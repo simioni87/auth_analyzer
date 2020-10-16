@@ -2,7 +2,7 @@ package com.protect7.authanalyzer.controller;
 
 /**
  * The RequestController processes each HTTP message which is not previously rejected due to filter specification. The RequestController
- * is extracts the defined values (CSRF Token and Grep Rules) and modifies the given HTTP Message for each session. Furthermore, the
+ * extracts the defined values (CSRF Token and Grep Rules) and modifies the given HTTP Message for each session. Furthermore, the
  * RequestController is responsible for analyzing the response and declare the BYPASS status according to the specified definitions.
  * 
  * @author Simon Reinhart
@@ -10,6 +10,7 @@ package com.protect7.authanalyzer.controller;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.List;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -45,6 +46,7 @@ public class RequestController {
 	}
 
 	public synchronized void analyze(IHttpRequestResponse originalMessageInfo) {
+		// Fail-Safe - Check if messageInfo can be processed
 		if (originalMessageInfo == null || originalMessageInfo.getRequest() == null || originalMessageInfo.getResponse() == null) {
 			stdout.println("WARNING: Cannot analyze request with null values.");
 		}
@@ -52,6 +54,7 @@ public class RequestController {
 			IRequestInfo originalRequestInfo = callbacks.getHelpers().analyzeRequest(originalMessageInfo);
 			stdout.println("INFO: Handle New Request: " + originalRequestInfo.getUrl());
 			
+			// Extract original CSRF value for faster replacement if it is present in further requests
 			extractOriginalCsrfValue(originalMessageInfo);
 		
 			String originalMessageBody = getRequestBodyAsString(originalMessageInfo);
@@ -59,9 +62,9 @@ public class RequestController {
 			int mapId = config.getTableModel().getFullMapSize() + 1;
 			boolean success = true;
 			for(Session session : config.getSessions()) {
-				if(session.isFilterRequestsWithSameHeader() && isSameHeader((ArrayList<String>) originalRequestInfo.getHeaders(), session)) {
+				if(session.isFilterRequestsWithSameHeader() && isSameHeader(originalRequestInfo.getHeaders(), session)) {
 					// No other session will be analyzed if one session has same header. The assumption is that the given request was send
-					// automatically be the defined session. We do not want to analyze this request. 
+					// automatically be the defined session. We do not want to analyze such a request.
 					success = false;
 					break;
 				}
@@ -70,7 +73,7 @@ public class RequestController {
 					stdout.println("INFO: Modify Request Body");
 					String modifiedMessageBody = getModifiedMessageBody(originalMessageBody, originalRequestInfo.getContentType() , session);
 					stdout.println("INFO: Modify Request Header");
-					// Headers must be modified after Message Body for proper Content-Length update
+					// Headers must be modified after Message Body to calculate Content-Length
 					ArrayList<String> modifiedHeaders = getModifiedHeaders(originalRequestInfo, session, modifiedMessageBody.length());
 					stdout.println("INFO: Create bytestream");
 					byte[] message = callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody.getBytes());
@@ -97,14 +100,14 @@ public class RequestController {
 							session.putRequestResponse(mapId, analyzerRequestResponse);
 						}
 						else {
-							// Fail Save - Should no occur
+							// Fail-Safe
 							success = false;
 							stdout.println("WARNING: Cannot analyze if BYPASSED.");
 							break;
 						}
 					}
 					else {
-						// Fail Save - Should no occur
+						// Fail-Safe
 						success = false;
 						stdout.println("WARNING: Modified Request / Response has null value");
 						break;
@@ -118,7 +121,7 @@ public class RequestController {
 		}
 	}
 	
-	public boolean isSameHeader(ArrayList<String> headers, Session session) {
+	public boolean isSameHeader(List<String> headers, Session session) {
 		String[] headersToReplace = session.getHeadersToReplace().split("\n");
 		boolean requestContainsHeader = true;
 		for (String headerToReplace : headersToReplace) {
@@ -169,35 +172,39 @@ public class RequestController {
 		}		
 		
 		// Check for CSRF Token as Query Parameter
-		if (session.getCsrfTokenName().toLowerCase().startsWith("remove_token")) {
-			String[] csrfSplit = session.getCsrfTokenName().split("#");
-			if (csrfSplit.length > 0) {
-				//Only replace in request query string
-				String modifiedHeader = headers.get(0).replace(csrfSplit[1],"dummyparam");
-				headers.set(0, modifiedHeader);
-			}
-		}
-		else if(!session.getCsrfTokenName().equals("")){
-			for (IParameter param : originalRequestInfo.getParameters()) {
-				if (param.getName().equals(session.getCsrfTokenName())) {
-					String modifiedHeader = headers.get(0).replace(param.getValue(), session.getCurrentCsrftTokenValue());
+		if (!session.getCsrfTokenName().equals("")) {
+			// CSRF Remove feature. Syntax remove_token#csrf_token
+			if (session.getCsrfTokenName().toLowerCase().startsWith("remove_token")) {
+				String[] csrfSplit = session.getCsrfTokenName().split("#");
+				if (csrfSplit.length > 1) {
+					// Only replace in request query string --> headers.get(0)
+					String modifiedHeader = headers.get(0).replace(csrfSplit[1],"dummyparam");
 					headers.set(0, modifiedHeader);
-					break;
+				}
+			}
+			else {
+				for (IParameter param : originalRequestInfo.getParameters()) {
+					if (param.getName().equals(session.getCsrfTokenName())) {
+						String modifiedHeader = headers.get(0).replace(param.getValue(), session.getCurrentCsrftTokenValue());
+						headers.set(0, modifiedHeader);
+						break;
+					}
 				}
 			}
 		}
 		return headers;
 	}
 
-	// Sets CSRF Token to Body
 	public String getModifiedMessageBody(String originalMessageBody, byte contentType, Session session) {
+		// Apply rules in body
 		String messageBodyWithAppliedRules = applyRulesInBody(session, originalMessageBody); 
+		// Check and modify if csrf modification is needed
 		if(session.getCsrfTokenName().equals("")) {
 			return messageBodyWithAppliedRules;
 		}
 		else {
 			String modifiedMessageBody = "";
-			// CSRF Remove feature. Syntax remove_token#csrt_token
+			// CSRF Remove feature. Syntax remove_token#csrf_token
 			if (session.getCsrfTokenName().toLowerCase().startsWith("remove_token")) {
 				String[] csrfSplit = session.getCsrfTokenName().split("#");
 				if (csrfSplit.length > 0) {
@@ -220,7 +227,6 @@ public class RequestController {
 									String csrfValue = csrfTokenValueSplit[2].split("---")[0].trim();
 									modifiedMessageBody = messageBodyWithAppliedRules.replace(csrfValue,
 											session.getCurrentCsrftTokenValue());
-									;
 								}
 							}
 						} 
@@ -254,6 +260,7 @@ public class RequestController {
 					}
 				}
 			}
+			//Fail-Safe
 			if (modifiedMessageBody.equals("")) {
 				modifiedMessageBody = messageBodyWithAppliedRules;
 			}
@@ -474,5 +481,9 @@ public class RequestController {
 		String currentResponse = new String(messageInfo.getResponse());
 		String responseBody = currentResponse.substring(response.getBodyOffset());
 		return responseBody;
+	}
+	
+	public void setOriginalCsrfTokenValue(String value) {
+		this.currentOriginalCsrfValue = value;
 	}
 }
