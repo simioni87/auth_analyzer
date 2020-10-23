@@ -5,7 +5,7 @@ import burp.IHttpRequestResponse;
 
 public class PathFilter extends RequestFilter {
 	
-	private String[] filterStringLiterals = {""};
+	private String[] filterStringLiterals = {};
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo) {

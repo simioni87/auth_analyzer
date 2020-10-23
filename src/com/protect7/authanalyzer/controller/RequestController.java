@@ -242,7 +242,7 @@ public class RequestController {
 						}
 						// Handle JSON Body
 						if(contentType == IRequestInfo.CONTENT_TYPE_JSON) {
-							JsonElement jelement = new JsonParser().parse(messageBodyWithAppliedRules);
+							JsonElement jelement = JsonParser.parseString(messageBodyWithAppliedRules).getAsJsonObject();
 							JsonObject jobject = null;
 							if(jelement.isJsonObject()) {
 								jobject = jelement.getAsJsonObject();
@@ -312,7 +312,7 @@ public class RequestController {
 	}
 
 	public String getCsrfTokenValueFromJson(String json, String csrfName) {
-		JsonElement jelement = new JsonParser().parse(json);
+		JsonElement jelement = JsonParser.parseString(json).getAsJsonObject();
 		JsonObject jobject = null;
 		if(jelement.isJsonObject()) {
 			jobject = jelement.getAsJsonObject();
