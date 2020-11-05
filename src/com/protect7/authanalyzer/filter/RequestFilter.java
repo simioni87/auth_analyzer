@@ -2,11 +2,10 @@ package com.protect7.authanalyzer.filter;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
 import javax.swing.JToggleButton;
-
 import burp.IBurpExtenderCallbacks;
-import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 
 public abstract class RequestFilter {
 	
@@ -42,7 +41,7 @@ public abstract class RequestFilter {
 		}
 	}
 	
-	public abstract boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo);
+	public abstract boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo);
 
 	public abstract boolean hasStringLiterals();
 	

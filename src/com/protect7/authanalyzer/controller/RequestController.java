@@ -448,10 +448,12 @@ public class RequestController {
 		try {
 			String originalMessageBody = getResponseBodyAsString(originalMessageInfo);
 			String modifiedMessageBody = getResponseBodyAsString(modifiedMessageInfo);
-			if (originalMessageBody.equals(modifiedMessageBody) && (originalMessageInfo.getStatusCode() == modifiedMessageInfo.getStatusCode())) {
+			IResponseInfo originalResponseInfo = callbacks.getHelpers().analyzeResponse(originalMessageInfo.getResponse());
+			IResponseInfo modifiedResponseInfo = callbacks.getHelpers().analyzeResponse(modifiedMessageInfo.getResponse());
+			if (originalMessageBody.equals(modifiedMessageBody) && (originalResponseInfo.getStatusCode() == modifiedResponseInfo.getStatusCode())) {
 				return BypassConstants.BYPASSED;
 			}
-			if (originalMessageInfo.getStatusCode() == modifiedMessageInfo.getStatusCode()) {
+			if (originalResponseInfo.getStatusCode() == modifiedResponseInfo.getStatusCode()) {
 				int range = originalMessageBody.length() / 20; // calc 5% of response length
 				int difference = originalMessageBody.length() - modifiedMessageBody.length();
 				// Check if difference is in range

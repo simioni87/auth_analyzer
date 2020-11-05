@@ -55,11 +55,7 @@ public class RequestTableModel extends AbstractTableModel {
 	public Object getValueAt(int row, int column) {
 		if (originalRequestResponseMap.size() > row) {
 			IHttpRequestResponse messageInfoOriginal = originalRequestResponseMap.get(row+1);
-			IRequestInfo request = null;
-			if(messageInfoOriginal != null) {
-				request = callbacks.getHelpers().analyzeRequest(messageInfoOriginal.getRequest());
-			}
-			else {
+			if(messageInfoOriginal == null) {
 				PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
 				stdout.println("ERROR: Cannot find map key: " + row+1 + ". Avaliable Key Sets: ");
 				for(Integer key :originalRequestResponseMap.keySet()) {
@@ -68,6 +64,7 @@ public class RequestTableModel extends AbstractTableModel {
 				stdout.close();
 				return null;
 			}
+			IRequestInfo request = callbacks.getHelpers().analyzeRequest(messageInfoOriginal);
 			if(column == 0) {
 				return row + 1;
 			}
@@ -75,14 +72,14 @@ public class RequestTableModel extends AbstractTableModel {
 				return  request.getMethod();
 			}
 			if(column == 2) {
-				return messageInfoOriginal.getHost();
+				return messageInfoOriginal.getHttpService().getHost();
 			}
 			if(column == 3) {
-				if(messageInfoOriginal.getUrl().getQuery() == null) {
-					return messageInfoOriginal.getUrl().getPath();
+				if(request.getUrl().getQuery() == null) {
+					return request.getUrl().getPath();
 				}
 				else {
-					return messageInfoOriginal.getUrl().getPath()+"?"+messageInfoOriginal.getUrl().getQuery();
+					return request.getUrl().getPath() + "?" + request.getUrl().getQuery();
 				}
 			}
 			for(int i=0; i<config.getSessions().size(); i++) {

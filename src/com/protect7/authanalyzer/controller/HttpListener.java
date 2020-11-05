@@ -14,6 +14,8 @@ import com.protect7.authanalyzer.util.CurrentConfig;
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpListener;
 import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 
 public class HttpListener implements IHttpListener {
 
@@ -32,9 +34,11 @@ public class HttpListener implements IHttpListener {
 		//Only responses to have corresponding request
 		if(!messageIsRequest && config.isRunning()) {
 			boolean isFiltered = false;
+			IRequestInfo requestInfo = callbacks.getHelpers().analyzeRequest(messageInfo);
+			IResponseInfo responseInfo = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
 			for(int i=0; i<config.getRequestFilterList().size(); i++) {
 				RequestFilter filter = config.getRequestFilterAt(i);
-				if(filter.filterRequest(callbacks, toolFlag, messageInfo)) {
+				if(filter.filterRequest(callbacks, toolFlag, requestInfo, responseInfo)) {
 					isFiltered = true;
 					break;
 				}

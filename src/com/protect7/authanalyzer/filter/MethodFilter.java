@@ -1,17 +1,18 @@
 package com.protect7.authanalyzer.filter;
 
 import burp.IBurpExtenderCallbacks;
-import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 
 public class MethodFilter extends RequestFilter {
 	
 	private String[] filterMethods = {"OPTIONS"};
 
 	@Override
-	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo) {
+	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
 		
 		if(isSelected) {		
-			String requestMethod = callbacks.getHelpers().analyzeRequest(messageInfo.getRequest()).getMethod();
+			String requestMethod = requestInfo.getMethod();
 			for(String method : filterMethods) {
 				if(requestMethod.toLowerCase().equals(method.toLowerCase()) && !method.trim().equals("")) {
 					incrementFiltered();

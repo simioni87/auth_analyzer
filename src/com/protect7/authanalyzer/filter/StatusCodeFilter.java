@@ -1,16 +1,17 @@
 package com.protect7.authanalyzer.filter;
 
 import burp.IBurpExtenderCallbacks;
-import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 
 public class StatusCodeFilter extends RequestFilter {
 
 	private String[] filterStringLiterals = { "204", "304" };
 
 	@Override
-	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo) {
+	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
 		if (isSelected) {
-			String statusCode = String.valueOf(messageInfo.getStatusCode());
+			String statusCode = String.valueOf(responseInfo.getStatusCode());
 			for (String stringLiteral : filterStringLiterals) {
 				if (statusCode.equals(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
 					incrementFiltered();

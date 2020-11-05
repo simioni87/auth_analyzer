@@ -1,16 +1,17 @@
 package com.protect7.authanalyzer.filter;
 
 import burp.IBurpExtenderCallbacks;
-import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 
 public class PathFilter extends RequestFilter {
 	
 	private String[] filterStringLiterals = {};
 
 	@Override
-	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo) {
-		if(isSelected && messageInfo.getUrl().getPath() != null) {		
-			String url = messageInfo.getUrl().getPath().toString().toLowerCase();	
+	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
+		if(isSelected && requestInfo.getUrl().getPath() != null) {		
+			String url = requestInfo.getUrl().getPath().toString().toLowerCase();	
 			for(String stringLiteral : filterStringLiterals) {
 				if(url.contains(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
 					incrementFiltered();

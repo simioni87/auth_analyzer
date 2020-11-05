@@ -1,7 +1,7 @@
 package com.protect7.authanalyzer.filter;
 
 import burp.IBurpExtenderCallbacks;
-import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public class FileTypeFilter extends RequestFilter {
@@ -9,13 +9,12 @@ public class FileTypeFilter extends RequestFilter {
 	private String[] filterFileTypes = {"js", "script", "css", "png", "jpg", "jpeg", "gif", "svg", "bmp", "woff", "ico"};
 
 	@Override
-	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IHttpRequestResponse messageInfo) {
+	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
 		if(isSelected) {
-			IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
-			String url = messageInfo.getUrl().toString().toLowerCase();
+			String url = requestInfo.getUrl().toString().toLowerCase();
 			for(String fileType : filterFileTypes) {
 				if(url.endsWith(fileType.toLowerCase()) && !fileType.equals("") || 
-						(fileType.toLowerCase().equals(response.getInferredMimeType().toLowerCase()) && !fileType.trim().equals(""))) {
+						(fileType.toLowerCase().equals(responseInfo.getInferredMimeType().toLowerCase()) && !fileType.trim().equals(""))) {
 					incrementFiltered();
 					return true;
 				}
