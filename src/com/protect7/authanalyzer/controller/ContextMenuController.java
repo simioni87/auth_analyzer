@@ -24,7 +24,6 @@ public class ContextMenuController implements IContextMenuFactory {
 		String selectedText = null;
 		if (selection != null) { 
 			IHttpRequestResponse message = invocation.getSelectedMessages()[0];
-			// TODO https://github.com/ozzi-/JWT4B/issues/10 -> this issue needs to be fixed here
 			if (iContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || iContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
 				selectedText = new String(message.getRequest()).substring(selection[0], selection[1]);
 			} else if (iContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_RESPONSE || iContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
