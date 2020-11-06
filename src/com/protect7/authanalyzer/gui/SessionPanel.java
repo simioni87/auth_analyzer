@@ -295,8 +295,8 @@ public class SessionPanel extends JPanel {
 		return headersToReplaceText;
 	}
 
-	public void setHeadersToReplaceText(JTextArea headersToReplaceText) {
-		this.headersToReplaceText = headersToReplaceText;
+	public void setHeadersToReplaceText(String text) {
+		this.headersToReplaceText.setText(text);
 	}
 
 	public JTextField getCsrfTokenToReplaceText() {

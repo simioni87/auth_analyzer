@@ -25,7 +25,8 @@ public class RequestTableModel extends AbstractTableModel {
 	
 	public void putNewRequestResponse(int key, IHttpRequestResponse requestResponse) {
 		originalRequestResponseMap.put(key, requestResponse);
-		fireTableDataChanged();
+		fireTableRowsInserted(originalRequestResponseMap.size()-1, originalRequestResponseMap.size()-1);
+		//fireTableDataChanged();
 	}
 	
 	public int getFullMapSize() {

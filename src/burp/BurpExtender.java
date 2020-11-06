@@ -13,31 +13,16 @@ public class BurpExtender implements IBurpExtender, ITab {
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
 		// Extension needs Jsoup and Gson Library
-		try {
-			Class.forName("org.jsoup.Jsoup");
-			Class.forName("com.google.gson.JsonObject");
-			callbacks.setExtensionName("Auth Analyzer");
-			panel = new MainPanel(callbacks);
-			callbacks.addSuiteTab(this);
-			callbacks.registerHttpListener(new HttpListener(callbacks));
-			PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
-			stdout.println("Auth Analyzer successfully started");
-			stdout.println("Version " + Version.VERSION);
-			stdout.println("Protect7 GmbH");
-			stdout.println("www.protect7.com");
-			stdout.close();
-
-		} catch (ClassNotFoundException e) {
-			PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
-			stdout.println("Failed to start Auth Analyzer");
-			stdout.println("Jsoup and / or Gson library missing. Add Jsoup / Gson library to use Auth Analyzer.");
-			stdout.println("1. Download lib (jsoup and gson)");
-			stdout.println("2. Link lib in Burp: Extender -> Options -> Java Environment");
-			stdout.println("");
-			stdout.println("Unload Auth Anayzer");
-			stdout.close();
-			callbacks.unloadExtension();
-		}
+		callbacks.setExtensionName("Auth Analyzer");
+		panel = new MainPanel(callbacks);
+		callbacks.addSuiteTab(this);
+		callbacks.registerHttpListener(new HttpListener(callbacks));
+		PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
+		stdout.println("Auth Analyzer successfully started");
+		stdout.println("Version " + Version.VERSION);
+		stdout.println("Protect7 GmbH");
+		stdout.println("www.protect7.com");
+		stdout.close();
 	}
 
 	@Override
@@ -49,4 +34,5 @@ public class BurpExtender implements IBurpExtender, ITab {
 	public Component getUiComponent() {
 		return panel;
 	}
+
 }

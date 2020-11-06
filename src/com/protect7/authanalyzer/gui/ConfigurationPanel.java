@@ -39,12 +39,12 @@ public class ConfigurationPanel extends JPanel {
 	private JButton removeSessionButton;
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
+	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
 
 	public ConfigurationPanel(CenterPanel centerPanel) {
 		
 		JPanel sessionButtonPanel = new JPanel();
 		sessionButtonPanel.setLayout(new BoxLayout(sessionButtonPanel, BoxLayout.Y_AXIS));
-		JTabbedPane sessionTabbedPane = new JTabbedPane();
 		createSessionButton = new JButton("New Session");
 		renameSessionButton = new JButton("Rename Session");
 		renameSessionButton.setEnabled(false);
@@ -151,6 +151,21 @@ public class ConfigurationPanel extends JPanel {
 		add(pauseButton);
 	}
 	
+	// Sets the selected text from context menu within the header(s) to replace text are of the currently selected session
+	public void setSelectedTextFromContextMenu(String selectedText) {
+		if(!config.isRunning()) {
+			int currentIndex = sessionTabbedPane.getSelectedIndex();
+			String sessionName = sessionTabbedPane.getTitleAt(currentIndex);
+			SessionPanel sessionPanel = sessionPanelMap.get(sessionName);
+			sessionPanel.setHeadersToReplaceText(selectedText);
+		}
+	}
+	
+	public SessionPanel getSelectedSession() {
+		int currentIndex = sessionTabbedPane.getSelectedIndex();
+		String sessionName = sessionTabbedPane.getTitleAt(currentIndex);
+		return sessionPanelMap.get(sessionName);
+	}
 	
 	private void addFilter(RequestFilter filter, JToggleButton onOffButton, String toolTipText, String inputDialogText) {
 		config.addRequestFilter(filter);
