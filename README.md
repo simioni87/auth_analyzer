@@ -7,14 +7,23 @@ The so called “Auth Analyzer” helps to find authorization bugs.
 ## How does it work?
 1.	Create a “New Session” for each user role you want to test (e.g. admin, normal_user, unauthenticated, …) 
 2.	Paste the session characteristic (e.g. Session Cookie, Authorization Header, …) into the text area “Header(s) to replace”
-3.	Enter your CSRF Token parameter name (the CSRF token value will be automatically grepped if it is present in a HTML-input tag or JSON object of a given response)
-4.	Add your preferred “Grep and Replace” Rules (a start and stop string can be defined for Grep and Replace. Each grepped value will be replaced within the defined Replace rule of the given session).
+3.	If needed: Define CSRF Token Name
+    
+    a. With a dynamic value (the CSRF token value will be automatically grepped if it is present in a HTML-input tag or JSON object of a given response)
+    
+    b. With a static value (value can be defined)
+    
+    c. Remove CSRF Token (to test CSRF check mechanism of for other purposes)
+    
+4.	If needed: Add your preferred “Grep and Replace” Rules (a start and stop string can be defined for Grep and Replace. Each grepped value will be replaced within the defined Replace rule of the given session).
+5. Define Filters (only relevant requests should be processed)
 5.	Start the “Auth Analyzer”. 
-*	Each Request will be displayed in a table. 
-*	I will easy see for each session if you have a BYPASS or a POTENTIAL_BYPASS for the current request.
+
+    *	Each Request will be displayed in a table. 
+    *	I will easy see for each session if you have a BYPASS or a POTENTIAL_BYPASS for the current request.
 
 ## Processing Filter
-The “Auth Analyzer” should only process Request which eighter have a CSRF Token in it or should only be accessible for authorized users. For this reason following filters can be defined:
+The “Auth Analyzer” should only process Request which eighter have a CSRF Token in it or should only be accessible for authorized users. For this reason, following filters can be defined:
 *	Only In Scope (only requests to the set Scope will be processed)
 *	Only Proxy Traffic (only requests to the “Proxy History will be processed)
 *	Exclude Filetypes (specified Filetypes can be excluded)
@@ -36,7 +45,8 @@ The “Auth Analyzer” should only process Request which eighter have a CSRF To
 *	Remove a specified parameter
 *	Specify personal Grep and Replace Rules
 *	Detailed Filter Rules
-*	Amount of filtered Requests for each Filter
+*	Number of filtered Requests for each Filter displayed in Session Info Panel
 *	Detailed Status Panel for each Session
 *	Start / Stop / Pause the “Auth Analyzer”
 *	Detailed view of all processed Requests and Responses
+* Send marked text directly to "Header(s) to replace" text field by context menu item
