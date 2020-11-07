@@ -19,8 +19,8 @@ The so called “Auth Analyzer” helps to find authorization bugs.
 5. Define Filters (only relevant requests should be processed)
 5.	Start the “Auth Analyzer”. 
 
-    *	Each Request will be displayed in a table. 
-    *	I will easy see for each session if you have a BYPASS or a POTENTIAL_BYPASS for the current request.
+  *	Each Request will be displayed in a table. 
+  *	I will easy see for each session if you have a BYPASS or a POTENTIAL_BYPASS for each request.
 
 ## Processing Filter
 The “Auth Analyzer” should only process Request which eighter have a CSRF Token in it or should only be accessible for authorized users. For this reason, following filters can be defined:
