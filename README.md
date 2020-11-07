@@ -6,14 +6,14 @@ The so called “Auth Analyzer” helps to find authorization bugs.
 
 ## How does it work?
 1.	Create a “New Session” for each user role you want to test (e.g. admin, normal_user, unauthenticated, …) 
-2.	Paste the session characteristic (e.g. Session Cookie, Authorization Header, …) into the text area “Header(s) to replace”
+2.	Paste the session characteristic (e.g. Session Cookie, Authorization Header, …) into the text area “Header(s) to replace”. Use the whole header for it (e.g. Cookie: session=123456;). Header(s) can be marked and send from anywhere to Auth Analyzer over the standard context menu (mark text and right click).
 3.	If needed: Define CSRF Token Name
     
     a. With a dynamic value (the CSRF token value will be automatically grepped if it is present in a HTML-input tag or JSON object of a given response)
     
     b. With a static value (value can be defined)
     
-    c. Remove CSRF Token (to test CSRF check mechanism of for other purposes)
+    c. Remove CSRF Token (to test CSRF check mechanism or for other purposes)
     
 4.	If needed: Add your preferred “Grep and Replace” Rules (a start and stop string can be defined for Grep and Replace. Each grepped value will be replaced within the defined Replace rule of the given session).
 5. Define Filters (only relevant requests should be processed)
