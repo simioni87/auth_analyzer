@@ -17,7 +17,8 @@ The so called “Auth Analyzer” helps to find authorization bugs.
     
 4.	If needed: Add your preferred “Grep and Replace” Rules (a start and stop string can be defined for Grep and Replace. Each grepped value will be replaced within the defined Replace rule of the given session).
 5. Define Filters (only relevant requests should be processed)
-5.	Start the “Auth Analyzer”. 
+6.	Start the “Auth Analyzer”. 
+7.	Navigate with a high privileged user through the web application. All unfiltered proxy request will be modified, repeated and analyzed by the Auth Analyzer. The results are displayed in the Auth Analyzer Tab.
 
   *	Each Request will be displayed in a table. 
   *	I will easy see for each session if you have a BYPASS or a POTENTIAL_BYPASS for each request.
