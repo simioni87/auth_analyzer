@@ -1,5 +1,5 @@
 # Auth Analyzer
-This Burp Extension helps you to find authorization bugs.
+This Burp Extension helps you to find authorization bugs by repeating Proxy requests with self defined headers and tokens.
 
 ## What is it?
 The so called “Auth Analyzer” helps to find authorization bugs. 
