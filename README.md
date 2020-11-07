@@ -20,8 +20,6 @@ The so called “Auth Analyzer” helps to find authorization bugs.
 6.	Start the “Auth Analyzer”. 
 7.	Navigate with a high privileged user through the web application. All unfiltered proxy request will be modified, repeated and analyzed by the Auth Analyzer. The results are displayed in the Auth Analyzer Tab.
 
-  *	Each Request will be displayed in a table. 
-  *	I will easy see for each session if you have a BYPASS or a POTENTIAL_BYPASS for each request.
 
 ## Processing Filter
 The “Auth Analyzer” should only process Request which eighter have a CSRF Token in it or should only be accessible for authorized users. For this reason, following filters can be defined:
