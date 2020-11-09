@@ -1,0 +1,12 @@
+<p>This Burp Extension helps you to find authorization bugs by repeating Proxy requests with self defined headers and tokens.</p>
+
+<p>How does it work?</p>
+<ol>
+	<li>Create a “New Session” for each user role you want to test (e.g. admin, normal_user, unauthenticated, …)</li>
+	<li>Paste the session characteristic (e.g. Session Cookie, Authorization Header, …) for each role into the text area “Header(s) to replace”. Use the whole header for it (e.g. Cookie: session=123456;). Header(s) can be marked and send from anywhere to Auth Analyzer over the standard context menu (mark text and right click).</li>
+	<li>If needed: Define CSRF Token Name for each role</li>
+	<li>If needed: Add your preferred “Grep and Replace” Rules (a start and stop string can be defined for Grep and Replace. Each grepped value will be replaced within the defined Replace rule of the given session).</li>
+	<li>Define Filters (only relevant requests should be processed)</li>
+	<li>Start the “Auth Analyzer”.</li>
+	<li>Navigate with a high privileged user through the web application and access resources / functions which should not be accessible by your defined roles (sessions). All unfiltered proxy request will be modified, repeated and analyzed (for each role) by the Auth Analyzer. The results are displayed in the Auth Analyzer Tab.</li>
+</ol>
