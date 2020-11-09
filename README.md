@@ -1,13 +1,12 @@
 # Auth Analyzer
-This Burp Extension helps you to find authorization bugs by repeating Proxy requests with self defined headers and tokens.
 
 ## What is it?
-The so called “Auth Analyzer” helps to find authorization bugs. 
+This Burp Extension helps you to find authorization bugs by repeating Proxy requests with self defined headers and tokens.
 
 ## How does it work?
 1.	Create a “New Session” for each user role you want to test (e.g. admin, normal_user, unauthenticated, …) 
-2.	Paste the session characteristic (e.g. Session Cookie, Authorization Header, …) into the text area “Header(s) to replace”. Use the whole header for it (e.g. Cookie: session=123456;). Header(s) can be marked and send from anywhere to Auth Analyzer over the standard context menu (mark text and right click).
-3.	If needed: Define CSRF Token Name
+2.	Paste the session characteristic (e.g. Session Cookie, Authorization Header, …) for each role into the text area “Header(s) to replace”. Use the whole header for it (e.g. Cookie: session=123456;). Header(s) can be marked and send from anywhere to Auth Analyzer over the standard context menu (mark text and right click).
+3.	If needed: Define CSRF Token Name for each role
     
     a. With a dynamic value (the CSRF token value will be automatically grepped if it is present in a HTML-input tag or JSON object of a given response)
     
@@ -18,11 +17,12 @@ The so called “Auth Analyzer” helps to find authorization bugs.
 4.	If needed: Add your preferred “Grep and Replace” Rules (a start and stop string can be defined for Grep and Replace. Each grepped value will be replaced within the defined Replace rule of the given session).
 5. Define Filters (only relevant requests should be processed)
 6.	Start the “Auth Analyzer”. 
-7.	Navigate with a high privileged user through the web application. All unfiltered proxy request will be modified, repeated and analyzed by the Auth Analyzer. The results are displayed in the Auth Analyzer Tab.
+7.	Navigate with a high privileged user through the web application and access resources / functions which should not be accessible by your defined roles (sessions). All unfiltered proxy request will be modified, repeated and analyzed (for each role) by the Auth Analyzer. The results are displayed in the Auth Analyzer Tab.
 
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/auth_analyzer_pic.png)
 
 ## Processing Filter
-The “Auth Analyzer” should only process Request which eighter have a CSRF Token in it or should only be accessible for authorized users. For this reason, following filters can be defined:
+The “Auth Analyzer” should only process Requests which eighter containing a CSRF Token or implementing an access restriction. For this reason, following filters can be defined:
 *	Only In Scope (only requests to the set Scope will be processed)
 *	Only Proxy Traffic (only requests to the “Proxy History will be processed)
 *	Exclude Filetypes (specified Filetypes can be excluded)
@@ -48,4 +48,4 @@ The “Auth Analyzer” should only process Request which eighter have a CSRF To
 *	Detailed Status Panel for each Session
 *	Start / Stop / Pause the “Auth Analyzer”
 *	Detailed view of all processed Requests and Responses
-* Send marked text directly to "Header(s) to replace" text field by context menu item
+*   Send marked text directly to "Header(s) to replace" text field by context menu item
