@@ -14,14 +14,14 @@ import com.protect7.authanalyzer.gui.StatusPanel;
 public class Session {
 
 	private final String name;
-	private final String headersToReplace;
-	private final String csrfTokenName;
-	private final String staticCsrfTokenValue;
+	private String headersToReplace;
+	private String csrfTokenName;
+	private String staticCsrfTokenValue;
 	private int tabbedPaneRequestIndex;
 	private int tabbedPaneResponseIndex;
 	private String csrfTokenValue = "";
-	private final boolean filterRequestsWithSameHeader;
-	private final ArrayList<Rule> rules;
+	private boolean filterRequestsWithSameHeader;
+	private ArrayList<Rule> rules;
 	private HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
 	private final StatusPanel statusPanel;
 
@@ -43,11 +43,19 @@ public class Session {
 	public String getHeadersToReplace() {
 		return headersToReplace;
 	}
+	
+	public void setHeadersToReplace(String headersToReplace) {
+		this.headersToReplace = headersToReplace;
+	}
 
 	public String getCsrfTokenName() {
 		return csrfTokenName;
 	}
 
+	public void setCsrfTokenName(String csrfTokenName) {
+		this.csrfTokenName = csrfTokenName;
+	}
+	
 	public String getCurrentCsrftTokenValue() {
 		if (!getStaticCsrfTokenValue().equals("")) {
 			return getStaticCsrfTokenValue();
@@ -62,6 +70,10 @@ public class Session {
 
 	public String getStaticCsrfTokenValue() {
 		return staticCsrfTokenValue;
+	}
+	
+	public void setStaticCsrfTokenValue(String staticCsrfTokenValue) {
+		this.staticCsrfTokenValue = staticCsrfTokenValue;
 	}
 
 	public HashMap<Integer, AnalyzerRequestResponse> getRequestResponseMap() {
@@ -95,9 +107,17 @@ public class Session {
 	public boolean isFilterRequestsWithSameHeader() {
 		return filterRequestsWithSameHeader;
 	}
+	
+	public void setFilterRequestsWithSameHeader(boolean filterRequestsWithSameHeader) {
+		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
+	}
 
 	public ArrayList<Rule> getRules() {
 		return rules;
+	}
+	
+	public void setRules(ArrayList<Rule> rules) {
+		this.rules = rules;
 	}
 
 	public StatusPanel getStatusPanel() {

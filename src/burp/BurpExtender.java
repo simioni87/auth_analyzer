@@ -20,6 +20,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 		PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
 		stdout.println("Auth Analyzer successfully started");
 		stdout.println("Version " + Version.VERSION);
+		stdout.println("Created by Simon Reinhart");
 		stdout.println("Protect7 GmbH");
 		stdout.println("www.protect7.com");
 		stdout.close();

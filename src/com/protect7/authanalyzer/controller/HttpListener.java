@@ -44,7 +44,14 @@ public class HttpListener implements IHttpListener {
 				}
 			}
 			if(!isFiltered) {
-				requestController.analyze(messageInfo);
+				//
+				config.getAnalyzerThreadExecutor().execute(new Runnable() {
+					
+					@Override
+					public void run() {
+						requestController.analyze(messageInfo);
+					}
+				});
 			}
 		}
 	}
