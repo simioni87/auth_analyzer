@@ -6,6 +6,7 @@ import javax.swing.table.AbstractTableModel;
 
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
+import com.protect7.authanalyzer.util.Logger;
 
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;
@@ -25,12 +26,8 @@ public class RequestTableModel extends AbstractTableModel {
 	
 	public void putNewRequestResponse(int key, IHttpRequestResponse requestResponse) {
 		originalRequestResponseMap.put(key, requestResponse);
-		fireTableRowsInserted(originalRequestResponseMap.size()-1, originalRequestResponseMap.size()-1);
-		//fireTableDataChanged();
-	}
-	
-	public int getFullMapSize() {
-		return originalRequestResponseMap.size();
+		//fireTableRowsInserted(getRowCount(), getRowCount());
+		fireTableDataChanged();
 	}
 	
 	public void clearRequestMap() {
@@ -54,20 +51,19 @@ public class RequestTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int row, int column) {
-		if (originalRequestResponseMap.size() > row) {
-			IHttpRequestResponse messageInfoOriginal = originalRequestResponseMap.get(row+1);
-			if(messageInfoOriginal == null) {
-				PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
-				stdout.println("ERROR: Cannot find map key: " + row+1 + ". Avaliable Key Sets: ");
-				for(Integer key :originalRequestResponseMap.keySet()) {
-					stdout.println(key);
-				}
-				stdout.close();
-				return null;
-			}
+		int mapKey = getMapKeyByIndex(row);
+		if(!originalRequestResponseMap.containsKey(mapKey)) {
+			PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
+			Logger.getLogInstance(stdout).writeLog(Logger.SEVERITY.INFO, "Cannot find map key!");
+			stdout.close();
+			return null;
+		}
+		else {
+			IHttpRequestResponse messageInfoOriginal = originalRequestResponseMap.get(mapKey);
+			
 			IRequestInfo request = callbacks.getHelpers().analyzeRequest(messageInfoOriginal);
 			if(column == 0) {
-				return row + 1;
+				return mapKey;
 			}
 			if(column == 1) {
 				return  request.getMethod();
@@ -86,12 +82,21 @@ public class RequestTableModel extends AbstractTableModel {
 			for(int i=0; i<config.getSessions().size(); i++) {
 				int tempColunmIndex = STATIC_COLUMN_COUNT+i;
 				if(column == tempColunmIndex) {
-					return config.getSessions().get(i).getRequestResponseMap().get(row+1).getStatus();
+					return config.getSessions().get(i).getRequestResponseMap().get(mapKey).getStatus();
 				}
 			}
 			throw new IndexOutOfBoundsException("Column index out of bounds: " + column);
 		}
-		throw new IndexOutOfBoundsException("Row index out of bounds: " + row);
+	}
+	
+	private Integer getMapKeyByIndex(int index) {
+		Object[] keyArray = originalRequestResponseMap.keySet().toArray();
+		if(keyArray.length > index) {
+			return (Integer) keyArray[index];
+		}
+		else {
+			return -1;
+		}
 	}
 
 	@Override
@@ -111,7 +116,7 @@ public class RequestTableModel extends AbstractTableModel {
 		for(int i=0; i<config.getSessions().size(); i++) {
 			int tempColunmIndex = STATIC_COLUMN_COUNT+i;
 			if(column == tempColunmIndex) {
-				return config.getSessions().get(i).getName() + " Status";
+				return config.getSessions().get(i).getName();
 			}
 		}
 		throw new IndexOutOfBoundsException("Column index out of bounds: " + column);

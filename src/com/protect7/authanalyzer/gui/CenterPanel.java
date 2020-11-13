@@ -43,11 +43,7 @@ public class CenterPanel extends JPanel {
 		tablePanel.setBorder(BorderFactory.createLineBorder(Color.gray));
 		JPanel tableConfigPanel = new JPanel();
 		JButton clearTableButton = new JButton("Clear Table");
-		clearTableButton.addActionListener(e -> {
-			config.clearSessionRequestMaps();
-			tableModel.clearRequestMap();
-			currentRow = -1;
-		});
+		clearTableButton.addActionListener(e -> clearTable());
 		tableConfigPanel.add(clearTableButton);
 		tablePanel.add(new JScrollPane(table), BorderLayout.CENTER);
 		tablePanel.add(tableConfigPanel, BorderLayout.SOUTH);
@@ -81,10 +77,12 @@ public class CenterPanel extends JPanel {
 	}
 	
 	//Paint center panel according to session list
-	public void initCenterPanel() {
-		config.clearSessionRequestMaps();
-		tableModel.clearRequestMap();
-		initTableWithModel();
+	public void initCenterPanel(boolean sessionListChanged) {
+		//config.clearSessionRequestMaps();
+		//tableModel.clearRequestMap();
+		if(sessionListChanged) {
+			initTableWithModel();
+		}
 		initTabbedPane();
 		for(Session session : config.getSessions()) {
 			tabbedPane.add(session.getName() + " Request", new JPanel());
@@ -92,6 +90,12 @@ public class CenterPanel extends JPanel {
 			tabbedPane.add(session.getName() + " Response", new JPanel());
 			session.setTabbedPaneResponseIndex(tabbedPane.getTabCount() - 1);
 		}
+		currentRow = -1;
+	}
+	
+	public void clearTable() {
+		config.clearSessionRequestMaps();
+		tableModel.clearRequestMap();
 		currentRow = -1;
 	}
 	

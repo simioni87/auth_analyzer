@@ -58,7 +58,7 @@ public class SessionPanel extends JPanel {
 		sessionPanel.add(new JSeparator());
 		sessionPanel.add(new JLabel("   "));
 		
-		JLabel cssrfTokenParameterNameLabel = new JLabel("CSRF Token Parameter Name (leave empty if unsused)", SwingConstants.LEFT);
+		JLabel cssrfTokenParameterNameLabel = new JLabel("CSRF Token Parameter Name (leave empty if unsused). remove_token#name for removing the token.", SwingConstants.LEFT);
 		cssrfTokenParameterNameLabel.setToolTipText("Enter param name of CSRF token. remove_token#name for removing the token.");
 		sessionPanel.add(cssrfTokenParameterNameLabel);
 		getCsrfTokenToReplaceText().setAlignmentX(Component.LEFT_ALIGNMENT);

@@ -40,9 +40,11 @@ public class ConfigurationPanel extends JPanel {
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
 	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
+	boolean sessionListChanged = false;
+	private final CenterPanel centerPanel;
 
 	public ConfigurationPanel(CenterPanel centerPanel) {
-		
+		this.centerPanel = centerPanel;
 		JPanel sessionButtonPanel = new JPanel();
 		sessionButtonPanel.setLayout(new BoxLayout(sessionButtonPanel, BoxLayout.Y_AXIS));
 		createSessionButton = new JButton("New Session");
@@ -56,12 +58,14 @@ public class ConfigurationPanel extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session (e.g. user1)");
 				if(sessionName != null && !sessionName.equals("") && !sessionPanelMap.containsKey(sessionName) && !sessionName.equals("Original")) {
-					SessionPanel sessionPanel = new SessionPanel();
-					sessionTabbedPane.add(sessionName, sessionPanel);
-					sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount()-1);
-					sessionPanelMap.put(sessionName, sessionPanel);
-					renameSessionButton.setEnabled(true);
-					removeSessionButton.setEnabled(true);
+					if(doModify()) {
+						SessionPanel sessionPanel = new SessionPanel();
+						sessionTabbedPane.add(sessionName, sessionPanel);
+						sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount()-1);
+						sessionPanelMap.put(sessionName, sessionPanel);
+						renameSessionButton.setEnabled(true);
+						removeSessionButton.setEnabled(true);
+					}
 				}
 			}
 		});
@@ -73,9 +77,11 @@ public class ConfigurationPanel extends JPanel {
 				String currentTitle = sessionTabbedPane.getTitleAt(currentIndex);
 				String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Rename Current Session:", currentTitle);
 				if(sessionName != null && !sessionName.equals("") && !sessionPanelMap.containsKey(sessionName) && !sessionName.equals("Original")) {
-					sessionTabbedPane.setTitleAt(currentIndex, sessionName);
-					sessionPanelMap.put(sessionName, sessionPanelMap.get(currentTitle));
-					sessionPanelMap.remove(currentTitle);
+					if(doModify()) {
+						sessionTabbedPane.setTitleAt(currentIndex, sessionName);
+						sessionPanelMap.put(sessionName, sessionPanelMap.get(currentTitle));
+						sessionPanelMap.remove(currentTitle);
+					}
 				}
 			}
 		});
@@ -83,12 +89,14 @@ public class ConfigurationPanel extends JPanel {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int currentIndex = sessionTabbedPane.getSelectedIndex();
-				sessionPanelMap.remove(sessionTabbedPane.getTitleAt(currentIndex));
-				sessionTabbedPane.remove(currentIndex);
-				if(sessionTabbedPane.getTabCount() == 0) {
-					renameSessionButton.setEnabled(false);
-					removeSessionButton.setEnabled(false);
+				if(doModify()) {
+					int currentIndex = sessionTabbedPane.getSelectedIndex();
+					sessionPanelMap.remove(sessionTabbedPane.getTitleAt(currentIndex));
+					sessionTabbedPane.remove(currentIndex);
+					if(sessionTabbedPane.getTabCount() == 0) {
+						renameSessionButton.setEnabled(false);
+						removeSessionButton.setEnabled(false);
+					}
 				}
 			}
 		});
@@ -135,11 +143,11 @@ public class ConfigurationPanel extends JPanel {
 		filterPanel.add(queryFilterButton);
 
 		startStopButton.setText(ANALYZER_STOPPED_TEXT);
-		startStopButton.addActionListener(e -> startStopButtonPressed(centerPanel));
+		startStopButton.addActionListener(e -> startStopButtonPressed());
 		
 		pauseButton.setText(PAUSE_TEXT);
 		pauseButton.setEnabled(false);
-		pauseButton.addActionListener(e -> pauseButtonPressed(centerPanel));
+		pauseButton.addActionListener(e -> pauseButtonPressed());
 		
 		add(sessionButtonPanel);
 		add(Box.createHorizontalStrut(30));
@@ -151,13 +159,39 @@ public class ConfigurationPanel extends JPanel {
 		add(pauseButton);
 	}
 	
-	// Sets the selected text from context menu within the header(s) to replace text are of the currently selected session
+	private boolean doModify() {
+		if(config.getTableModel().getRowCount() > 0 && !sessionListChanged) {
+			int selection = JOptionPane.showConfirmDialog(this, "You are going to modify your session setup."
+					+ "\nTable data will be lost.", "Change Session Setup", JOptionPane.OK_CANCEL_OPTION);
+			if(selection == JOptionPane.YES_OPTION) {
+				sessionListChanged = true;
+				centerPanel.clearTable();
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			sessionListChanged = true;
+			return true;
+		}
+	}
+	
+	// Appends the selected text from context menu within the header(s) to replace text are of the currently selected session
 	public void setSelectedTextFromContextMenu(String selectedText) {
 		if(!config.isRunning()) {
 			int currentIndex = sessionTabbedPane.getSelectedIndex();
 			String sessionName = sessionTabbedPane.getTitleAt(currentIndex);
 			SessionPanel sessionPanel = sessionPanelMap.get(sessionName);
-			sessionPanel.setHeadersToReplaceText(selectedText);
+			String currentText = sessionPanel.getHeadersToReplaceText().getText();
+			if(currentText.endsWith("\n") || currentText.equals("")) {
+				sessionPanel.setHeadersToReplaceText(currentText + selectedText);
+			}
+			else {
+				sessionPanel.setHeadersToReplaceText(currentText + "\n" + selectedText);
+			}
+			
 		}
 	}
 	
@@ -192,7 +226,7 @@ public class ConfigurationPanel extends JPanel {
 		});
 	}
 
-	private void startStopButtonPressed(CenterPanel centerPanel) {
+	private void startStopButtonPressed() {
 		if(sessionPanelMap.size() == 0) {
 			JOptionPane.showMessageDialog(this, "No Session Created");
 		}
@@ -209,35 +243,49 @@ public class ConfigurationPanel extends JPanel {
 				config.setRunning(false);
 				startStopButton.setText(ANALYZER_STOPPED_TEXT);
 			} else {
-				// Comitt Settings to Config
-				config.clearSessionList();
+				
+				if(sessionListChanged) {
+					config.clearSessionListAndTableModel();
+				}
 				for(String session : sessionPanelMap.keySet()) {				
 					SessionPanel sessionPanel = sessionPanelMap.get(session);
-					Session newSession = new Session(session, sessionPanel.getHeadersToReplaceText().getText(), 
-							sessionPanel.getCsrfTokenToReplaceText().getText(), sessionPanel.getCsrfTokenValueText().getText(), 
-							sessionPanel.getFilterRequestsWithSameHeader().isSelected(), sessionPanel.getRules(), sessionPanel.getStatusPanel());
-					config.addSession(newSession);
 					for(Rule rule : sessionPanel.getRules()) {
 						rule.setReplacementValue(null);
 					}
+					Session newSession = null;
+					if(sessionListChanged) {
+						newSession = new Session(session, sessionPanel.getHeadersToReplaceText().getText(), 
+								sessionPanel.getCsrfTokenToReplaceText().getText(), sessionPanel.getCsrfTokenValueText().getText(), 
+								sessionPanel.getFilterRequestsWithSameHeader().isSelected(), sessionPanel.getRules(), sessionPanel.getStatusPanel());
+						config.addSession(newSession);
+					}
+					else {
+						newSession = config.getSessionByName(session);
+						newSession.setHeadersToReplace(sessionPanel.getHeadersToReplaceText().getText());
+						newSession.setCsrfTokenName(sessionPanel.getCsrfTokenToReplaceText().getText());
+						newSession.setStaticCsrfTokenValue(sessionPanel.getCsrfTokenValueText().getText());
+						newSession.setFilterRequestsWithSameHeader(sessionPanel.getFilterRequestsWithSameHeader().isSelected());
+						newSession.setRules(sessionPanel.getRules());
+					}
 					sessionPanel.setRunning();
 					sessionPanel.getStatusPanel().init(newSession);
-				}
+				}			
 				for(RequestFilter filter : config.getRequestFilterList()) {
 					filter.resetFilteredAmount();
 				}
-				centerPanel.initCenterPanel();
+				centerPanel.initCenterPanel(sessionListChanged);
 				createSessionButton.setEnabled(false);
 				renameSessionButton.setEnabled(false);
 				removeSessionButton.setEnabled(false);
 				pauseButton.setEnabled(true);
 				config.setRunning(true);
 				startStopButton.setText(ANALYZER_STARTED_TEXT);
+				sessionListChanged = false;
 			}
 		}
 	}
 	
-	private void pauseButtonPressed(CenterPanel centerPanel) {
+	private void pauseButtonPressed() {
 		if (config.isRunning()) {
 			config.setRunning(false);
 			pauseButton.setText(PLAY_TEXT);

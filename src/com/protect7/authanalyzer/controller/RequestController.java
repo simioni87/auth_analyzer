@@ -22,6 +22,8 @@ import com.protect7.authanalyzer.entities.Rule;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
+import com.protect7.authanalyzer.util.Logger;
+
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;
 import burp.IParameter;
@@ -33,67 +35,71 @@ public class RequestController {
 	private final IBurpExtenderCallbacks callbacks;
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
 	private String currentOriginalCsrfValue = "";
-	private final PrintWriter stdout;
+	private final Logger logger;
 
 	public RequestController(IBurpExtenderCallbacks callbacks) {
 		this.callbacks = callbacks;
 		if(callbacks != null) {
-			this.stdout = new PrintWriter(callbacks.getStdout(), true);
+			this.logger = new Logger(new PrintWriter(callbacks.getStdout(), true));
 		}
 		else {
-			this.stdout = new PrintWriter(System.out, true);
+			this.logger = new Logger(new PrintWriter(System.out, true));
 		}
 	}
 
 	public synchronized void analyze(IHttpRequestResponse originalMessageInfo) {
 		// Fail-Safe - Check if messageInfo can be processed
 		if (originalMessageInfo == null || originalMessageInfo.getRequest() == null || originalMessageInfo.getResponse() == null) {
-			stdout.println("WARNING: Cannot analyze request with null values.");
+			logger.writeLog(Logger.SEVERITY.WARNING, "Cannot analyze request with null values.");
 		}
 		else {
+			logger.writeMarker();
 			IRequestInfo originalRequestInfo = callbacks.getHelpers().analyzeRequest(originalMessageInfo);
-			stdout.println("INFO: Handle New Request: " + originalRequestInfo.getUrl());
+			logger.writeLog(Logger.SEVERITY.INFO, "Handle New Request: " + originalRequestInfo.getUrl());
 			
-			// Extract original CSRF value for faster replacement if it is present in further requests
-			extractOriginalCsrfValue(originalMessageInfo);
+			// Extract original CSRF value if first session has replacement set
+			Session firstSession = config.getSessions().get(0);
+			if (!firstSession.getCsrfTokenName().equals("") && firstSession.getStaticCsrfTokenValue().equals("")) {
+				logger.writeLog(Logger.SEVERITY.INFO, "Extract Original CSRF Token");
+				extractOriginalCsrfValue(originalMessageInfo);
+			}
 		
 			String originalMessageBody = getRequestBodyAsString(originalMessageInfo);
 			
-			int mapId = config.getTableModel().getFullMapSize() + 1;
+			int mapId = config.getNextMapId();
 			boolean success = true;
 			for(Session session : config.getSessions()) {
 				if(session.isFilterRequestsWithSameHeader() && isSameHeader(originalRequestInfo.getHeaders(), session)) {
 					// No other session will be analyzed if one session has same header. The assumption is that the given request was send
-					// automatically be the defined session. We do not want to analyze such a request.
+					// automatically by the application we are navigating through. We do not want to analyze such a request.
 					success = false;
 					break;
 				}
 				else {
-					stdout.println("INFO: Handle Session: " + session.getName());
-					stdout.println("INFO: Modify Request Body");
+					logger.writeLog(Logger.SEVERITY.INFO, "**** Handle Session: " + session.getName() + " ****");
+					logger.writeLog(Logger.SEVERITY.INFO, "Modify Request Body");
 					String modifiedMessageBody = getModifiedMessageBody(originalMessageBody, originalRequestInfo.getContentType() , session);
-					stdout.println("INFO: Modify Request Header");
+					logger.writeLog(Logger.SEVERITY.INFO, "Modify Request Header");
 					// Headers must be modified after Message Body to calculate Content-Length
 					ArrayList<String> modifiedHeaders = getModifiedHeaders(originalRequestInfo, session, modifiedMessageBody.length());
-					stdout.println("INFO: Create bytestream");
+					logger.writeLog(Logger.SEVERITY.INFO, "Create bytestream");
 					byte[] message = callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody.getBytes());
 					// Perform modified request
-					stdout.println("INFO: Perform modified request");
+					logger.writeLog(Logger.SEVERITY.INFO, "Make http Request");
 					IHttpRequestResponse modifiedMessageInfo = callbacks.makeHttpRequest(originalMessageInfo.getHttpService(), message);
-					
+					logger.writeLog(Logger.SEVERITY.INFO, "Response received");
 					// Analyze Response of modified Request
 					if (modifiedMessageInfo.getRequest() != null && modifiedMessageInfo.getResponse() != null) {
-						stdout.println("INFO: Verify Response");
 						// Extract CSRF Token
 						if (!session.getCsrfTokenName().equals("") && session.getStaticCsrfTokenValue().equals("")) {
-							stdout.println("INFO: Extract CSRF Token");
+							logger.writeLog(Logger.SEVERITY.INFO, "Extract CSRF Token");
 							extractCurrentCsrfValue(modifiedMessageInfo, session);
 						}
 						
 						//Extract Rules Values
 						extractResponseRuleValues(session, modifiedMessageInfo.getResponse());
 
-						stdout.println("INFO: Analyze if BYPASSED");
+						logger.writeLog(Logger.SEVERITY.INFO, "Analyze bypass status");
 						BypassConstants bypassConstant = analyzeResponse(originalMessageInfo, modifiedMessageInfo);
 						if (bypassConstant != null) {
 							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(modifiedMessageInfo, bypassConstant);
@@ -102,21 +108,21 @@ public class RequestController {
 						else {
 							// Fail-Safe
 							success = false;
-							stdout.println("WARNING: Cannot analyze if BYPASSED.");
+							logger.writeLog(Logger.SEVERITY.WARNING, "Cannot analyze if BYPASSED.");
 							break;
 						}
 					}
 					else {
 						// Fail-Safe
 						success = false;
-						stdout.println("WARNING: Modified Request / Response has null value");
+						logger.writeLog(Logger.SEVERITY.WARNING, "Modified Request / Response has null value");
 						break;
 					}
 				}
 			}
 			if(success) {
 				config.getTableModel().putNewRequestResponse(mapId, originalMessageInfo);
-				stdout.println("INFO: Analyze finished. Request added to Table.");
+				logger.writeLog(Logger.SEVERITY.INFO, "Analyze finished. Request added to Table.");
 			}
 		}
 	}
@@ -130,7 +136,7 @@ public class RequestController {
 			}
 		}
 		if(requestContainsHeader) {
-			stdout.println("INFO: Request filtered due to same header");
+			logger.writeLog(Logger.SEVERITY.INFO, "Request filtered due to same header");
 			// Update Session Panel
 			session.getStatusPanel().incrementAmountOfFitleredRequests();
 			return true;
@@ -270,16 +276,14 @@ public class RequestController {
 	
 	public void extractOriginalCsrfValue(IHttpRequestResponse messageInfo) {
 		String csrfTokenName = config.getSessions().get(0).getCsrfTokenName();
-		if (!csrfTokenName.equals("")) {
-			IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
-			String responseBody = getResponseBodyAsString(messageInfo);
-			if(responseBody.contains(csrfTokenName)) {
-				if (response.getStatedMimeType().equals("HTML") || response.getInferredMimeType().equals("HTML")) {
-					currentOriginalCsrfValue = getCsrfTokenValueFromInputField(responseBody, csrfTokenName);
-				}
-				else if (response.getStatedMimeType().equals("JSON") || response.getInferredMimeType().equals("JSON")) {
-					currentOriginalCsrfValue = getCsrfTokenValueFromJson(responseBody, csrfTokenName);
-				}
+		IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
+		String responseBody = getResponseBodyAsString(messageInfo);
+		if(responseBody.contains(csrfTokenName)) {
+			if (response.getStatedMimeType().equals("HTML") || response.getInferredMimeType().equals("HTML")) {
+				currentOriginalCsrfValue = getCsrfTokenValueFromInputField(responseBody, csrfTokenName);
+			}
+			else if (response.getStatedMimeType().equals("JSON") || response.getInferredMimeType().equals("JSON")) {
+				currentOriginalCsrfValue = getCsrfTokenValueFromJson(responseBody, csrfTokenName);
 			}
 		}
 	}
@@ -388,7 +392,7 @@ public class RequestController {
 
 	public void extractResponseRuleValues(Session session, byte[] response) {
 		if(session.getRules().size() > 0) {
-			stdout.println("INFO: Extract rule values");
+			logger.writeLog(Logger.SEVERITY.INFO, "Extract rule values");
 			String messageAsString = new String(response);
 			int bodyOffset = -1;
 			bodyOffset = messageAsString.indexOf("\r\n\r\n");
