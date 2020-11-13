@@ -1,7 +1,7 @@
 # Auth Analyzer
 
 ## What is it?
-This Burp Extension helps you to find authorization bugs by repeating Proxy requests with self defined headers and tokens.
+The Burp extension helps you to find authorization bugs. Just navigate through the web application with a high privileged user and let the Auth Analyzer repeat your requests for any defined non-privileged user. CSRF Tokens of the non-privileged users will be extracted and replaced automatically and each response will be analyzed on its bypass status.
 
 ## How does it work?
 1.	Create a “New Session” for each user role you want to test (e.g. admin, normal_user, unauthenticated, …) 
