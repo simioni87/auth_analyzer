@@ -178,13 +178,20 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 	
-	// Sets the selected text from context menu within the header(s) to replace text are of the currently selected session
+	// Appends the selected text from context menu within the header(s) to replace text are of the currently selected session
 	public void setSelectedTextFromContextMenu(String selectedText) {
 		if(!config.isRunning()) {
 			int currentIndex = sessionTabbedPane.getSelectedIndex();
 			String sessionName = sessionTabbedPane.getTitleAt(currentIndex);
 			SessionPanel sessionPanel = sessionPanelMap.get(sessionName);
-			sessionPanel.setHeadersToReplaceText(selectedText);
+			String currentText = sessionPanel.getHeadersToReplaceText().getText();
+			if(currentText.endsWith("\n") || currentText.equals("")) {
+				sessionPanel.setHeadersToReplaceText(currentText + selectedText);
+			}
+			else {
+				sessionPanel.setHeadersToReplaceText(currentText + "\n" + selectedText);
+			}
+			
 		}
 	}
 	
