@@ -33,8 +33,8 @@ The “Auth Analyzer” should only process Requests which eighter containing a 
 *	Exclude Queries / Params (specified Queries / Params can be excluded) 
 
 ## Bypass Detection
-*	The Response will be declared as BYPASSED if “Both Responses have same Response Body”
-*	The Response will be declared as POTENTIAL_BYPASSED if either “Both Responses have same Response Code” or “Both Responses have +-5% of response body length”
+*	The Response will be declared as BYPASSED if "Both Responses have same Response Body" and "same Response Code"
+*	The Response will be declared as POTENTIAL_BYPASSED if "Both Responses have same Response Code" and "Both Responses have +-5% of response body length"
 *	The Response will be declared as NOT_BYPASSED in every other case
 
 ## Features
