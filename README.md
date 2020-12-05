@@ -4,12 +4,18 @@
 The Burp extension helps you to find authorization bugs. Just navigate through the web application with a high privileged user and let the Auth Analyzer repeat your requests for any defined non-privileged user. With the possibility to define Parameters the Auth Analyzer is able to extract and replace parameter values automatically. With this for instance, CSRF tokens or even whole session characteristics can be auto extracted from responses and replaced in further requests. Each response will be analyzed and tagged on its bypass status. 
 
 ## How does it work
-(1) Create a new Session for every user you want to test.
+(1) Create or Clone a Session for every user you want to test.
+
 (2) Specify the session characteristics (Header(s) and / or Parameter(s) to replace)
+
 (3) Optional: Set Filters
+
 (4) Press Start
+
 (5) Navigate through Web App with another user and track results of the repeated requests
+
 (6) Manually analyze original and repeated requests / responses 
+
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/complete_gui.png)
 
@@ -26,10 +32,20 @@ Define the username and password as a static value. The session cookie name must
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id.png)
 
-### Auto extract and insert Bearer Token
+### Auto extract from JavaScript variable
+Since the Auto Extract only works on "HTML Input Fields", "JSON Objects" or "Set-Cookie Headers" we must use the generic extraction method called "From To String". With this extraction method we can extract any value from a response if it is located after a unique starting and / or ending string. Auth Analyzer provides a context menu method to set the "From String" and "To String" automatically. Just mark the String you want to extract and set as "From-To Extract".
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_csrftoken_from_js_var.png)
+
+### Auto extract and insert as Bearer Token
 Since the Authorization Header is not treated as a parameter (as it is done with the Cookie Header), we must use and insertion point to insert the automatically extracted value of the Bearer Token. Just mark and right click the value you want to replace in the specified header. The default value will be used if the parameter value is not extracted yet.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/autp_extract_and_insert_bearer_token.png)
+
+### Test several privilege roles at a time
+Just create as many sessions as you want to test several roles at a time. 
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/several_sessions.png)
 
 ## Processing Filter
 The Auth Analyzer should process two types of requests / responses:
