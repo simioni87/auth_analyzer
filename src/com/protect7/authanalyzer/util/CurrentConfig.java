@@ -3,7 +3,6 @@ package com.protect7.authanalyzer.util;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.gui.RequestTableModel;
@@ -94,6 +93,5 @@ public class CurrentConfig {
 
 	public ThreadPoolExecutor getAnalyzerThreadExecutor() {
 		return analyzerThreadExecutor;
-	}
-
+	}	
 }

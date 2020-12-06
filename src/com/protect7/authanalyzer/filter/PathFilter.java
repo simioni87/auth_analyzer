@@ -5,7 +5,11 @@ import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public class PathFilter extends RequestFilter {
-	
+
+	public PathFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
+
 	private String[] filterStringLiterals = {};
 
 	@Override

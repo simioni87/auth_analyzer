@@ -6,6 +6,11 @@ import burp.IResponseInfo;
 
 public class FileTypeFilter extends RequestFilter {
 	
+
+	public FileTypeFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
+
 	private String[] filterFileTypes = {"js", "script", "css", "png", "jpg", "jpeg", "gif", "svg", "bmp", "woff", "ico"};
 
 	@Override

@@ -5,7 +5,11 @@ import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public class QueryFilter extends RequestFilter {
-	
+
+	public QueryFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
+
 	private String[] filterStringLiterals = {};
 
 	@Override

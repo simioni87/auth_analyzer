@@ -8,9 +8,12 @@ package com.protect7.authanalyzer.controller;
  * @author Simon Reinhart
  */
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import javax.swing.JOptionPane;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -18,13 +21,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
-import com.protect7.authanalyzer.entities.Rule;
 import com.protect7.authanalyzer.entities.Session;
+import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import com.protect7.authanalyzer.util.Logger;
-
 import burp.IBurpExtenderCallbacks;
+import burp.ICookie;
 import burp.IHttpRequestResponse;
 import burp.IParameter;
 import burp.IRequestInfo;
@@ -34,109 +36,97 @@ public class RequestController {
 
 	private final IBurpExtenderCallbacks callbacks;
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
-	private String currentOriginalCsrfValue = "";
-	private final Logger logger;
 
 	public RequestController(IBurpExtenderCallbacks callbacks) {
 		this.callbacks = callbacks;
-		if(callbacks != null) {
-			this.logger = new Logger(new PrintWriter(callbacks.getStdout(), true));
-		}
-		else {
-			this.logger = new Logger(new PrintWriter(System.out, true));
-		}
 	}
 
-	public synchronized void analyze(IHttpRequestResponse originalMessageInfo) {
+	public synchronized void analyze(IHttpRequestResponse originalRequestResponse) {
 		// Fail-Safe - Check if messageInfo can be processed
-		if (originalMessageInfo == null || originalMessageInfo.getRequest() == null || originalMessageInfo.getResponse() == null) {
-			logger.writeLog(Logger.SEVERITY.WARNING, "Cannot analyze request with null values.");
-		}
-		else {
-			logger.writeMarker();
-			IRequestInfo originalRequestInfo = callbacks.getHelpers().analyzeRequest(originalMessageInfo);
-			logger.writeLog(Logger.SEVERITY.INFO, "Handle New Request: " + originalRequestInfo.getUrl());
-			
-			// Extract original CSRF value if first session has replacement set
-			Session firstSession = config.getSessions().get(0);
-			if (!firstSession.getCsrfTokenName().equals("") && firstSession.getStaticCsrfTokenValue().equals("")) {
-				logger.writeLog(Logger.SEVERITY.INFO, "Extract Original CSRF Token");
-				extractOriginalCsrfValue(originalMessageInfo);
-			}
-		
-			String originalMessageBody = getRequestBodyAsString(originalMessageInfo);
-			
+		if (originalRequestResponse == null || originalRequestResponse.getRequest() == null
+				|| originalRequestResponse.getResponse() == null) {
+			callbacks.printError("Cannot analyze request with null values.");
+		} else {
 			int mapId = config.getNextMapId();
 			boolean success = true;
-			for(Session session : config.getSessions()) {
-				if(session.isFilterRequestsWithSameHeader() && isSameHeader(originalRequestInfo.getHeaders(), session)) {
-					// No other session will be analyzed if one session has same header. The assumption is that the given request was send
-					// automatically by the application we are navigating through. We do not want to analyze such a request.
+			IRequestInfo originalRequestInfo = callbacks.getHelpers().analyzeRequest(originalRequestResponse);
+			for (Session session : config.getSessions()) {
+				if (session.isFilterRequestsWithSameHeader()
+						&& isSameHeader(originalRequestInfo.getHeaders(), session)) {
+					// No other session will be analyzed if one session has same header. The
+					// assumption is that the given request was send
+					// automatically by the application the user was navigating through. We do not
+					// want to
+					// analyze such a request.
 					success = false;
 					break;
-				}
-				else {
-					logger.writeLog(Logger.SEVERITY.INFO, "**** Handle Session: " + session.getName() + " ****");
-					logger.writeLog(Logger.SEVERITY.INFO, "Modify Request Body");
-					String modifiedMessageBody = getModifiedMessageBody(originalMessageBody, originalRequestInfo.getContentType() , session);
-					logger.writeLog(Logger.SEVERITY.INFO, "Modify Request Header");
-					// Headers must be modified after Message Body to calculate Content-Length
-					ArrayList<String> modifiedHeaders = getModifiedHeaders(originalRequestInfo, session, modifiedMessageBody.length());
-					logger.writeLog(Logger.SEVERITY.INFO, "Create bytestream");
-					byte[] message = callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody.getBytes());
-					// Perform modified request
-					logger.writeLog(Logger.SEVERITY.INFO, "Make http Request");
-					IHttpRequestResponse modifiedMessageInfo = callbacks.makeHttpRequest(originalMessageInfo.getHttpService(), message);
-					logger.writeLog(Logger.SEVERITY.INFO, "Response received");
-					// Analyze Response of modified Request
-					if (modifiedMessageInfo.getRequest() != null && modifiedMessageInfo.getResponse() != null) {
-						// Extract CSRF Token
-						if (!session.getCsrfTokenName().equals("") && session.getStaticCsrfTokenValue().equals("")) {
-							logger.writeLog(Logger.SEVERITY.INFO, "Extract CSRF Token");
-							extractCurrentCsrfValue(modifiedMessageInfo, session);
-						}
-						
-						//Extract Rules Values
-						extractResponseRuleValues(session, modifiedMessageInfo.getResponse());
-
-						logger.writeLog(Logger.SEVERITY.INFO, "Analyze bypass status");
-						BypassConstants bypassConstant = analyzeResponse(originalMessageInfo, modifiedMessageInfo);
-						if (bypassConstant != null) {
-							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(modifiedMessageInfo, bypassConstant);
-							session.putRequestResponse(mapId, analyzerRequestResponse);
-						}
-						else {
-							// Fail-Safe
-							success = false;
-							logger.writeLog(Logger.SEVERITY.WARNING, "Cannot analyze if BYPASSED.");
-							break;
+				} else {
+					// Handle Session
+					byte[] modifiedRequest = originalRequestResponse.getRequest();
+					for (Token token : session.getTokens()) {
+						if (token.getValue() != null || token.isRemove() || token.isPromptForInput()) {
+							modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, token);
 						}
 					}
-					else {
+					// Analyze modifiedRequest
+					IRequestInfo modifiedRequestInfo = callbacks.getHelpers().analyzeRequest(modifiedRequest);
+					byte[] modifiedMessageBody = Arrays.copyOfRange(modifiedRequest,
+							modifiedRequestInfo.getBodyOffset(), modifiedRequest.length);
+
+					List<String> modifiedHeaders = getModifiedHeaders(modifiedRequestInfo.getHeaders(), session);
+
+					byte[] message = callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody);
+
+					// Perform modified request
+					IHttpRequestResponse sessionRequestResponse = callbacks
+							.makeHttpRequest(originalRequestResponse.getHttpService(), message);
+
+					IResponseInfo sessionResponseInfo = callbacks.getHelpers()
+							.analyzeResponse(sessionRequestResponse.getResponse());
+					// Analyze Response of modified Request
+					if (sessionRequestResponse.getRequest() != null && sessionRequestResponse.getResponse() != null) {
+						// Extract Token Values if applicable
+						for (Token token : session.getTokens()) {
+							if (token.isAutoExtract()) {
+								extractCurrentTokenValue(sessionRequestResponse.getResponse(), sessionResponseInfo,
+										token);
+								session.getStatusPanel().updateTokenStatus(token);
+							}
+							if (token.isFromToString()) {
+								extractTokenWithFromToString(sessionRequestResponse.getResponse(), token);
+								session.getStatusPanel().updateTokenStatus(token);
+							}
+						}
+						IResponseInfo originalResponseInfo = callbacks.getHelpers()
+								.analyzeResponse(originalRequestResponse.getResponse());
+						BypassConstants bypassConstant = analyzeResponse(originalRequestResponse.getResponse(),
+								sessionRequestResponse.getResponse(), originalResponseInfo, sessionResponseInfo);
+						AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+								sessionRequestResponse, bypassConstant);
+						session.putRequestResponse(mapId, analyzerRequestResponse);
+					} else {
 						// Fail-Safe
 						success = false;
-						logger.writeLog(Logger.SEVERITY.WARNING, "Modified Request / Response has null value");
+						callbacks.printError("Modified Request / Response has null value");
 						break;
 					}
 				}
 			}
-			if(success) {
-				config.getTableModel().putNewRequestResponse(mapId, originalMessageInfo);
-				logger.writeLog(Logger.SEVERITY.INFO, "Analyze finished. Request added to Table.");
+			if (success) {
+				config.getTableModel().putNewRequestResponse(mapId, originalRequestResponse);
 			}
 		}
 	}
-	
+
 	public boolean isSameHeader(List<String> headers, Session session) {
 		String[] headersToReplace = session.getHeadersToReplace().split("\n");
 		boolean requestContainsHeader = true;
 		for (String headerToReplace : headersToReplace) {
-			if(!headers.contains(headerToReplace)) {
+			if (!headers.contains(headerToReplace)) {
 				requestContainsHeader = false;
 			}
 		}
-		if(requestContainsHeader) {
-			logger.writeLog(Logger.SEVERITY.INFO, "Request filtered due to same header");
+		if (requestContainsHeader) {
 			// Update Session Panel
 			session.getStatusPanel().incrementAmountOfFitleredRequests();
 			return true;
@@ -144,15 +134,13 @@ public class RequestController {
 		return false;
 	}
 
-	//need content-length, header as string
-	public ArrayList<String> getModifiedHeaders(IRequestInfo originalRequestInfo, Session session, int bodyLength) {
-		ArrayList<String> headers = (ArrayList<String>) originalRequestInfo.getHeaders();
-		String[] headersToReplace = session.getHeadersToReplace().replace("\r", "").split("\n");
-		for (String headerToReplace : headersToReplace) {
+	// need content-length, header as string
+	public List<String> getModifiedHeaders(List<String> headers, Session session) {
+		for (String headerToReplace : getHeaderToReplaceList(session)) {
 			String trimmedHeaderToReplace = headerToReplace.trim();
 			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
 			if (headerKeyValuePair.length > 1) {
-				String headerKey = headerKeyValuePair[0];
+				String headerKey = headerKeyValuePair[0].trim();
 				boolean headerReplaced = false;
 				for (int i = 0; i < headers.size(); i++) {
 					if (headers.get(i).startsWith(headerKey)) {
@@ -161,335 +149,284 @@ public class RequestController {
 						break;
 					}
 				}
-				//Set new header if it not occurs
+				// Set new header if it not occurs
 				if (!headerReplaced) {
 					headers.add(trimmedHeaderToReplace);
-				}
-			}
-		}
-		//Apply Rules and Update Content-Length
-		for (int i = 0; i < headers.size(); i++) {
-			if(session.getRules().size() > 0) {
-				headers.set(i, applyRulesInHeader(session, headers.get(i)));
-			}
-			if(headers.get(i).startsWith("Content-Length:")) {
-				headers.set(i, "Content-Length: "+ bodyLength);
-			}
-		}		
-		
-		// Check for CSRF Token as Query Parameter
-		if (!session.getCsrfTokenName().equals("")) {
-			// CSRF Remove feature. Syntax remove_token#csrf_token
-			if (session.getCsrfTokenName().toLowerCase().startsWith("remove_token")) {
-				String[] csrfSplit = session.getCsrfTokenName().split("#");
-				if (csrfSplit.length > 1) {
-					// Only replace in request query string --> headers.get(0)
-					String modifiedHeader = headers.get(0).replace(csrfSplit[1],"dummyparam");
-					headers.set(0, modifiedHeader);
-				}
-			}
-			else {
-				for (IParameter param : originalRequestInfo.getParameters()) {
-					if (param.getName().equals(session.getCsrfTokenName())) {
-						String modifiedHeader = headers.get(0).replace(param.getValue(), session.getCurrentCsrftTokenValue());
-						headers.set(0, modifiedHeader);
-						break;
-					}
 				}
 			}
 		}
 		return headers;
 	}
 
-	public String getModifiedMessageBody(String originalMessageBody, byte contentType, Session session) {
-		// Apply rules in body
-		String messageBodyWithAppliedRules = applyRulesInBody(session, originalMessageBody); 
-		// Check and modify if csrf modification is needed
-		if(session.getCsrfTokenName().equals("")) {
-			return messageBodyWithAppliedRules;
-		}
-		else {
-			String modifiedMessageBody = "";
-			// CSRF Remove feature. Syntax remove_token#csrf_token
-			if (session.getCsrfTokenName().toLowerCase().startsWith("remove_token")) {
-				String[] csrfSplit = session.getCsrfTokenName().split("#");
-				if (csrfSplit.length > 0) {
-					modifiedMessageBody = messageBodyWithAppliedRules.replace(csrfSplit[1], "dummyparam");
-				}
-			}
-			else {
-				if (messageBodyWithAppliedRules.length() > 0) {
-					// Check and replace if original csrf value present (request body content type not relevant)
-					if(!currentOriginalCsrfValue.equals("") && messageBodyWithAppliedRules.contains(currentOriginalCsrfValue)) {
-						modifiedMessageBody = messageBodyWithAppliedRules.replace(currentOriginalCsrfValue, session.getCurrentCsrftTokenValue());
-					}
-					else if(messageBodyWithAppliedRules.contains(session.getCsrfTokenName())) {
-						// Handle Multipart Form Data
-						if (contentType == IRequestInfo.CONTENT_TYPE_MULTIPART) {
-							String[] splitAtCsrfTokenName = messageBodyWithAppliedRules.split(session.getCsrfTokenName());
-							if (splitAtCsrfTokenName.length > 1) {
-								String[] csrfTokenValueSplit = splitAtCsrfTokenName[1].split("\\n");
-								if (csrfTokenValueSplit.length > 2) {
-									String csrfValue = csrfTokenValueSplit[2].split("---")[0].trim();
-									modifiedMessageBody = messageBodyWithAppliedRules.replace(csrfValue,
-											session.getCurrentCsrftTokenValue());
-								}
+	private ArrayList<String> getHeaderToReplaceList(Session session) {
+		ArrayList<String> headerToReplaceList = new ArrayList<String>();
+		String[] headersToReplace = session.getHeadersToReplace().replace("\r", "").split("\n");
+		for (String headerToReplace : headersToReplace) {
+			String trimmedHeaderToReplace = headerToReplace.trim();
+			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
+			if (headerKeyValuePair.length > 1) {
+				boolean containsToken = false;
+				for (Token token : session.getTokens()) {
+					if (trimmedHeaderToReplace.contains(token.getHeaderInsertionPointNameStart())) {
+						int startIndex = trimmedHeaderToReplace.indexOf(token.getHeaderInsertionPointNameStart());
+						int endIndex = trimmedHeaderToReplace.indexOf("]§", startIndex) + 2;
+						if (startIndex != -1 && endIndex != -1) {
+							containsToken = true;
+							if (token.getValue() != null) {
+								String modifiedHeader = trimmedHeaderToReplace.substring(0, startIndex)
+										+ token.getValue() + trimmedHeaderToReplace.substring(endIndex);
+								headerToReplaceList.add(modifiedHeader);
+							} else {
+								String defaultValue = trimmedHeaderToReplace.substring(
+										startIndex + token.getHeaderInsertionPointNameStart().length() + 1,
+										endIndex - 2);
+								String modifiedHeader = trimmedHeaderToReplace.substring(0, startIndex) + defaultValue
+										+ trimmedHeaderToReplace.substring(endIndex);
+								headerToReplaceList.add(modifiedHeader);
 							}
-						} 
-						// Handle URL Encoded
-						if(contentType == IRequestInfo.CONTENT_TYPE_URL_ENCODED) {
-							String[] params = messageBodyWithAppliedRules.split("&");
-							for (String param : params) {
-								if (param.split("=")[0].equals(session.getCsrfTokenName())) {
-									modifiedMessageBody = messageBodyWithAppliedRules.replace(param,
-											session.getCsrfTokenName() + "=" + session.getCurrentCsrftTokenValue());
-								}
-							}
-						}
-						// Handle JSON Body
-						if(contentType == IRequestInfo.CONTENT_TYPE_JSON) {
-							JsonElement jelement = JsonParser.parseString(messageBodyWithAppliedRules).getAsJsonObject();
-							JsonObject jobject = null;
-							if(jelement.isJsonObject()) {
-								jobject = jelement.getAsJsonObject();
-							}
-							else if(jelement.isJsonArray()) {
-								if(jelement.getAsJsonArray().get(0).isJsonObject()) {
-									jobject = jelement.getAsJsonArray().get(0).getAsJsonObject();
-								}
-							}
-						    if(jobject != null) {
-						    	String oldCsrfValue = jobject.get(session.getCsrfTokenName()).getAsString();
-						    	modifiedMessageBody = messageBodyWithAppliedRules.replace(oldCsrfValue, session.getCurrentCsrftTokenValue());
-						    }
 						}
 					}
 				}
+				if (!containsToken) {
+					headerToReplaceList.add(trimmedHeaderToReplace);
+				}
 			}
-			//Fail-Safe
-			if (modifiedMessageBody.equals("")) {
-				modifiedMessageBody = messageBodyWithAppliedRules;
-			}
-			return modifiedMessageBody;
 		}
+		return headerToReplaceList;
 	}
-	
-	public void extractOriginalCsrfValue(IHttpRequestResponse messageInfo) {
-		String csrfTokenName = config.getSessions().get(0).getCsrfTokenName();
-		IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
-		String responseBody = getResponseBodyAsString(messageInfo);
-		if(responseBody.contains(csrfTokenName)) {
-			if (response.getStatedMimeType().equals("HTML") || response.getInferredMimeType().equals("HTML")) {
-				currentOriginalCsrfValue = getCsrfTokenValueFromInputField(responseBody, csrfTokenName);
+
+	public byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token) {
+		byte[] modifiedRequest = request;
+		for (IParameter parameter : originalRequestInfo.getParameters()) {
+			if (parameter.getName().equals(token.getName())) {
+				String paramLocationText = null;
+				// Helper can only handle URL, COOKIE and BODY Parameters
+				if (parameter.getType() == IParameter.PARAM_URL) {
+					paramLocationText = "URL";
+				}
+				if (parameter.getType() == IParameter.PARAM_COOKIE) {
+					paramLocationText = "Cookie";
+				}
+				if (parameter.getType() == IParameter.PARAM_BODY) {
+					paramLocationText = "Body";
+				}
+				// Handle JSON as well (self implemented)
+				if (parameter.getType() == IParameter.PARAM_JSON) {
+					paramLocationText = "Json";
+				}
+				if (paramLocationText != null) {
+					if (token.isPromptForInput()) {
+						String paramValue = JOptionPane.showInputDialog(session.getStatusPanel(),
+								"<html><strong>Auth Analyzer</strong><br>" + "Enter Parameter Value<br>Session: "
+										+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
+										+ "Parameter Location: " + paramLocationText + "<br></html>");
+						if (paramValue != null) {
+							token.setValue(paramValue);
+							session.getStatusPanel().updateTokenStatus(token);
+						} else {
+							token.setValue("");
+						}
+					}
+					if (token.isRemove()) {
+						if (parameter.getType() == IParameter.PARAM_JSON) {
+							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
+						} else {
+							modifiedRequest = callbacks.getHelpers().removeParameter(modifiedRequest, parameter);
+						}
+					} else if (token.getValue() != null) {
+						if (parameter.getType() == IParameter.PARAM_JSON) {
+							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
+						} else {
+							IParameter modifiedParameter = callbacks.getHelpers().buildParameter(token.getName(),
+									token.getValue(), parameter.getType());
+							modifiedRequest = callbacks.getHelpers().updateParameter(modifiedRequest,
+									modifiedParameter);
+						}
+					}
+				}
 			}
-			else if (response.getStatedMimeType().equals("JSON") || response.getInferredMimeType().equals("JSON")) {
-				currentOriginalCsrfValue = getCsrfTokenValueFromJson(responseBody, csrfTokenName);
+		}
+		return modifiedRequest;
+	}
+
+	private byte[] getModifiedJsonRequest(byte[] request, IRequestInfo originalRequestInfo, Token token) {
+		if (!token.isRemove() && token.getValue() == null) {
+			return request;
+		}
+		JsonObject jsonObject = null;
+		try {
+			String bodyAsString = new String(
+					Arrays.copyOfRange(request, originalRequestInfo.getBodyOffset(), request.length));
+			jsonObject = JsonParser.parseString(bodyAsString).getAsJsonObject();
+		} catch (Exception e) {
+			callbacks.printError("Can not parse JSON Request Body. Error Message: " + e.getMessage());
+			return request;
+		}
+		modifyJsonTokenValue(jsonObject, token);
+		String jsonBody = jsonObject.toString();
+		List<String> headers = originalRequestInfo.getHeaders();
+		for (int i = 0; i < headers.size(); i++) {
+			if (headers.get(i).startsWith("Content-Length:")) {
+				headers.set(i, "Content-Length: " + jsonBody.length());
+			}
+		}
+		byte[] modifiedRequest = callbacks.getHelpers().buildHttpMessage(headers, jsonBody.getBytes());
+		return modifiedRequest;
+	}
+
+	private void modifyJsonTokenValue(JsonElement jsonElement, Token token) {
+		if (jsonElement.isJsonObject()) {
+			JsonObject jsonObject = jsonElement.getAsJsonObject();
+			Iterator<Map.Entry<String, JsonElement>> it = jsonObject.entrySet().iterator();
+			while (it.hasNext()) {
+				Map.Entry<String, JsonElement> entry = it.next();
+				if (entry.getValue().isJsonArray() || entry.getValue().isJsonObject()) {
+					modifyJsonTokenValue(entry.getValue(), token);
+				}
+				if (entry.getValue().isJsonPrimitive()) {
+					if (entry.getKey().equals(token.getName())) {
+						if (token.isRemove()) {
+							jsonObject.remove(entry.getKey());
+						} else {
+							jsonObject.addProperty(entry.getKey(), token.getValue());
+						}
+					}
+				}
+			}
+		}
+		if (jsonElement.isJsonArray()) {
+			for (JsonElement arrayJsonEl : jsonElement.getAsJsonArray()) {
+				if (arrayJsonEl.isJsonObject()) {
+					modifyJsonTokenValue(arrayJsonEl.getAsJsonObject(), token);
+				}
 			}
 		}
 	}
 
-	public void extractCurrentCsrfValue(IHttpRequestResponse messageInfo, Session session) {
-		IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
-		String responseBody = getResponseBodyAsString(messageInfo);
-		if(responseBody.contains(session.getCsrfTokenName())) {
-			if (response.getStatedMimeType().equals("HTML") || response.getInferredMimeType().equals("HTML")) {
-				String value = getCsrfTokenValueFromInputField(responseBody, session.getCsrfTokenName());
-				session.setCsrfTokenValue(value);
-				session.getStatusPanel().updateCsrfTokenValue(value);
+	private String getJsonTokenValue(JsonElement jsonElement, Token token) {
+		if (jsonElement.isJsonObject()) {
+			JsonObject jsonObject = jsonElement.getAsJsonObject();
+			for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+				if (entry.getValue().isJsonArray() || entry.getValue().isJsonObject()) {
+					return getJsonTokenValue(entry.getValue(), token);
+				}
+				if (entry.getValue().isJsonPrimitive()) {
+					if (entry.getKey().equals(token.getExtractName())) {
+						return entry.getValue().getAsString();
+					}
+				}
 			}
-			else if (response.getStatedMimeType().equals("JSON") || response.getInferredMimeType().equals("JSON")) {
-				String value = getCsrfTokenValueFromJson(responseBody, session.getCsrfTokenName());
-				session.setCsrfTokenValue(value);
-				session.getStatusPanel().updateCsrfTokenValue(value);
+		}
+		if (jsonElement.isJsonArray()) {
+			for (JsonElement arrayJsonEl : jsonElement.getAsJsonArray()) {
+				if (arrayJsonEl.isJsonObject()) {
+					return getJsonTokenValue(arrayJsonEl.getAsJsonObject(), token);
+				}
+			}
+		}
+		return null;
+	}
+
+	public void extractCurrentTokenValue(byte[] sessionResponse, IResponseInfo sessionResponseInfo, Token token) {
+		boolean extractedFromCookie = false;
+		for (ICookie cookie : sessionResponseInfo.getCookies()) {
+			if (cookie.getName().equals(token.getExtractName())) {
+				token.setValue(cookie.getValue());
+				extractedFromCookie = true;
+				break;
+			}
+		}
+		if (!extractedFromCookie) {
+			if (sessionResponseInfo.getStatedMimeType().equals("HTML")
+					|| sessionResponseInfo.getInferredMimeType().equals("HTML")) {
+				try {
+					String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
+							sessionResponseInfo.getBodyOffset(), sessionResponse.length));
+					String value = getTokenValueFromInputField(bodyAsString, token.getExtractName());
+					if (value != null) {
+						token.setValue(value);
+					}
+				} catch (Exception e) {
+					callbacks.printError("Can not parse HTML Response. Error Message: " + e.getMessage());
+				}
+			}
+			if (sessionResponseInfo.getStatedMimeType().equals("JSON")
+					|| sessionResponseInfo.getInferredMimeType().equals("JSON")) {
+				try {
+					String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
+							sessionResponseInfo.getBodyOffset(), sessionResponse.length));
+					JsonObject jsonObject = JsonParser.parseString(bodyAsString).getAsJsonObject();
+					String value = getJsonTokenValue(jsonObject, token);
+					if (value != null) {
+						token.setValue(value);
+					}
+				} catch (Exception e) {
+					callbacks.printError("Can not parse JSON Response. Error Message: " + e.getMessage());
+				}
 			}
 		}
 	}
-	
-	public String getCsrfTokenValueFromInputField(String document, String csrfName) {
+
+	public String getTokenValueFromInputField(String document, String name) {
 		Document doc = Jsoup.parse(document);
-		Elements csrfFields = doc.getElementsByAttributeValue("name", csrfName);
+		Elements csrfFields = doc.getElementsByAttributeValue("name", name);
 		if (csrfFields.size() > 0) {
 			String csrfValue = csrfFields.get(0).attr("value");
 			return csrfValue;
 		}
-		return "";
+		return null;
 	}
 
-	public String getCsrfTokenValueFromJson(String json, String csrfName) {
-		JsonElement jelement = JsonParser.parseString(json).getAsJsonObject();
-		JsonObject jobject = null;
-		if(jelement.isJsonObject()) {
-			jobject = jelement.getAsJsonObject();
-		}
-		else if(jelement.isJsonArray()) {
-			if(jelement.getAsJsonArray().get(0).isJsonObject()) {
-				jobject = jelement.getAsJsonArray().get(0).getAsJsonObject();
-			}
-		}
-	    if(jobject != null) {
-	    	String csrfValue = jobject.get(csrfName).getAsString();
-	    	return csrfValue;
-	    }
-	    return "";
-	}
-	
-	public String applyRulesInBody(Session session, String body) {
-		if(session.getRules().size() > 0) {
-			String messageAsString = body;
-			for(Rule rule : session.getRules()) {
-				if(rule.replaceInBody() && rule.getReplacementValue() != null) {
-					int beginIndex = messageAsString.indexOf(rule.getReplaceFromString());
-					if(beginIndex != -1) {
-						beginIndex = beginIndex + rule.getReplaceFromString().length();
+	public void extractTokenWithFromToString(byte[] sessionResponse, Token token) {
+		try {
+			String responseAsString = new String(sessionResponse);
+			int beginIndex = responseAsString.indexOf(token.getGrepFromString());
+			if (beginIndex != -1) {
+				beginIndex = beginIndex + token.getGrepFromString().length();
+				// Only single lines in extraction scope
+				String lineWithValue = responseAsString.substring(beginIndex).split("\n")[0];
+				String value = null;
+				if (token.getGrepToString().equals("")) {
+					value = lineWithValue;
+				} else {
+					if (lineWithValue.contains(token.getGrepToString())) {
+						value = lineWithValue.substring(0, lineWithValue.indexOf(token.getGrepToString()));
 					}
-					int endIndex = -1;
-					if(rule.getReplaceToString().equals("EOF")) {
-						endIndex = messageAsString.length();
-					}
-					else {
-						endIndex = messageAsString.indexOf(rule.getReplaceToString(), beginIndex);	
-					}
-					if(beginIndex != -1 && endIndex != -1) {
-						String beginString = messageAsString.substring(0, beginIndex);
-						String endString = messageAsString.substring(endIndex, messageAsString.length());
-						messageAsString = beginString + rule.getReplacementValue() + endString;
-					}				
+				}
+				if (value != null) {
+					token.setValue(value);
 				}
 			}
-			return messageAsString;
+		} catch (Exception e) {
+			callbacks.printError("Can not extract from to value. Error Message: " + e.getMessage());
 		}
-		return body;
-	}
-	
-	public String applyRulesInHeader(Session session, String header) {
-		if(session.getRules().size() > 0) {
-			String messageAsString = header;
-			for(Rule rule : session.getRules()) {
-				if(rule.replaceInHeader() && rule.getReplacementValue() != null) {
-					int beginIndex = messageAsString.indexOf(rule.getReplaceFromString());
-					if(beginIndex != -1) {
-						beginIndex = beginIndex + rule.getReplaceFromString().length();
-					}
-					int endIndex = -1;
-					// Threat CR / LF as end of file (every header line is processed by its own). Also take escaped CR LF because
-					if(rule.getReplaceToString().equals("EOF") || rule.getReplaceToString().equals("\n")) {
-						endIndex = messageAsString.length();
-					}
-					else {
-						endIndex = messageAsString.indexOf(rule.getReplaceToString(), beginIndex);
-					}
-					if(beginIndex != -1 && endIndex != -1) {
-						String beginString = messageAsString.substring(0, beginIndex);
-						String endString = messageAsString.substring(endIndex, messageAsString.length());
-						messageAsString = beginString + rule.getReplacementValue() + endString;
-					}				
-				}
-			}
-			return messageAsString;
-		}
-		return header;
 	}
 
-	public void extractResponseRuleValues(Session session, byte[] response) {
-		if(session.getRules().size() > 0) {
-			logger.writeLog(Logger.SEVERITY.INFO, "Extract rule values");
-			String messageAsString = new String(response);
-			int bodyOffset = -1;
-			bodyOffset = messageAsString.indexOf("\r\n\r\n");
-			if(bodyOffset == -1) {
-				bodyOffset = messageAsString.indexOf("\n\n");
-			}
-			if(bodyOffset == -1) {
-				bodyOffset = messageAsString.indexOf(System.lineSeparator());
-			}
-			if(bodyOffset != -1) {
-				String header = messageAsString.substring(0, bodyOffset);
-				String body = messageAsString.substring(bodyOffset).trim(); 
-				for(Rule rule : session.getRules()) {
-					String stringToCheck = "";
-					if(rule.grepInHeader() && !rule.grepInBody()) {
-						stringToCheck = header;
-					}
-					else if(!rule.grepInHeader() && rule.grepInBody()) {
-						stringToCheck = body;
-					}
-					else if(rule.grepInHeader() && rule.grepInBody()) {
-						stringToCheck = messageAsString;
-					}
-					int beginIndex = stringToCheck.indexOf(rule.getGrepFromString());
-					if(beginIndex != -1) {
-						beginIndex = beginIndex + rule.getGrepFromString().length();
-					}
-					int endIndex = -1;
-					if(rule.getGrepToString().equals("EOF")) {
-						// Grep to end of file
-						endIndex = stringToCheck.length();
-					}
-					else {
-						endIndex = stringToCheck.indexOf(rule.getGrepToString(), beginIndex);
-					}
-					if(beginIndex != -1 && endIndex != -1) {
-						String value = stringToCheck.substring(beginIndex, endIndex);
-						rule.setReplacementValue(value);
-						session.getStatusPanel().setRuleValue(rule, value);
-					}
-				}
-			}
-		}
-	}
-	
 	/*
-	 * Bypass if: 
-	 * - Both Responses have same Response Body and Status Code
+	 * Bypass if: - Both Responses have same Response Body and Status Code
 	 * 
-	 * Potential Bypass if: 
-	 * - Both Responses have same Response Code 
-	 * - Both Responses have +-5% of response body length 
+	 * Potential Bypass if: - Both Responses have same Response Code - Both
+	 * Responses have +-5% of response body length
 	 *
 	 */
-	public BypassConstants analyzeResponse(IHttpRequestResponse originalMessageInfo,
-			IHttpRequestResponse modifiedMessageInfo) {
-		try {
-			String originalMessageBody = getResponseBodyAsString(originalMessageInfo);
-			String modifiedMessageBody = getResponseBodyAsString(modifiedMessageInfo);
-			IResponseInfo originalResponseInfo = callbacks.getHelpers().analyzeResponse(originalMessageInfo.getResponse());
-			IResponseInfo modifiedResponseInfo = callbacks.getHelpers().analyzeResponse(modifiedMessageInfo.getResponse());
-			if (originalMessageBody.equals(modifiedMessageBody) && (originalResponseInfo.getStatusCode() == modifiedResponseInfo.getStatusCode())) {
-				return BypassConstants.BYPASSED;
-			}
-			if (originalResponseInfo.getStatusCode() == modifiedResponseInfo.getStatusCode()) {
-				int range = originalMessageBody.length() / 20; // calc 5% of response length
-				int difference = originalMessageBody.length() - modifiedMessageBody.length();
-				// Check if difference is in range
-				if (difference < range && difference > -range) {
-					return BypassConstants.POTENTIAL_BYPASSED;
-				}
-			}
-			return BypassConstants.NOT_BYPASSED;
-			
-		} catch (Exception e) {
-			PrintWriter stderr = new PrintWriter(callbacks.getStderr(), true);
-			stderr.println("Failed to analyze Response");
-			e.printStackTrace();
-			return null;
+	public BypassConstants analyzeResponse(byte[] originalResponse, byte[] sessionResponse,
+			IResponseInfo originalResponseInfo, IResponseInfo sessionResponseInfo) {
+		byte[] originalResponseBody = Arrays.copyOfRange(originalResponse, originalResponseInfo.getBodyOffset(),
+				originalResponse.length);
+		byte[] sessionResponseBody = Arrays.copyOfRange(sessionResponse, sessionResponseInfo.getBodyOffset(),
+				sessionResponse.length);
+		if (Arrays.equals(originalResponseBody, sessionResponseBody)
+				&& (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode())) {
+			return BypassConstants.BYPASSED;
 		}
-	}
-	
-	private String getRequestBodyAsString(IHttpRequestResponse messageInfo) {
-		IRequestInfo requestInfo = callbacks.getHelpers().analyzeRequest(messageInfo);
-		String requestString = new String(messageInfo.getRequest());
-		String messageBody = requestString.substring(requestInfo.getBodyOffset());
-		return messageBody;
-	}
-	
-	private String getResponseBodyAsString(IHttpRequestResponse messageInfo) {
-		IResponseInfo response = callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
-		String currentResponse = new String(messageInfo.getResponse());
-		String responseBody = currentResponse.substring(response.getBodyOffset());
-		return responseBody;
-	}
-	
-	public void setOriginalCsrfTokenValue(String value) {
-		this.currentOriginalCsrfValue = value;
+		if (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode()) {
+			int range = originalResponseBody.length / 20; // calc 5% of response length
+			int difference = originalResponseBody.length - sessionResponseBody.length;
+			// Check if difference is in range
+			if (difference <= range && difference >= -range) {
+				return BypassConstants.POTENTIAL_BYPASSED;
+			}
+		}
+		return BypassConstants.NOT_BYPASSED;
 	}
 }

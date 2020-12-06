@@ -6,6 +6,10 @@ import burp.IResponseInfo;
 
 public class OnlyProxyFilter extends RequestFilter {
 
+	public OnlyProxyFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
+
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
 		if(isSelected) {

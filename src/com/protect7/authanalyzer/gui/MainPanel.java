@@ -18,8 +18,10 @@ public class MainPanel extends JPanel {
 		setLayout(new BorderLayout(10, 10));
 		setBorder(new EmptyBorder(20, 20, 20, 20));
 		CenterPanel centerPanel = new CenterPanel(callbacks);
-		ConfigurationPanel configurationPanel = new ConfigurationPanel(centerPanel);
-		JSplitPane  splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(configurationPanel), centerPanel);
+		ConfigurationPanel configurationPanel = new ConfigurationPanel(centerPanel, callbacks);
+		JScrollPane scrollPane = new JScrollPane(configurationPanel);
+		//scrollPane.setPreferredSize(new Dimension(200, 200));
+		JSplitPane  splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, centerPanel);
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
 		callbacks.registerContextMenuFactory(new ContextMenuController(configurationPanel));
