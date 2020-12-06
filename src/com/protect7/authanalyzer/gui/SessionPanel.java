@@ -86,7 +86,7 @@ public class SessionPanel extends JPanel {
 			try {
 				Desktop.getDesktop().browse(new URI("https://github.com/simioni87/auth_analyzer/blob/main/README.md#parameter-extraction"));
 			} catch (Exception e1) {
-				JOptionPane.showMessageDialog(this, "Browser can not be openened.", "Error", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(this, "Browser can not be opened.", "Error", JOptionPane.WARNING_MESSAGE);
 			}
 		});
 		buttonPanel.add(infoButton);
@@ -209,7 +209,7 @@ public class SessionPanel extends JPanel {
 						String selectedText = headersToReplaceText.getText().substring(headersToReplaceText.getSelectionStart(), 
 								headersToReplaceText.getSelectionEnd());
 						String textWithReplacement = headersToReplaceText.getText().substring(0,
-								headersToReplaceText.getSelectionStart()) + "ง" + tokenPanel.getTokenName() + "["+selectedText+"]ง"
+								headersToReplaceText.getSelectionStart()) + "ยง" + tokenPanel.getTokenName() + "["+selectedText+"]ยง"
 								+ headersToReplaceText.getText().substring(headersToReplaceText.getSelectionEnd());
 						item.addActionListener(e -> headersToReplaceText.setText(textWithReplacement));
 						contextMenu.add(item);
