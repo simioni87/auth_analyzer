@@ -8,7 +8,7 @@ The Burp extension helps you to find authorization bugs. Just navigate through t
 
 (2) Specify the session characteristics (Header(s) and / or Parameter(s) to replace)
 
-(3) Optional: Set Filters
+(3) Set Filters if needed
 
 (4) Press Start
 
@@ -28,21 +28,21 @@ Define a Cookie header and a CSRF token (with auto value extract). The CSRF toke
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/session_header_with_csrf_token.png)
 
 ### Auto extract session Cookie
-Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This cookie will be used for further requests of the given session.
+Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id.png)
 
 ### Auto extract from JavaScript variable
-Since the "Auto Extract" only works on "HTML Input Fields", "JSON Objects" or "Set-Cookie Headers" we must use the generic extraction method called "From To String". With this extraction method we can extract any value from a response if it is located between a unique starting and ending string. The Auth Analyzer provides a context menu method to set the "From String" and "To String" automatically. Just mark the String you want to extract and set as "From-To Extract" by the context menu.
+Since the "Auto Extract" method only works on "HTML Input Fields", "JSON Objects" or "Set-Cookie Headers" we must use the generic extraction method called "From To String". With this extraction method we can extract any value from a response if it is located between a unique starting and ending string. The Auth Analyzer provides a context menu method to set the "From String" and "To String" automatically. Just mark the String you want to extract and set as "From-To Extract" by the context menu.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_csrftoken_from_js_var.png)
 
 ### Auto extract and insert a Bearer Token
-Since the Authorization Header is not treated as a parameter (as it is done with the Cookie Header), we can use a header insertion point to insert to achieve what we want. Just mark and right click the value you want to replace in the specified header. The "default value" will be used if no parameter value is extracted yet.
+Since the Authorization Header is not treated as a parameter (as it is done with the Cookie Header), we can use a header insertion point to achieve what we want. Just mark and right click the value you want to replace in the specified header. The "defaultvalue" will be used if no parameter value is extracted yet.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/autp_extract_and_insert_bearer_token.png)
 
-### Test several privilege roles at a time
+### Test several roles at a time
 Just create as many sessions as you want to test several roles at a time. 
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/several_sessions.png)
@@ -50,7 +50,7 @@ Just create as many sessions as you want to test several roles at a time.
 ## Parameter Extraction
 The Auth Analyzer has the possibility to define parameters which are replaced before the request for the given session will be repeated. The value for the given parameter can be set according to different requirements. Following is possible:
 ### Auto Extract
-The parameter value will be extracted if it occurs in a response with either:
+The parameter value will be extracted if it occurs in a response with one of the following constraints:
 
 * A response with a **Set-Cookie Header** with a Cookie name set to the defined **Extract Field Name**
 
@@ -59,15 +59,15 @@ The parameter value will be extracted if it occurs in a response with either:
 * A **JSON Response** contains a key set to the **Extract Field Name**
 
 ### From To String
-The parameter will be extracted if the response contains the specified **From String** and **To String** in a line. The From-To String can be set either manually or directly by the corresponding context menu. Just mark the word you want to extract in any response and set as "From-To Extract" at the parameter you like.
+The parameter will be extracted if the response contains the specified **From String** and **To String** in a line. The From-To String can be set either manually or directly by the corresponding context menu. Just mark the word you want to extract in any response and set as "From-To Extract" for the parameter you like.
 
 ### Static Value
-A static parameter value can be defined. This can be used for instance for static csrftokens or login credentials.
+A static parameter value can be defined. This can be used for instance for static CSRF tokens or login credentials.
 ### Prompt for Input
-You will be prompted for input the value if the defined parameter is present in a request. This can be used for instance to set 2FA codes.
+You will be prompted for input if the defined parameter is present in a request. This can be used for instance to set 2FA codes.
 
 ## Parameter Replacement
-If a value is present (extracted or set by the user) it will be replaced if the corresponding parameter is present in a request. The conditions for parameter replacement are:
+If a value is set (extracted or defined by the user) it will be replaced if the corresponding parameter is present in a request. The conditions for parameter replacements are:
 ### Replacement Location
 The parameter will be replaced if it is present at one of the following locations:
 
@@ -79,7 +79,7 @@ The parameter will be replaced if it is present at one of the following location
 
 * **JSON Parameter**
 
-### Remove Parameter
+## Parameter removement
 The defined parameter can be removed completely for instance to test CSRF check mechanisms. 
 
 ## Processing Filter
