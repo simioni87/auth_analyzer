@@ -12,6 +12,7 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.TableRowSorter;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
@@ -24,11 +25,12 @@ import burp.IMessageEditorController;
 public class CenterPanel extends JPanel {
 
 	private static final long serialVersionUID = 8472627619821851125L;
-	private CurrentConfig config = CurrentConfig.getCurrentConfig();
-	private JTable table;
+	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
+	private final JTable table;
 	private RequestTableModel tableModel;
-	private IBurpExtenderCallbacks callbacks;
-	private JTabbedPane tabbedPane = new JTabbedPane();
+	private TableRowSorter<RequestTableModel> sorter;
+	private final IBurpExtenderCallbacks callbacks;
+	private final JTabbedPane tabbedPane = new JTabbedPane();
 	private int currentRequestResponseKey = -1;
 	private int currentRow = -1;
 
@@ -36,9 +38,10 @@ public class CenterPanel extends JPanel {
 		setLayout(new BorderLayout());
 		table = new JTable();
 		this.callbacks = callbacks;
-		initTableWithModel();
+		initTableSorter();
+		initTableWithModel();		
 		table.setDefaultRenderer(BypassConstants.class, new BypassCellRenderer());
-		table.setAutoCreateRowSorter(true);
+		//table.setAutoCreateRowSorter(true);
 		JPanel tablePanel = new JPanel(new BorderLayout());
 		tablePanel.setBorder(BorderFactory.createLineBorder(Color.gray));
 		JPanel tableConfigPanel = new JPanel();
@@ -78,8 +81,6 @@ public class CenterPanel extends JPanel {
 	
 	//Paint center panel according to session list
 	public void initCenterPanel(boolean sessionListChanged) {
-		//config.clearSessionRequestMaps();
-		//tableModel.clearRequestMap();
 		if(sessionListChanged) {
 			initTableWithModel();
 		}
@@ -99,6 +100,13 @@ public class CenterPanel extends JPanel {
 		currentRow = -1;
 	}
 	
+	private void initTableSorter() {
+		sorter = new TableRowSorter<RequestTableModel>();
+        sorter.setMaxSortKeys(1);
+        sorter.setSortsOnUpdates(true);
+        table.setRowSorter(sorter);
+	}
+	
 	private void initTabbedPane() {
 		tabbedPane.removeAll();
 		currentRequestResponseKey = -1;
@@ -107,9 +115,10 @@ public class CenterPanel extends JPanel {
 	}
 	
 	private void initTableWithModel() {
-		this.tableModel = new RequestTableModel(callbacks);
+		tableModel = new RequestTableModel(callbacks);
 		table.setModel(tableModel);
 		config.setTableModel(tableModel);
+		sorter.setModel(tableModel);
 		table.getColumnModel().getColumn(0).setMaxWidth(40);
 		table.getColumnModel().getColumn(1).setMaxWidth(90);
 		table.getColumnModel().getColumn(2).setPreferredWidth(200);
@@ -117,8 +126,9 @@ public class CenterPanel extends JPanel {
 	}
 
 	private void changeRequestResponseView(JTable table, RequestTableModel tableModel) {
-		if(table.getSelectedRow() != -1) {
-			currentRequestResponseKey = (int) tableModel.getValueAt(table.convertRowIndexToModel(table.getSelectedRow()), 0);			
+		int requestResponseKey = (int) tableModel.getValueAt(table.convertRowIndexToModel(table.getSelectedRow()), 0);
+		if(table.getSelectedRow() != -1 && requestResponseKey != currentRequestResponseKey) {
+			currentRequestResponseKey = requestResponseKey;
 			
 			IMessageEditorController controllerOriginal = new CustomIMessageEditorController(tableModel.getOriginalRequestResponse(currentRequestResponseKey).getHttpService(), 
 					tableModel.getOriginalRequestResponse(currentRequestResponseKey).getRequest(), tableModel.getOriginalRequestResponse(currentRequestResponseKey).getResponse());
@@ -129,8 +139,7 @@ public class CenterPanel extends JPanel {
 			IMessageEditor responseMessageEditorOriginal = callbacks.createMessageEditor(controllerOriginal, false);
 			responseMessageEditorOriginal.setMessage(tableModel.getOriginalRequestResponse(currentRequestResponseKey).getResponse(), false);
 			tabbedPane.setComponentAt(1, responseMessageEditorOriginal.getComponent());
-			
-			
+						
 			for(Session session : config.getSessions()) {
 				IHttpRequestResponse sessionRequestResponse = session.getRequestResponseMap().get(currentRequestResponseKey).getRequestResponse();
 				IMessageEditorController controller = new CustomIMessageEditorController(sessionRequestResponse.getHttpService(), 

@@ -2,418 +2,263 @@ package com.protect7.authanalyzer.gui;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.Desktop;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URI;
 import java.util.ArrayList;
-import javax.swing.BoxLayout;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import com.protect7.authanalyzer.entities.Rule;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
 
 public class SessionPanel extends JPanel {
-	
+
 	private static final long serialVersionUID = 1L;
 	private int textFieldWidth = 70;
-	private ArrayList<Rule> rules = new ArrayList<>();
+	private String sessionName = "";
 	private JTextArea headersToReplaceText = new JTextArea(3, textFieldWidth);
 	private JCheckBox filterRequestsWithSameHeader;
-	private JTextField csrfTokenToReplaceText = new JTextField(textFieldWidth);
-	private JTextField csrfTokenValueText = new JTextField(textFieldWidth);
-	private JCheckBox determineValueAutoButton;
-	private JButton grepAndReplaceButton;
+	private JButton addTokenButton;
+	private JButton removeTokenButton;
 	private JPanel sessionPanel = new JPanel();
-	private JLabel addedRulesLabel = new JLabel("<html><h3>Added Rules:</h3></html>");
-	private int ruleId = 1;
-	private boolean isRunning = false;
 	private StatusPanel statusPanel = new StatusPanel();
+	private GridBagConstraints c = new GridBagConstraints();
+	private final ArrayList<TokenPanel> tokenPanels = new ArrayList<TokenPanel>();
 
-	public SessionPanel() {
+	public SessionPanel(String sessionName) {
+		this.sessionName = sessionName;
+		sessionPanel.setLayout(new GridBagLayout());
+		c.gridx = 0;
+		c.anchor = GridBagConstraints.WEST;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.weighty = 1;
+		
 		statusPanel.setVisible(false);
-		add(statusPanel);
-		sessionPanel.setLayout(new BoxLayout(sessionPanel, BoxLayout.Y_AXIS));
+		add(statusPanel, c);
 
 		headersToReplaceText.setLineWrap(true);
+		Border border = BorderFactory.createLineBorder(Color.LIGHT_GRAY);
+		headersToReplaceText.setBorder(border);
+		setupContextMenu();
 
 		JLabel headerToReplaceLabel = new JLabel("Header(s) to Replace");
-		sessionPanel.add(headerToReplaceLabel);
-		getHeadersToReplaceText().setAlignmentX(Component.LEFT_ALIGNMENT);
-		sessionPanel.add(getHeadersToReplaceText());
-		getHeadersToReplaceText().setToolTipText(
+		c.gridy = 0;
+		sessionPanel.add(headerToReplaceLabel, c);
+		headersToReplaceText.setAlignmentX(Component.LEFT_ALIGNMENT);
+		c.gridy = 1;
+		sessionPanel.add(headersToReplaceText, c);
+		headersToReplaceText.setToolTipText(
 				"<html>eg:<br>Cookie: session=06q7c9fj33rhb72f6qb60f52s6<br>AnyHeader: key=value</html>");
-		setFilterRequestsWithSameHeader(new JCheckBox("Filter requests with exact same header(s)"));
+		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)");
 		filterRequestsWithSameHeader.setSelected(false);
-		sessionPanel.add(filterRequestsWithSameHeader);
+		c.gridy = 2;
+		sessionPanel.add(filterRequestsWithSameHeader, c);
 
-		sessionPanel.add(new JLabel("   "));
-		sessionPanel.add(new JSeparator());
-		sessionPanel.add(new JLabel("   "));
-		
-		JLabel cssrfTokenParameterNameLabel = new JLabel("CSRF Token Parameter Name (leave empty if unsused). remove_token#name for removing the token.", SwingConstants.LEFT);
-		cssrfTokenParameterNameLabel.setToolTipText("Enter param name of CSRF token. remove_token#name for removing the token.");
-		sessionPanel.add(cssrfTokenParameterNameLabel);
-		getCsrfTokenToReplaceText().setAlignmentX(Component.LEFT_ALIGNMENT);
-		sessionPanel.add(getCsrfTokenToReplaceText());
-		setDetermineValueAutoButton(new JCheckBox("Auto CSRF Value Detection (enter CSRF value if unselected)"));
-		getDetermineValueAutoButton()
-				.setToolTipText("CSRF token will be grapped from input fields with specified CSRF token name.");
-		getDetermineValueAutoButton().addActionListener(new ActionListener() {
+		c.gridy = 3;
+		sessionPanel.add(new JLabel(" "), c);
+		c.gridy = 4;
+		sessionPanel.add(new JSeparator(), c);
+		c.gridy = 5;
+		sessionPanel.add(new JLabel(" "), c);
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (getDetermineValueAutoButton().isSelected()) {
-					getCsrfTokenValueText().setEnabled(false);
-					getCsrfTokenValueText().setText("");
-				} else {
-					getCsrfTokenValueText().setEnabled(true);
-				}
+		JPanel buttonPanel = new JPanel();
+		addTokenButton = new JButton("Add Parameter");
+		addTokenButton.addActionListener(e -> addToken());
+		removeTokenButton = new JButton("Remove Last Parameter");
+		removeTokenButton.setEnabled(false);
+		removeTokenButton.addActionListener(e -> removeToken());
+		buttonPanel.add(addTokenButton);
+		buttonPanel.add(removeTokenButton);
+		JButton infoButton = new JButton("?");
+		infoButton.addActionListener(e -> {
+			
+			try {
+				Desktop.getDesktop().browse(new URI("https://github.com/simioni87/auth_analyzer/blob/main/README.md#parameter-extraction"));
+			} catch (Exception e1) {
+				JOptionPane.showMessageDialog(this, "Browser can not be opened.", "Error", JOptionPane.WARNING_MESSAGE);
 			}
 		});
-		getDetermineValueAutoButton().setSelected(true);
-		getCsrfTokenValueText().setEnabled(false);
-
-		sessionPanel.add(getDetermineValueAutoButton());
-		getCsrfTokenValueText().setAlignmentX(Component.LEFT_ALIGNMENT);
-		sessionPanel.add(getCsrfTokenValueText());
-		
-		sessionPanel.add(new JLabel("   "));
-		sessionPanel.add(new JSeparator());
-		sessionPanel.add(new JLabel("   "));
-		
-		grepAndReplaceButton = new JButton("Add Grep and Replace Rule");
-		grepAndReplaceButton.addActionListener(e -> addGrepAndReplace());
-		sessionPanel.add(grepAndReplaceButton);
-		sessionPanel.add(addedRulesLabel);
-		addedRulesLabel.setVisible(false);
+		buttonPanel.add(infoButton);
+		c.gridy = 6;
+		c.fill = GridBagConstraints.VERTICAL;
+		sessionPanel.add(buttonPanel, c);
 
 		add(sessionPanel);
 	}
-	
+
 	public void setRunning() {
-		isRunning = true;
-		getHeadersToReplaceText().setEnabled(false);
-		getCsrfTokenToReplaceText().setEnabled(false);
-		getCsrfTokenValueText().setEnabled(false);
-		getDetermineValueAutoButton().setEnabled(false);
-		getFilterRequestsWithSameHeader().setEnabled(false);
-		grepAndReplaceButton.setEnabled(false);
-		for(Component component : sessionPanel.getComponents()) {
-			if(component instanceof JLabel) {
-				JLabel label = (JLabel) component;
-				label.setForeground(Color.LIGHT_GRAY);
-			}
-		}
 		statusPanel.setVisible(true);
 		sessionPanel.setVisible(false);
 	}
-	
+
 	public void setStopped() {
-		isRunning = false;
-		getHeadersToReplaceText().setEnabled(true);
-		getCsrfTokenToReplaceText().setEnabled(true);
-		if (!getDetermineValueAutoButton().isSelected()) {
-			getCsrfTokenValueText().setEnabled(true);
-		}
-		getDetermineValueAutoButton().setEnabled(true);
-		getFilterRequestsWithSameHeader().setEnabled(true);
-		grepAndReplaceButton.setEnabled(true);
-		for(Component component : sessionPanel.getComponents()) {
-			if(component instanceof JLabel) {
-				JLabel label = (JLabel) component;
-				label.setForeground(Color.BLACK);
-			}
-		}
 		statusPanel.setVisible(false);
 		sessionPanel.setVisible(true);
 	}
+
+	private TokenPanel addToken() {
+		TokenPanel tokenPanel = new TokenPanel();
+		tokenPanels.add(tokenPanel);
+		c.gridy++;
+		sessionPanel.add(tokenPanel, c);
+		removeTokenButton.setEnabled(true);
+		sessionPanel.revalidate();
+		return tokenPanel;
+	}
 	
+	public TokenPanel addToken(String name) {
+		addToken();
+		TokenPanel tokenPanel = tokenPanels.get(tokenPanels.size()-1);
+		tokenPanel.setTokenName(name);
+		//Set Token Extract Field Name as well
+		tokenPanel.setAutoExtractFieldName(name);
+		return tokenPanel;
+	}
+
+	private void removeToken() {
+		TokenPanel tokenPanel = tokenPanels.get(tokenPanels.size() - 1);
+		sessionPanel.remove(tokenPanel);
+		c.gridy--;
+		tokenPanels.remove(tokenPanel);
+		if (tokenPanels.size() == 0) {
+			removeTokenButton.setEnabled(false);
+		}
+		revalidate();
+	}
+
+	public boolean tokensValid() {
+		ArrayList<String> tokenNames = new ArrayList<String>();
+		for (TokenPanel tokenPanel : tokenPanels) {
+			tokenPanel.setDefaultColorAllTextFields();
+			// Token Name can not be empty
+			if (tokenPanel.getTokenName().equals("")) {
+				tokenPanel.setRedColorNameTextField();
+				showValidationFailedDialog("You are not allowed to use empty parameter names\nAffected Session: " + getSessionName() );
+				return false;
+			}
+			// Extract Field Name can not be empty (if selected)
+			if (tokenPanel.isAutoExtract() && tokenPanel.getAutoExtractFieldName().equals("")) {
+				tokenPanel.setRedColorGenericTextField();
+				showValidationFailedDialog("You are not allowed to use an empty \"Extract Field Name\"\nAffected Session: "  + 
+			getSessionName() + "\nAffected Parameter: " + tokenPanel.getTokenName());
+				return false;
+			}
+			// From To String must be in correct format (if selected)
+			if (tokenPanel.isFromToString() && tokenPanel.getFromToStringArray() == null) {
+				tokenPanel.setRedColorGenericTextField();
+				showValidationFailedDialog("\"From To String\" not correctly formatted\nAffected Session: "  + getSessionName() +
+						"\nAffected Parameter: " + tokenPanel.getTokenName());
+				return false;
+			}
+			// Check for duplicated Names
+			if (tokenNames.contains(tokenPanel.getTokenName())) {
+				tokenPanel.setRedColorNameTextField();
+				showValidationFailedDialog(
+						"You are not allowed to use duplicated parameter names\nAffected Session: " + getSessionName() +
+						"\nAffected Parameter: " + tokenPanel.getTokenName());
+				return false;
+			}
+			tokenNames.add(tokenPanel.getTokenName());
+		}
+		return true;
+	}
+
+	public boolean isHeaderValid() {
+		headersToReplaceText.setBackground(UIManager.getColor("TextArea.background"));
+		//Allow empty header
+		if(headersToReplaceText.getText().trim().equals("")) {
+			return true;
+		}
+		String[] headerLines = headersToReplaceText.getText().replace("\r", "").split("\n");
+		for(String header : headerLines) {
+			String[] keyValueSplit = header.split(":");
+			if(keyValueSplit.length < 2) {
+				showValidationFailedDialog("The definied Header(s) to replace are not valid. \nAffected Session: " +
+			getSessionName() + "\nAffected Header: " + header);
+				headersToReplaceText.setBackground(new Color(255, 102, 102));
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	private void showValidationFailedDialog(String text) {
+		JOptionPane.showMessageDialog(this, text, "Validation Failed", JOptionPane.WARNING_MESSAGE);
+	}
+
+	private void setupContextMenu() {
+		headersToReplaceText.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent event) {
+				if (event.getButton() == MouseEvent.BUTTON3 && headersToReplaceText.getSelectedText() != null
+						&& tokenPanels.size() > 0) {
+					JPopupMenu contextMenu = new JPopupMenu();
+					for (TokenPanel tokenPanel : tokenPanels) {
+						JMenuItem item = new JMenuItem("Set Insertion Point for " + tokenPanel.getTokenName());
+						String selectedText = headersToReplaceText.getText().substring(headersToReplaceText.getSelectionStart(), 
+								headersToReplaceText.getSelectionEnd());
+						String textWithReplacement = headersToReplaceText.getText().substring(0,
+								headersToReplaceText.getSelectionStart()) + "§" + tokenPanel.getTokenName() + "["+selectedText+"]§"
+								+ headersToReplaceText.getText().substring(headersToReplaceText.getSelectionEnd());
+						item.addActionListener(e -> headersToReplaceText.setText(textWithReplacement));
+						contextMenu.add(item);
+					}
+					contextMenu.show(event.getComponent(), event.getX(), event.getY());
+				} else {
+					super.mouseReleased(event);
+				}
+			}
+		});
+	}
+
 	public StatusPanel getStatusPanel() {
 		return statusPanel;
 	}
-	
-	private void addGrepAndReplace() {
-		JTextField grepAt = new JTextField(5);
-		grepAt.setText("from [TEXT] to [TEXT]");
-		JTextField replaceAt = new JTextField(5);
-		replaceAt.setText("from [TEXT] to [TEXT]");
 
-		JPanel inputPanel = new JPanel();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
-		JPanel infoPanel = new JPanel();
-		infoPanel.add(getRuleInfoLabel());
-		inputPanel.add(infoPanel);
-		JPanel grepPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		grepPanel.add(new JLabel("<html><strong>GREP RULE:</strong></html>"));
-		JCheckBox grepInHeader = new JCheckBox("Header", true);
-		grepPanel.add(grepInHeader);
-		JCheckBox grepInBody = new JCheckBox("Body", true);
-		grepPanel.add(grepInBody);
-		inputPanel.add(grepPanel);
-		inputPanel.add(grepAt);
-		inputPanel.add(new JLabel(" "));
-		JPanel replacePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		replacePanel.add(new JLabel("<html><strong>REPLACE RULE:</strong></html>"));
-		JCheckBox replaceInHeader = new JCheckBox("Header", true);
-		replacePanel.add(replaceInHeader);
-		JCheckBox replaceInBody = new JCheckBox("Body", true);
-		replacePanel.add(replaceInBody);
-		inputPanel.add(replacePanel);
-		inputPanel.add(replaceAt);
-
-		int result = JOptionPane.showConfirmDialog(this, inputPanel, "Grep and Replace Rules",
-				JOptionPane.OK_CANCEL_OPTION);
-		if (result == JOptionPane.OK_OPTION) {
-			Rule rule = createRule("Rule " + ruleId, grepAt.getText(), replaceAt.getText(), 
-					grepInHeader.isSelected(), grepInBody.isSelected(), replaceInHeader.isSelected(), replaceInBody.isSelected());
-			// Rule is null if input syntax incorrect
-			if(rule != null) {
-				rules.add(rule);
-				sessionPanel.add(new RuleLabel(rule));
-				addedRulesLabel.setVisible(true);
-				sessionPanel.revalidate();
-			}
-		}
-	}
-	
-	private void modifyGrepAndReplace(Rule rule, RuleLabel ruleLabel) {
-		JTextField grepAt = new JTextField(5);
-		String grepAtText = "from [" + rule.getGrepFromString() + "] to [" + escapeIfLinefeed(rule.getGrepToString()) + "]";
-		grepAt.setText(grepAtText);
-		JTextField replaceAt = new JTextField(5);
-		String replaceAtText = "from [" + rule.getReplaceFromString() + "] to [" + escapeIfLinefeed(rule.getReplaceToString()) + "]";
-		replaceAt.setText(replaceAtText);
-
-		JPanel inputPanel = new JPanel();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
-		JPanel infoPanel = new JPanel();
-		infoPanel.add(getRuleInfoLabel());
-		inputPanel.add(infoPanel);
-		JPanel grepPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		grepPanel.add(new JLabel("<html><strong>GREP RULE:</strong></html>"));
-		JCheckBox grepInHeader = new JCheckBox("Header", true);
-		grepPanel.add(grepInHeader);
-		JCheckBox grepInBody = new JCheckBox("Body", true);
-		grepPanel.add(grepInBody);
-		inputPanel.add(grepPanel);
-		inputPanel.add(grepAt);
-		inputPanel.add(new JLabel(" "));
-		JPanel replacePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		replacePanel.add(new JLabel("<html><strong>REPLACE RULE:</strong></html>"));
-		JCheckBox replaceInHeader = new JCheckBox("Header", true);
-		replacePanel.add(replaceInHeader);
-		JCheckBox replaceInBody = new JCheckBox("Body", true);
-		replacePanel.add(replaceInBody);
-		inputPanel.add(replacePanel);
-		inputPanel.add(replaceAt);
-
-		Object[] choices = {"Save Changes", "Delete Rule"};
-		Object defaultChoice = choices[0];
-		int result = JOptionPane.showOptionDialog(this, inputPanel, "Modify Rule " + ruleLabel.getId(), JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, defaultChoice);
-		
-		//Save Changes
-		if (result == 0) {
-			Rule newRule = createRule(ruleLabel.getRuleName(), grepAt.getText(), replaceAt.getText(), 
-					grepInHeader.isSelected(), grepInBody.isSelected(), replaceInHeader.isSelected(), replaceInBody.isSelected());
-			if(newRule != null) {
-				rules.remove(rule);
-				ruleLabel.setRule(newRule);
-				rules.add(newRule);
-				sessionPanel.revalidate();
-			}
-		}
-		//Delete
-		if(result == 1) {
-			sessionPanel.remove(ruleLabel);
-			rules.remove(rule);
-			if(rules.size() == 0) {
-				addedRulesLabel.setVisible(false);
-			}
-			ruleLabel = null;
-			sessionPanel.revalidate();
-		}
-	}
-	
-	private JLabel getRuleInfoLabel() {
-		JLabel infoLabel = new JLabel("<html><h3>Information:</h3><p>The value between the defined <strong>GREP RULE</strong> will be grepped from every response (header and/or body) within the current Session.<br>"
-				+ "The value between the defined <strong>REPLACE RULE</strong> will be replaced, with previously grepped value, within every request (header and body) within current Session.<br>"
-				+ "No regular expressions accepted. Use 'EOF' to declare a value must be grepped or replaced to the end of request / response. Use '\\n' to declare CRLF.<br><br>"
-				+ "<h3>How to (syntax examples):</h3> <h4>Grep Rule:</h4><p>from [name=\"_requestVerificationToken\" value=\"] to [\" />]</p><br>"
-				+ "<h4>Replace Rule:</h4><p>from [_RequestVerificationToken=] to [&]</p><br><br></html>");
-		return infoLabel;
-	}
-	
-	private Rule createRule(String ruleName, String grepRule, String replaceRule, boolean grepFromHeader, boolean grepFromBody,
-			boolean replaceFromHeader, boolean replaceFromBody) {
-		String grepFromString = null;
-		String grepToString = null;
-		String replaceFromString = null;
-		String replaceToString = null;
-		String[] split1Grep = grepRule.trim().split("\\[");
-		if(split1Grep.length == 3) {
-			String[] split2Grep = split1Grep[1].split("\\]");
-			String[] split3Grep = split1Grep[2].split("\\]");
-			if(split2Grep.length == 2 && split3Grep.length == 1) {
-				grepFromString = split2Grep[0];
-				grepToString = split3Grep[0];
-				// The charset '\n' of JTextArea is escaped but must not be for proper work
-				if(grepToString.trim().equals("\\n")) {					
-					grepToString = "\n";
-				}
-			}
-		}
-		String[] split1Replace = replaceRule.trim().split("\\[");
-		if(split1Replace.length == 3) {
-			String[] split2Replace = split1Replace[1].split("\\]");
-			String[] split3Replace = split1Replace[2].split("\\]");
-			if(split2Replace.length == 2 && split3Replace.length == 1) {
-				replaceFromString = split2Replace[0];
-				replaceToString = split3Replace[0];
-				// The charset '\n' of JTextArea is escaped but must not be for proper work
-				if(replaceToString.trim().equals("\\n")) {
-					replaceToString = "\n";
-				}
-			}
-		}
-		if(grepFromString != null && grepToString != null && replaceFromString != null && replaceToString != null &&
-				!grepFromString.equals("") && !grepToString.equals("") && !replaceFromString.equals("") &&
-				!replaceToString.equals("")) {
-			return new Rule(ruleName, grepFromString, grepToString, replaceFromString, replaceToString, grepFromHeader, grepFromBody, replaceFromHeader, replaceFromBody);
-		}
-		return null;
-	}
-
-	public JTextArea getHeadersToReplaceText() {
-		return headersToReplaceText;
+	public String getHeadersToReplaceText() {
+		return headersToReplaceText.getText();
 	}
 
 	public void setHeadersToReplaceText(String text) {
 		this.headersToReplaceText.setText(text);
 	}
 
-	public JTextField getCsrfTokenToReplaceText() {
-		return csrfTokenToReplaceText;
+	public void appendHeadersToReplaceText(String selectedText) {
+		if (getHeadersToReplaceText().endsWith("\n") || getHeadersToReplaceText().equals("")) {
+			setHeadersToReplaceText(getHeadersToReplaceText() + selectedText);
+		} else {
+			setHeadersToReplaceText(getHeadersToReplaceText() + "\n" + selectedText);
+		}
 	}
 
-	public void setCsrfTokenToReplaceText(JTextField csrfTokenToReplaceText) {
-		this.csrfTokenToReplaceText = csrfTokenToReplaceText;
+	public boolean isFilterRequestsWithSameHeader() {
+		return filterRequestsWithSameHeader.isSelected();
 	}
 
-	public JTextField getCsrfTokenValueText() {
-		return csrfTokenValueText;
+	public void setFilterRequestsWithSameHeader(boolean filterRequestsWithSameHeader) {
+		this.filterRequestsWithSameHeader.setSelected(filterRequestsWithSameHeader);
 	}
 
-	public void setCsrfTokenValueText(JTextField csrfTokenValueText) {
-		this.csrfTokenValueText = csrfTokenValueText;
+	public ArrayList<TokenPanel> getTokenPanelList() {
+		return tokenPanels;
 	}
 
-	public JCheckBox getDetermineValueAutoButton() {
-		return determineValueAutoButton;
+	public String getSessionName() {
+		return sessionName;
 	}
 
-	public void setDetermineValueAutoButton(JCheckBox determineValueAutoButton) {
-		this.determineValueAutoButton = determineValueAutoButton;
-	}
-
-	public JCheckBox getFilterRequestsWithSameHeader() {
-		return filterRequestsWithSameHeader;
-	}
-
-	public void setFilterRequestsWithSameHeader(JCheckBox filterRequestsWithSameHeader) {
-		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
-	}
-	
-	public ArrayList<Rule> getRules() {
-		return rules;
-	}
-	
-	class RuleLabel extends JLabel {
-		
-		private static final long serialVersionUID = -3096260871191135397L;
-		private Rule rule;
-		private final int id;
-		
-		RuleLabel(Rule ruleCurrent) {
-			this.rule = ruleCurrent;
-			id = ruleId;
-			ruleId++;
-			setText(getDisplayText());
-			RuleLabel currentLabel = this;
-			addMouseListener(new MouseAdapter() {
-				public void mouseEntered(MouseEvent e) {
-					if(!isRunning) {
-						setText(getDisplayTextMouseOver());
-					}
-				};
-				public void mouseExited(MouseEvent e) {
-					if(!isRunning) {
-						setText(getDisplayText());
-					}
-				};
-				public void mouseClicked(MouseEvent e) {
-					if(!isRunning) {
-						modifyGrepAndReplace(rule, currentLabel);
-					}
-				};
-			});
-		}
-		
-		public int getId() {
-			return id;
-		}
-
-		public Rule getRule() {
-			return rule;
-		}
-		
-		public String getRuleName() {
-			return "Rule " + id;
-		}
-		
-		public void setRule(Rule rule) {
-			this.rule = rule;
-			setText(getDisplayText());
-		}
-		
-		private String getDisplayText() {
-			String startString = "<html><p style='border:1px solid gray; margin-top:10px; padding:5px; background-color:white;'><strong>Rule " + id + ": </strong> ";
-			String ruleString = "GREP RULE: from [" + rule.getGrepFromString() + "] to [" + rule.getGrepToString() + "] --- " +
-			"REPLACE RULE: from [" + escapeIfLinefeed(rule.getReplaceFromString()) + "] to [" + escapeIfLinefeed(rule.getReplaceToString()) + "]";
-			String completeString = startString + ruleString;
-			if(completeString.length() > 210) {
-				completeString = completeString.substring(0, 210) + "...";
-			}
-			completeString = completeString + "</p></html>";
-			return completeString;
-		}
-		
-		private String getDisplayTextMouseOver() {
-			String startString = "<html><p style='border:1px solid gray; margin-top:10px; padding:5px; background-color:black;color:white;display:inline;'><strong>Rule " + id + ": </strong>";
-			String ruleString = "GREP RULE: from [" + rule.getGrepFromString() + "] to [" + rule.getGrepToString() + "] --- " +
-			"REPLACE RULE: from [" + escapeIfLinefeed(rule.getReplaceFromString()) + "] to [" + escapeIfLinefeed(rule.getReplaceToString()) + "]";
-			String completeString = startString + ruleString;
-			if(completeString.length() > 243) {
-				completeString = completeString.substring(0, 243) + "...";
-			}
-			completeString = completeString + "</p></html>";
-			return completeString;
-		}
-	}
-	
-	private String escapeIfLinefeed(String text) {
-		if(text.equals("\n")) {
-			return "\\n";
-		}
-		else {
-			return text;
-		}
+	public void setSessionName(String sessionName) {
+		this.sessionName = sessionName;
 	}
 }

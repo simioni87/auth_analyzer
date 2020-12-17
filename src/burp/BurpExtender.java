@@ -1,7 +1,6 @@
 package burp;
 
 import java.awt.Component;
-import java.io.PrintWriter;
 import com.protect7.authanalyzer.controller.HttpListener;
 import com.protect7.authanalyzer.gui.MainPanel;
 import com.protect7.authanalyzer.util.Version;
@@ -12,18 +11,15 @@ public class BurpExtender implements IBurpExtender, ITab {
 
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
-		// Extension needs Jsoup and Gson Library
 		callbacks.setExtensionName("Auth Analyzer");
 		panel = new MainPanel(callbacks);
 		callbacks.addSuiteTab(this);
 		callbacks.registerHttpListener(new HttpListener(callbacks));
-		PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
-		stdout.println("Auth Analyzer successfully started");
-		stdout.println("Version " + Version.VERSION);
-		stdout.println("Created by Simon Reinhart");
-		stdout.println("Protect7 GmbH");
-		stdout.println("www.protect7.com");
-		stdout.close();
+		callbacks.printOutput("Auth Analyzer successfully started");
+		callbacks.printOutput("Version " + Version.VERSION);
+		callbacks.printOutput("Created by Simon Reinhart");
+		callbacks.printOutput("Protect7 GmbH");
+		callbacks.printOutput("www.protect7.com");
 	}
 
 	@Override

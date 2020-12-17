@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.entities;
+ package com.protect7.authanalyzer.entities;
 
 /**
  * This Entity holds a session.
@@ -9,30 +9,26 @@ package com.protect7.authanalyzer.entities;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.protect7.authanalyzer.gui.StatusPanel;
 
 public class Session {
 
 	private final String name;
 	private String headersToReplace;
-	private String csrfTokenName;
-	private String staticCsrfTokenValue;
+	private boolean filterRequestsWithSameHeader;
 	private int tabbedPaneRequestIndex;
 	private int tabbedPaneResponseIndex;
-	private String csrfTokenValue = "";
-	private boolean filterRequestsWithSameHeader;
-	private ArrayList<Rule> rules;
 	private HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
+	private ArrayList<Token> tokens = new ArrayList<Token>();
 	private final StatusPanel statusPanel;
 
-	public Session(String name, String headersToReplace, String csrfTokenToReplace, String csrfTokenValue, 
-			boolean filterRequestsWithSameHeader, ArrayList<Rule> rules, StatusPanel statusPanel) {
+	public Session(String name, String headersToReplace, boolean filterRequestsWithSameHeader, ArrayList<Token> tokens, StatusPanel statusPanel) {
 		this.name = name;
 		this.headersToReplace = headersToReplace;
-		this.csrfTokenName = csrfTokenToReplace;
-		this.staticCsrfTokenValue = csrfTokenValue;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
-		this.rules = rules;
+		this.setTokens(tokens);
 		this.statusPanel = statusPanel;
 	}
 
@@ -46,34 +42,6 @@ public class Session {
 	
 	public void setHeadersToReplace(String headersToReplace) {
 		this.headersToReplace = headersToReplace;
-	}
-
-	public String getCsrfTokenName() {
-		return csrfTokenName;
-	}
-
-	public void setCsrfTokenName(String csrfTokenName) {
-		this.csrfTokenName = csrfTokenName;
-	}
-	
-	public String getCurrentCsrftTokenValue() {
-		if (!getStaticCsrfTokenValue().equals("")) {
-			return getStaticCsrfTokenValue();
-		} else {
-			return csrfTokenValue;
-		}
-	}
-
-	public void setCsrfTokenValue(String csrfTokenValue) {
-		this.csrfTokenValue = csrfTokenValue;
-	}
-
-	public String getStaticCsrfTokenValue() {
-		return staticCsrfTokenValue;
-	}
-	
-	public void setStaticCsrfTokenValue(String staticCsrfTokenValue) {
-		this.staticCsrfTokenValue = staticCsrfTokenValue;
 	}
 
 	public HashMap<Integer, AnalyzerRequestResponse> getRequestResponseMap() {
@@ -112,15 +80,43 @@ public class Session {
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
 	}
 
-	public ArrayList<Rule> getRules() {
-		return rules;
-	}
-	
-	public void setRules(ArrayList<Rule> rules) {
-		this.rules = rules;
-	}
-
 	public StatusPanel getStatusPanel() {
 		return statusPanel;
+	}
+
+	public ArrayList<Token> getTokens() {
+		return tokens;
+	}
+
+	public void setTokens(ArrayList<Token> tokens) {
+		this.tokens = tokens;
+	}
+	
+	public ExclusionStrategy getExclusionStrategy() {
+		ExclusionStrategy strategy = new ExclusionStrategy() {
+			
+			@Override
+			public boolean shouldSkipField(FieldAttributes field) {
+				if(field.getDeclaringClass() == Session.class && field.getName().equals("tabbedPaneRequestIndex")) {
+					return true;
+				}
+				if(field.getDeclaringClass() == Session.class && field.getName().equals("tabbedPaneResponseIndex")) {
+					return true;
+				}
+				if(field.getDeclaringClass() == Session.class && field.getName().equals("requestResponseMap")) {
+					return true;
+				}
+				if(field.getDeclaringClass() == Session.class && field.getName().equals("statusPanel")) {
+					return true;
+				}
+				return false;
+			}
+			
+			@Override
+			public boolean shouldSkipClass(Class<?> clazz) {
+				return false;
+			}
+		};
+		return strategy;
 	}
 }

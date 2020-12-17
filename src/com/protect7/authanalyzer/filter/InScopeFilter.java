@@ -6,9 +6,14 @@ import burp.IResponseInfo;
 
 public class InScopeFilter extends RequestFilter {
 
+	public InScopeFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
+
 	@Override
-	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(isSelected && !callbacks.isInScope(requestInfo.getUrl())) {
+	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo,
+			IResponseInfo responseInfo) {
+		if (isSelected && !callbacks.isInScope(requestInfo.getUrl())) {
 			incrementFiltered();
 			return true;
 		}

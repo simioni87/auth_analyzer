@@ -6,6 +6,10 @@ import burp.IResponseInfo;
 
 public class MethodFilter extends RequestFilter {
 	
+	public MethodFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
+
 	private String[] filterMethods = {"OPTIONS"};
 
 	@Override

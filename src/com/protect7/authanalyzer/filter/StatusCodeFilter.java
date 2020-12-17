@@ -5,8 +5,12 @@ import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public class StatusCodeFilter extends RequestFilter {
+	
+	public StatusCodeFilter(int filterIndex, String description) {
+		super(filterIndex, description);
+	}
 
-	private String[] filterStringLiterals = { "204", "304" };
+	private String[] filterStringLiterals = { "304" };
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {

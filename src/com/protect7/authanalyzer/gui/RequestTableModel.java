@@ -1,13 +1,9 @@
 package com.protect7.authanalyzer.gui;
 
-import java.io.PrintWriter;
 import java.util.HashMap;
 import javax.swing.table.AbstractTableModel;
-
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import com.protect7.authanalyzer.util.Logger;
-
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;
 import burp.IRequestInfo;
@@ -25,9 +21,9 @@ public class RequestTableModel extends AbstractTableModel {
 	}
 	
 	public void putNewRequestResponse(int key, IHttpRequestResponse requestResponse) {
+		int index = originalRequestResponseMap.size();
 		originalRequestResponseMap.put(key, requestResponse);
-		//fireTableRowsInserted(getRowCount(), getRowCount());
-		fireTableDataChanged();
+		this.fireTableRowsInserted(index, index);
 	}
 	
 	public void clearRequestMap() {
@@ -53,9 +49,6 @@ public class RequestTableModel extends AbstractTableModel {
 	public Object getValueAt(int row, int column) {
 		int mapKey = getMapKeyByIndex(row);
 		if(!originalRequestResponseMap.containsKey(mapKey)) {
-			PrintWriter stdout = new PrintWriter(callbacks.getStdout(), true);
-			Logger.getLogInstance(stdout).writeLog(Logger.SEVERITY.INFO, "Cannot find map key!");
-			stdout.close();
 			return null;
 		}
 		else {
