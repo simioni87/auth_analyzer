@@ -10,13 +10,16 @@ import com.protect7.authanalyzer.gui.RequestTableModel;
 public class CurrentConfig {
 
 	private static CurrentConfig mInstance = new CurrentConfig();
-	private ThreadPoolExecutor analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+	private ThreadPoolExecutor analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 	private ArrayList<RequestFilter> requestFilterList = new ArrayList<>();
 	private ArrayList<Session> sessions = new ArrayList<>();
 	private RequestTableModel tableModel = null;
 	private boolean running = false;
 	private volatile int mapId = 0;
 
+	private CurrentConfig() {
+	}
+	
 	public static synchronized CurrentConfig getCurrentConfig(){
 		  return mInstance;
 	}
@@ -30,13 +33,6 @@ public class CurrentConfig {
 	}
 
 	public void setRunning(boolean running) {
-		if(running) {
-			
-			analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-		}
-		else {
-			analyzerThreadExecutor.shutdownNow();
-		}
 		this.running = running;
 	}
 
@@ -57,9 +53,8 @@ public class CurrentConfig {
 		sessions.add(session);
 	}
 
-	public void clearSessionListAndTableModel() {
+	public void clearSessionList() {
 		sessions.clear();
-		tableModel.clearRequestMap();
 	}
 	
 	public int getNextMapId() {

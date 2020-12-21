@@ -31,6 +31,9 @@ public class ContextMenuController implements IContextMenuFactory {
 		if (selection != null) { 
 			IHttpRequestResponse message = invocation.getSelectedMessages()[0];
 			if (iContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || iContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+				if(message.getRequest() == null) {
+					return menuItems;
+				}
 				String selectedText = new String(message.getRequest()).substring(selection[0], selection[1]).trim();
 				boolean isHeader = true;
 				String[] selectedTextLines = selectedText.replace("\r", "").split("\n");

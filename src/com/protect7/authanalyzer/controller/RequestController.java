@@ -1,5 +1,7 @@
 package com.protect7.authanalyzer.controller;
 
+import java.io.StringReader;
+
 /**
  * The RequestController processes each HTTP message which is not previously rejected due to filter specification. The RequestController
  * extracts the defined values (CSRF Token and Grep Rules) and modifies the given HTTP Message for each session. Furthermore, the
@@ -20,11 +22,15 @@ import org.jsoup.select.Elements;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
+import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
+
+import burp.BurpExtender;
 import burp.IBurpExtenderCallbacks;
 import burp.ICookie;
 import burp.IHttpRequestResponse;
@@ -34,14 +40,11 @@ import burp.IResponseInfo;
 
 public class RequestController {
 
-	private final IBurpExtenderCallbacks callbacks;
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
-
-	public RequestController(IBurpExtenderCallbacks callbacks) {
-		this.callbacks = callbacks;
-	}
+	private final IBurpExtenderCallbacks callbacks = BurpExtender.callbacks;
 
 	public synchronized void analyze(IHttpRequestResponse originalRequestResponse) {
+		
 		// Fail-Safe - Check if messageInfo can be processed
 		if (originalRequestResponse == null || originalRequestResponse.getRequest() == null
 				|| originalRequestResponse.getResponse() == null) {
@@ -113,7 +116,15 @@ public class RequestController {
 				}
 			}
 			if (success) {
-				config.getTableModel().putNewRequestResponse(mapId, originalRequestResponse);
+				String url = "";
+				if(originalRequestInfo.getUrl().getQuery() == null) {
+					url = originalRequestInfo.getUrl().getPath();
+				}
+				else {
+					url = originalRequestInfo.getUrl().getPath() + "?" + originalRequestInfo.getUrl().getQuery();
+				}
+				OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse, originalRequestInfo.getMethod(), url);
+				config.getTableModel().addNewRequestResponse(requestResponse);
 			}
 		}
 	}
@@ -165,31 +176,27 @@ public class RequestController {
 			String trimmedHeaderToReplace = headerToReplace.trim();
 			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
 			if (headerKeyValuePair.length > 1) {
-				boolean containsToken = false;
 				for (Token token : session.getTokens()) {
 					if (trimmedHeaderToReplace.contains(token.getHeaderInsertionPointNameStart())) {
 						int startIndex = trimmedHeaderToReplace.indexOf(token.getHeaderInsertionPointNameStart());
 						int endIndex = trimmedHeaderToReplace.indexOf("]§", startIndex) + 2;
 						if (startIndex != -1 && endIndex != -1) {
-							containsToken = true;
 							if (token.getValue() != null) {
-								String modifiedHeader = trimmedHeaderToReplace.substring(0, startIndex)
+								trimmedHeaderToReplace = trimmedHeaderToReplace.substring(0, startIndex)
 										+ token.getValue() + trimmedHeaderToReplace.substring(endIndex);
-								headerToReplaceList.add(modifiedHeader);
+								//headerToReplaceList.add(modifiedHeader);
 							} else {
 								String defaultValue = trimmedHeaderToReplace.substring(
 										startIndex + token.getHeaderInsertionPointNameStart().length() + 1,
 										endIndex - 2);
-								String modifiedHeader = trimmedHeaderToReplace.substring(0, startIndex) + defaultValue
+								trimmedHeaderToReplace = trimmedHeaderToReplace.substring(0, startIndex) + defaultValue
 										+ trimmedHeaderToReplace.substring(endIndex);
-								headerToReplaceList.add(modifiedHeader);
+								//headerToReplaceList.add(modifiedHeader);
 							}
 						}
 					}
 				}
-				if (!containsToken) {
-					headerToReplaceList.add(trimmedHeaderToReplace);
-				}
+				headerToReplaceList.add(trimmedHeaderToReplace);
 			}
 		}
 		return headerToReplaceList;
@@ -253,17 +260,19 @@ public class RequestController {
 		if (!token.isRemove() && token.getValue() == null) {
 			return request;
 		}
-		JsonObject jsonObject = null;
+		JsonElement jsonElement = null;
 		try {
 			String bodyAsString = new String(
 					Arrays.copyOfRange(request, originalRequestInfo.getBodyOffset(), request.length));
-			jsonObject = JsonParser.parseString(bodyAsString).getAsJsonObject();
+			JsonReader reader = new JsonReader(new StringReader(bodyAsString));
+			reader.setLenient(true);
+			jsonElement = JsonParser.parseReader(reader);
 		} catch (Exception e) {
 			callbacks.printError("Can not parse JSON Request Body. Error Message: " + e.getMessage());
 			return request;
 		}
-		modifyJsonTokenValue(jsonObject, token);
-		String jsonBody = jsonObject.toString();
+		modifyJsonTokenValue(jsonElement, token);
+		String jsonBody = jsonElement.toString();
 		List<String> headers = originalRequestInfo.getHeaders();
 		for (int i = 0; i < headers.size(); i++) {
 			if (headers.get(i).startsWith("Content-Length:")) {
@@ -355,8 +364,10 @@ public class RequestController {
 				try {
 					String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
 							sessionResponseInfo.getBodyOffset(), sessionResponse.length));
-					JsonObject jsonObject = JsonParser.parseString(bodyAsString).getAsJsonObject();
-					String value = getJsonTokenValue(jsonObject, token);
+					JsonReader reader = new JsonReader(new StringReader(bodyAsString));
+					reader.setLenient(true);
+					JsonElement jsonElement = JsonParser.parseReader(reader);
+					String value = getJsonTokenValue(jsonElement, token);
 					if (value != null) {
 						token.setValue(value);
 					}

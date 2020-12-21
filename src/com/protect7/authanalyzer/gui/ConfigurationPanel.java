@@ -6,6 +6,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import javax.swing.BoxLayout;
@@ -13,6 +14,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,7 +33,7 @@ import com.protect7.authanalyzer.filter.QueryFilter;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import burp.IBurpExtenderCallbacks;
+import burp.BurpExtender;
 
 public class ConfigurationPanel extends JPanel {
 
@@ -55,11 +57,11 @@ public class ConfigurationPanel extends JPanel {
 	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
 	boolean sessionListChanged = true;
 	private final CenterPanel centerPanel;
-	private final IBurpExtenderCallbacks callbacks;
+	private final JScrollPane scrollPane;
 
-	public ConfigurationPanel(CenterPanel centerPanel, IBurpExtenderCallbacks callbacks) {
+	public ConfigurationPanel(CenterPanel centerPanel, JScrollPane scrollPane) {
 		this.centerPanel = centerPanel;
-		this.callbacks = callbacks;
+		this.scrollPane = scrollPane;
 		JPanel sessionButtonPanel = new JPanel();
 		sessionButtonPanel.setLayout(new BoxLayout(sessionButtonPanel, BoxLayout.Y_AXIS));
 		createSessionButton = new JButton("New Session");
@@ -172,7 +174,13 @@ public class ConfigurationPanel extends JPanel {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				startStopButtonPressed();
+				try {
+					startStopButtonPressed();
+				}
+				catch (Exception ex) {
+					ex.printStackTrace(new PrintWriter(BurpExtender.callbacks.getStdout()));
+				}
+				
 			}
 		});
 		
@@ -206,7 +214,7 @@ public class ConfigurationPanel extends JPanel {
 		catch (Exception e) {
 			sessionPanelMap.clear();
 			sessionTabbedPane.removeAll();
-			callbacks.printError("Can not restore saved Data. Error Message: " + e.getMessage());
+			BurpExtender.callbacks.printOutput("Can not restore saved Data. Error Message: " + e.getMessage());
 		}
 	}
 	
@@ -224,7 +232,7 @@ public class ConfigurationPanel extends JPanel {
 	
 	private SessionPanel createSession(String sessionName) {
 		if(doModify()) {
-			SessionPanel sessionPanel = new SessionPanel(sessionName);
+			SessionPanel sessionPanel = new SessionPanel(sessionName, scrollPane);
 			sessionTabbedPane.add(sessionName, sessionPanel);
 			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount()-1);
 			sessionPanelMap.put(sessionName, sessionPanel);
@@ -240,7 +248,7 @@ public class ConfigurationPanel extends JPanel {
 	
 	private boolean cloneSession(String newSessionName, SessionPanel sessionPanelToClone) {
 		if(doModify()) {
-			SessionPanel sessionPanel = new SessionPanel(newSessionName);
+			SessionPanel sessionPanel = new SessionPanel(newSessionName, scrollPane);
 			sessionPanel.setHeadersToReplaceText(sessionPanelToClone.getHeadersToReplaceText());
 			sessionPanel.setFilterRequestsWithSameHeader(sessionPanelToClone.isFilterRequestsWithSameHeader());
 			for(TokenPanel tokenPanel : sessionPanelToClone.getTokenPanelList()) {
@@ -383,7 +391,7 @@ public class ConfigurationPanel extends JPanel {
 				}
 				if(success) {
 					if(sessionListChanged) {
-						config.clearSessionListAndTableModel();
+						config.clearSessionList();
 					}
 					for(String session : sessionPanelMap.keySet()) {
 						SessionPanel sessionPanel = sessionPanelMap.get(session);
@@ -412,7 +420,7 @@ public class ConfigurationPanel extends JPanel {
 							storeSetup(STORE_LAST_USED);
 						}
 						catch (Exception e) {
-							callbacks.printError("Can not store setup. Error Message: " + e.getMessage());
+							BurpExtender.callbacks.printOutput("Can not store setup. Error Message: " + e.getMessage());
 						}
 					}			
 					for(RequestFilter filter : config.getRequestFilterList()) {
@@ -434,7 +442,7 @@ public class ConfigurationPanel extends JPanel {
 	}
 	
 	private void storeSetup(String setupName) {
-		String storedSetupNames = callbacks.loadExtensionSetting(STORE_KEY_SETUP_NAMES);
+		String storedSetupNames = BurpExtender.callbacks.loadExtensionSetting(STORE_KEY_SETUP_NAMES);
 		boolean alreadySaved = false;
 		JsonArray storedSetupNameArray;
 		if(storedSetupNames != null) {
@@ -451,7 +459,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 		if(!alreadySaved) {
 			storedSetupNameArray.add(setupName);
-			callbacks.saveExtensionSetting(STORE_KEY_SETUP_NAMES, storedSetupNameArray.toString());
+			BurpExtender.callbacks.saveExtensionSetting(STORE_KEY_SETUP_NAMES, storedSetupNameArray.toString());
 		}
 		
 		JsonArray sessionArray = new JsonArray();
@@ -474,18 +482,18 @@ public class ConfigurationPanel extends JPanel {
 			filterArray.add(filterElement);
 		}
 		sessionsObject.add("filters", filterArray);
-		callbacks.saveExtensionSetting(setupName, sessionsObject.toString());
+		BurpExtender.callbacks.saveExtensionSetting(setupName, sessionsObject.toString());
 	}
 	
 	private void loadSetup(String setupName) {
-		String storedData = callbacks.loadExtensionSetting(setupName);
+		String storedData = BurpExtender.callbacks.loadExtensionSetting(setupName);
 		// Load Sessions
 		JsonArray storedSessionsArray = JsonParser.parseString(storedData).getAsJsonObject().get("sessions").getAsJsonArray();
 		SessionPanel[] sessionPanels = new SessionPanel[storedSessionsArray.size()];
 		for(JsonElement sessionEl : storedSessionsArray) {
 			JsonObject sessionObject = sessionEl.getAsJsonObject();
 			String sessionName = sessionObject.get("name").getAsString();
-			SessionPanel sessionPanel = new SessionPanel(sessionName);
+			SessionPanel sessionPanel = new SessionPanel(sessionName, scrollPane);
 			sessionPanel.setHeadersToReplaceText(sessionObject.get("headersToReplace").getAsString());
 			sessionPanel.setFilterRequestsWithSameHeader(sessionObject.get("filterRequestsWithSameHeader").getAsBoolean());
 			JsonArray tokenArray = sessionObject.get("tokens").getAsJsonArray();

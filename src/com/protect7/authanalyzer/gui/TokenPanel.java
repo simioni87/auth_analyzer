@@ -1,18 +1,21 @@
 package com.protect7.authanalyzer.gui;
 
 import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 
@@ -23,85 +26,59 @@ public class TokenPanel extends JPanel {
 	private final String OPTION_STATIC_VALUE = "Static Value";
 	private final String OPTION_FROM_TO_STRING = "From To String";
 	private final String OPTION_PROMPT_FOR_INPUT = "Prompt for Input";
-	private final String LABEL_EXTRACT_FIELD_NAME = "Extract Field Name";
-	private final String LABEL_STATIC_VALUE = "Static Value";
-	private final String LABEL_FROM_TO_STRING = "From To String";
+	private final String PLACEHOLDER_EXTRACT_FIELD_NAME = "Enter Extract Field Name...";
+	private final String PLACEHOLDER_STATIC_VALUE = "Enter Static Value...";
+	private final String PLACEHOLDER_FROM_TO_STRING = "Enter From To String...";
 	private final String TOOLTIP_EXTRACT_TOKEN_NAME = "<html>Name of the Parameter for which the static / extracted value will be replaced.<br>Respected Parameter locations: <strong>URL, Body, Cookie</strong>.</html>";
-	private final String TOOLTIP_REMOVE = "<html>Replaces the given token name with the Name \"dummyparam\"</html>";
+	private final String TOOLTIP_REMOVE = "<html><strong>Remove Parameter</strong><br>Removes all parameters with the given name.</html>";
 	private final String TOOLTIP_VALUE_EXTRACTION = "<html>Defines how the Parameter value will be discovered</html>";
-	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Respected Extract Locations (Names): <strong>Set-Cookie (Cookie Name), HTML Input Field Name, JSON Data (Key)</strong>.</html>";
+	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Name of:<br>- Cookie (Set-Cookie Header)<br>- HTML Input Field (Name Attribute) or <br>- JSON Data (Key)</strong>.</html>";
 	private final String TOOLTIP_STATIC_VALUE = "<html>The defined value will be used</html>";
 	private final String TOOLTIP_FROM_TO_STRING = "<html>The value between the \"From\" and \"To\" String will be extracted.<br>The desired value can be marked in message editor and directly<br>set as From-To String by the context menu.</html>";
 	private final String TOOLTIP_PROMPT_FOR_INPUT = "<html>Value can be entered manually if request has a Parameter with corresponding name</html>";
-	private final JTextField nameTextField;
+	private final PlaceholderTextField nameTextField;
+	private final JButton removeButton;
 	private final JCheckBox removeTokenCheckBox;
 	private final JComboBox<String> tokenValueComboBox;
-	private final JTextField genericTextField;
-	private final JLabel genericTextFieldLabel;
+	private final PlaceholderTextField genericTextField;
+	private String placeholderCache = "";
 	private int currentValueComboBoxIndex = 0;
 	private String[] valueTempText = {"", "", "", ""};
-	private final JLabel valueExtractLocationLabel;
 
 	public TokenPanel() {
 		setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.gridx = 0;
 		c.gridy = 0;
-		c.fill = GridBagConstraints.BOTH;
-		c.gridwidth = 4;
-		Insets insetLabel = new Insets(10, 5, 0, 5);
-		Insets insetInputField = new Insets(0, 5, 10, 5);
-		c.insets = insetLabel;
-		
-		add(new JSeparator(), c);
-		
 		c.fill = GridBagConstraints.NONE;
 		c.gridwidth = 1;
-		c.gridy = 1;
-		JLabel tokenNameLabel = new JLabel("Parameter Name");
-		tokenNameLabel.setToolTipText(TOOLTIP_EXTRACT_TOKEN_NAME);
-		add(tokenNameLabel, c);
-		nameTextField = new JTextField(20);
+		c.insets = new Insets(10, 5, 0, 5);
+		
+		nameTextField = new PlaceholderTextField(20);
 		nameTextField.setToolTipText(TOOLTIP_EXTRACT_TOKEN_NAME);
-		c.gridy = 2;
-		c.insets = insetInputField;
+		nameTextField.setPlaceholder("Enter Token Name...");
 		add(nameTextField, c);
 		
-		JLabel removeLabel = new JLabel("Remove");
-		removeLabel.setToolTipText(TOOLTIP_REMOVE);
 		c.gridx = 1;
-		c.gridy = 1;
-		c.insets = insetLabel;
-		add(removeLabel, c);
 		removeTokenCheckBox = new JCheckBox();
 		removeTokenCheckBox.setToolTipText(TOOLTIP_REMOVE);
-		c.gridy = 2;
-		c.insets = insetInputField;
 		add(removeTokenCheckBox, c);
 		
-		valueExtractLocationLabel = new JLabel("Parameter Value");
-		valueExtractLocationLabel.setToolTipText(TOOLTIP_VALUE_EXTRACTION);
 		c.gridx = 2;
-		c.gridy = 1;
-		c.insets = insetLabel;
-		add(valueExtractLocationLabel, c);
 		String[] tokenValueItems = {OPTION_AUTO_EXTRACT, OPTION_STATIC_VALUE, OPTION_FROM_TO_STRING, OPTION_PROMPT_FOR_INPUT};
 		tokenValueComboBox = new JComboBox<String>(tokenValueItems);
 		tokenValueComboBox.setToolTipText(TOOLTIP_VALUE_EXTRACTION);
-		c.gridy = 2;
-		c.insets = insetInputField;
 		add(tokenValueComboBox, c);
 		
-		genericTextFieldLabel = new JLabel(LABEL_EXTRACT_FIELD_NAME);
-		genericTextFieldLabel.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
 		c.gridx = 3;
-		c.gridy = 1;
-		c.insets = insetLabel;
-		add(genericTextFieldLabel, c);
-		genericTextField = new JTextField(30);
-		c.gridy = 2;
-		c.insets = insetInputField;
+		genericTextField = new PlaceholderTextField(30);
+		genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
+		genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
 		add(genericTextField, c);
+		
+		c.gridx = 4;
+		removeButton = new JButton("\u2716");
+		add(removeButton, c);
 		
 		removeTokenCheckBox.addActionListener(new ActionListener() {
 			
@@ -137,23 +114,22 @@ public class TokenPanel extends JPanel {
 		// Add temp text of newly selected item to textfield
 		currentValueComboBoxIndex = tokenValueComboBox.getSelectedIndex();
 		genericTextField.setText(valueTempText[currentValueComboBoxIndex]);
-		
-		genericTextFieldLabel.setEnabled(true);
+	
 		genericTextField.setEnabled(true);
 		
 		if(newOption.equals(OPTION_AUTO_EXTRACT)) {
-			genericTextFieldLabel.setText(LABEL_EXTRACT_FIELD_NAME);
-			genericTextFieldLabel.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
+			genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
+			genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
 			genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
 		}
 		if(newOption.equals(OPTION_STATIC_VALUE)) {
-			genericTextFieldLabel.setText(LABEL_STATIC_VALUE);
-			genericTextFieldLabel.setToolTipText(TOOLTIP_STATIC_VALUE);
+			genericTextField.setToolTipText(TOOLTIP_STATIC_VALUE);
+			genericTextField.setPlaceholder(PLACEHOLDER_STATIC_VALUE);
 			genericTextField.setToolTipText(TOOLTIP_STATIC_VALUE);
 		}
 		if(newOption.equals(OPTION_FROM_TO_STRING)) {
-			genericTextFieldLabel.setText(LABEL_FROM_TO_STRING);
-			genericTextFieldLabel.setToolTipText(TOOLTIP_FROM_TO_STRING);
+			genericTextField.setToolTipText(TOOLTIP_FROM_TO_STRING);
+			genericTextField.setPlaceholder(PLACEHOLDER_FROM_TO_STRING);
 			genericTextField.setToolTipText(TOOLTIP_FROM_TO_STRING);
 			// Set Default Value for generic Text Field from to option
 			if(genericTextField.getText().equals("")) {
@@ -161,25 +137,28 @@ public class TokenPanel extends JPanel {
 			}
 		}
 		if(newOption.equals(OPTION_PROMPT_FOR_INPUT)) {
-			genericTextFieldLabel.setEnabled(false);
 			genericTextField.setEnabled(false);
-			genericTextFieldLabel.setToolTipText(TOOLTIP_PROMPT_FOR_INPUT);
+			genericTextField.setToolTipText(TOOLTIP_PROMPT_FOR_INPUT);
+			genericTextField.setPlaceholder("");
 			genericTextField.setToolTipText(TOOLTIP_STATIC_VALUE);
 		}
 	}
 
 	private void setFieldsEnabledDisabled() {
 		if (removeTokenCheckBox.isSelected()) {
-			valueExtractLocationLabel.setEnabled(false);
 			tokenValueComboBox.setEnabled(false);
-			genericTextFieldLabel.setEnabled(false);
 			genericTextField.setEnabled(false);
+			placeholderCache = genericTextField.getPlaceholder();
+			genericTextField.setPlaceholder("");
 		} else {
-			valueExtractLocationLabel.setEnabled(true);
 			tokenValueComboBox.setEnabled(true);
-			genericTextFieldLabel.setEnabled(true);
 			genericTextField.setEnabled(true);
+			genericTextField.setPlaceholder(placeholderCache);
 		}
+	}
+	
+	public JButton getRemoveButton() {
+		return removeButton;
 	}
 
 	public String getTokenName() {
@@ -356,5 +335,38 @@ public class TokenPanel extends JPanel {
 		} else {
 			return null;
 		}
+	}
+	
+	private class PlaceholderTextField extends JTextField {
+
+		private static final long serialVersionUID = 5734794485649557381L;
+		private String placeholder;
+
+	    public PlaceholderTextField(final int pColumns) {
+	        super(pColumns);
+	    }
+
+	    @Override
+	    protected void paintComponent(final Graphics pG) {
+	        super.paintComponent(pG);
+
+	        if (placeholder == null || placeholder.length() == 0 || getText().length() > 0) {
+	            return;
+	        }
+
+	        final Graphics2D g = (Graphics2D) pG;
+	        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	        g.setColor(getDisabledTextColor());
+	        g.drawString(placeholder, getInsets().left, pG.getFontMetrics().getMaxAscent() + getInsets().top);
+	    }
+
+	    public void setPlaceholder(String placeholder) {
+	        this.placeholder = placeholder;
+	    }
+	    
+	    public String getPlaceholder() {
+	    	return placeholder;
+	    }
+
 	}
 }
