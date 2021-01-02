@@ -59,7 +59,7 @@ Just press "Renew" on the session status panel or repeat the affected request by
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/renew_session.png)
 
 ### Test idempotent Operations
-Original Requests can be dropped for testing idemptent operations.
+Original Requests can be dropped for testing idempotent operations.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/idempotent_operations.png)
 
