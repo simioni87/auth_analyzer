@@ -9,14 +9,17 @@ public class OriginalRequestResponse {
 	private final String method;
 	private final String host;
 	private final String url;
+	private final String infoText;
 	private boolean marked = false;
+	
 	public OriginalRequestResponse(int id, IHttpRequestResponse requestResponse, String method,
-			String url) {
+			String url, String infoText) {
 		this.id = id;
 		this.requestResponse = requestResponse;
 		this.method = method;
 		this.host = requestResponse.getHttpService().getHost();
 		this.url = url;
+		this.infoText = infoText;
 	}
 	public String getEndpoint() {
 		return method + host + url;
@@ -41,5 +44,8 @@ public class OriginalRequestResponse {
 	}
 	public void setMarked(boolean marked) {
 		this.marked = marked;
+	}
+	public String getInfoText() {
+		return infoText;
 	}	
 }

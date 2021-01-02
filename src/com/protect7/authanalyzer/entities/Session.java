@@ -1,5 +1,7 @@
  package com.protect7.authanalyzer.entities;
 
+import java.net.URL;
+
 /**
  * This Entity holds a session.
  * 
@@ -18,16 +20,21 @@ public class Session {
 	private final String name;
 	private String headersToReplace;
 	private boolean filterRequestsWithSameHeader;
+	private boolean restrictToScope = false;
+	private URL scopeUrl;
 	private int tabbedPaneRequestIndex;
 	private int tabbedPaneResponseIndex;
 	private HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
 	private ArrayList<Token> tokens = new ArrayList<Token>();
 	private final StatusPanel statusPanel;
+	//private int tokenPriority = 0;
 
-	public Session(String name, String headersToReplace, boolean filterRequestsWithSameHeader, ArrayList<Token> tokens, StatusPanel statusPanel) {
+	public Session(String name, String headersToReplace, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
 		this.name = name;
 		this.headersToReplace = headersToReplace;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
+		this.setRestrictToScope(restrictToScope);
+		this.setScopeUrl(scopeUrl);
 		this.setTokens(tokens);
 		this.statusPanel = statusPanel;
 	}
@@ -109,6 +116,9 @@ public class Session {
 				if(field.getDeclaringClass() == Session.class && field.getName().equals("statusPanel")) {
 					return true;
 				}
+				if(field.getDeclaringClass() == Token.class && field.getName().equals("request")) {
+					return true;
+				}
 				return false;
 			}
 			
@@ -119,4 +129,30 @@ public class Session {
 		};
 		return strategy;
 	}
+
+	public boolean isRestrictToScope() {
+		return restrictToScope;
+	}
+
+	public void setRestrictToScope(boolean restrictToScope) {
+		this.restrictToScope = restrictToScope;
+	}
+
+	public URL getScopeUrl() {
+		return scopeUrl;
+	}
+
+	public void setScopeUrl(URL scopeUrl) {
+		this.scopeUrl = scopeUrl;
+	}
+	
+	public Token getTokenByName(String tokenName) {
+		for(Token token : tokens) {
+			if(token.getName().equals(tokenName)) {
+				return token;
+			}
+		}
+		return null;
+	}
+
 }

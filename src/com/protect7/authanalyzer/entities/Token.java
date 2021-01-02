@@ -1,5 +1,17 @@
 package com.protect7.authanalyzer.entities;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.protect7.authanalyzer.gui.StatusPanel;
+import com.protect7.authanalyzer.util.ExtractionHelper;
+import com.protect7.authanalyzer.util.RequestModifHelper;
+
+import burp.BurpExtender;
+import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
+
 public class Token {
 	
 	private final String name;
@@ -12,6 +24,7 @@ public class Token {
 	private final boolean staticValue;
 	private final boolean fromToString;
 	private final boolean promptForInput;
+	private TokenRequest request = null;
 	
 	
 	public Token(String name, String value, String extractName, String grepFromString, String grepToString, boolean remove,
@@ -64,5 +77,44 @@ public class Token {
 	public String getHeaderInsertionPointNameStart() {
 		return "§" + name;
 	}
+	public TokenRequest getRequest() {
+		return request;
+	}
+	public void setRequest(TokenRequest request) {
+		this.request = request;
+	}
+	public boolean renewTokenValue(StatusPanel statusPanel, Session session) {
+		if(request != null) {
+			// Update oldRequestResponse with current parameter values
+			byte[] modifiedRequest = RequestModifHelper.getModifiedRequest(request.getRequest(), session, new TokenPriority());
+			IRequestInfo modifiedRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(modifiedRequest);
+			byte[] modifiedMessageBody = Arrays.copyOfRange(modifiedRequest, modifiedRequestInfo.getBodyOffset(), modifiedRequest.length);
+			List<String> modifiedHeaders = RequestModifHelper.getModifiedHeaders(modifiedRequestInfo.getHeaders(), session);
+			byte[] message = BurpExtender.callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody);
 
+			IHttpRequestResponse newRequestResponse = BurpExtender.callbacks.makeHttpRequest(request.getHttpService(), message);
+			boolean success = extractValue(newRequestResponse);
+			if(!success) {
+				//Try without modified Request
+				newRequestResponse = BurpExtender.callbacks.makeHttpRequest(request.getHttpService(), request.getRequest());
+				success = extractValue(newRequestResponse);
+			}
+			if(success) {
+				statusPanel.updateTokenStatus(this);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean extractValue(IHttpRequestResponse requestResponse) {
+		if (isAutoExtract()) {
+			IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(requestResponse.getResponse());
+			return ExtractionHelper.extractCurrentTokenValue(requestResponse.getResponse(), responseInfo, this);
+		}
+		if (isFromToString()) {
+			return ExtractionHelper.extractTokenWithFromToString(requestResponse.getResponse(), this);
+		}
+		return false;
+	}
 }

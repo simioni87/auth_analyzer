@@ -20,18 +20,14 @@ public class RequestTableModel extends AbstractTableModel {
 	
 	public synchronized void addNewRequestResponse(OriginalRequestResponse requestResponse) {
 		originalRequestResponseList.add(requestResponse);
-		//threadExecutor.execute(command);
 		final int index = originalRequestResponseList.size()-1;
 		SwingUtilities.invokeLater(new Runnable() {
 			
 			@Override
 			public void run() {
 				fireTableRowsInserted(index, index);
-				//fireTableDataChanged();
 			}
 		});
-		
-		//fireTableDataChanged();
 	}
 	
 	public boolean isDuplicate(int id, String endpoint) {

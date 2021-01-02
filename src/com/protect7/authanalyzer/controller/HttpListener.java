@@ -11,28 +11,28 @@ package com.protect7.authanalyzer.controller;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import burp.BurpExtender;
+import burp.IBurpExtenderCallbacks;
 import burp.IHttpListener;
 import burp.IHttpRequestResponse;
+import burp.IInterceptedProxyMessage;
+import burp.IProxyListener;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
 
-public class HttpListener implements IHttpListener {
+public class HttpListener implements IHttpListener, IProxyListener {
 
-	private final CurrentConfig config;
-	private final RequestController requestController;
-
-	public HttpListener() {
-		this.config = CurrentConfig.getCurrentConfig();
-		this.requestController = new RequestController();
-	}
+	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
 
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-		//Only responses to have corresponding request
-		if(!messageIsRequest && config.isRunning()) {
+
+		if(config.isRunning() && (!messageIsRequest || messageIsRequest && config.isDropOriginal())) {		
 			boolean isFiltered = false;
 			IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(messageInfo);
-			IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
+			IResponseInfo responseInfo = null;
+			if(messageInfo.getResponse() != null) {
+				BurpExtender.callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
+			}
 			for(int i=0; i<config.getRequestFilterList().size(); i++) {
 				RequestFilter filter = config.getRequestFilterAt(i);
 				if(filter.filterRequest(BurpExtender.callbacks, toolFlag, requestInfo, responseInfo)) {
@@ -41,13 +41,16 @@ public class HttpListener implements IHttpListener {
 				}
 			}
 			if(!isFiltered) {
-				config.getAnalyzerThreadExecutor().execute(new Runnable() {				
-					@Override
-					public void run() {
-						requestController.analyze(messageInfo);
-					}
-				});
+				config.performAuthAnalyzerRequest(messageInfo);
 			}
+		}
+	}
+
+	@Override
+	public void processProxyMessage(boolean messageIsRequest, IInterceptedProxyMessage message) {
+		if(config.isDropOriginal() && messageIsRequest) {
+			processHttpMessage(IBurpExtenderCallbacks.TOOL_PROXY, true, message.getMessageInfo());
+			message.setInterceptAction(IInterceptedProxyMessage.ACTION_DROP);
 		}
 	}
 }

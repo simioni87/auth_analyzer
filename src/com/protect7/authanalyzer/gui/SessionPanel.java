@@ -8,7 +8,9 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -33,6 +35,8 @@ public class SessionPanel extends JPanel {
 	private String sessionName = "";
 	private JTextArea headersToReplaceText = new JTextArea(3, textFieldWidth);
 	private JCheckBox filterRequestsWithSameHeader;
+	private JCheckBox restrictToScope;
+	private PlaceholderTextField restrictToScopeText;
 	private JButton addTokenButton;
 	private JPanel sessionPanel = new JPanel();
 	private StatusPanel statusPanel = new StatusPanel();
@@ -48,6 +52,7 @@ public class SessionPanel extends JPanel {
 		c.gridx = 0;
 		c.anchor = GridBagConstraints.WEST;
 		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridwidth = 2;
 		c.weighty = 1;
 		
 		statusPanel.setVisible(false);
@@ -62,21 +67,43 @@ public class SessionPanel extends JPanel {
 		c.gridy = 0;
 		sessionPanel.add(headerToReplaceLabel, c);
 		headersToReplaceText.setAlignmentX(Component.LEFT_ALIGNMENT);
-		c.gridy = 1;
+		c.gridy++;
 		sessionPanel.add(headersToReplaceText, c);
 		headersToReplaceText.setToolTipText(
 				"<html>eg:<br>Cookie: session=06q7c9fj33rhb72f6qb60f52s6<br>AnyHeader: key=value</html>");
+		
 		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)");
 		filterRequestsWithSameHeader.setSelected(false);
-		c.gridy = 2;
+		c.gridwidth = 1;
+		c.insets = new Insets(5, 0, 0, 20);
+		c.gridy++;
 		sessionPanel.add(filterRequestsWithSameHeader, c);
-
-		c.gridy = 3;
-		sessionPanel.add(new JLabel(" "), c);
-		c.gridy = 4;
+		restrictToScope = new JCheckBox("Restrict to Scope");
+		c.gridx = 1;
+		sessionPanel.add(restrictToScope, c);
+		
+		c.gridwidth = 2;
+		c.gridx = 0;
+		c.insets = new Insets(5, 0, 0, 0);
+		c.gridy++;
+		restrictToScopeText = new PlaceholderTextField();
+		restrictToScopeText.setPlaceholder("Enter URL e.g. https://example.com/path)...");
+		restrictToScopeText.setVisible(false);
+		sessionPanel.add(restrictToScopeText, c);
+		restrictToScope.addActionListener(e -> {
+			if(restrictToScope.isSelected()) {
+				restrictToScopeText.setVisible(true);
+				revalidate();
+			}
+			else {
+				restrictToScopeText.setVisible(false);
+				revalidate();
+			}
+		});
+		
+		c.gridy++;
+		c.insets = new Insets(10, 0, 0, 0);
 		sessionPanel.add(new JSeparator(), c);
-		c.gridy = 5;
-		sessionPanel.add(new JLabel(" "), c);
 
 		JPanel buttonPanel = new JPanel();
 		addTokenButton = new JButton("Add Parameter");
@@ -92,11 +119,12 @@ public class SessionPanel extends JPanel {
 			}
 		});
 		buttonPanel.add(infoButton);
-		c.gridy = 6;
+		c.gridy++;
 		c.fill = GridBagConstraints.VERTICAL;
 		sessionPanel.add(buttonPanel, c);
 
-		c.gridy = 7;
+		c.gridy++;
+		c.insets = new Insets(0, 0, 0, 0);
 		tokenHeaderPanel.setVisible(false);
 		sessionPanel.add(tokenHeaderPanel, c);
 		add(sessionPanel);
@@ -208,6 +236,32 @@ public class SessionPanel extends JPanel {
 		return true;
 	}
 	
+	public boolean isScopeValid() {
+		restrictToScopeText.setBackground(UIManager.getColor("TextArea.background"));
+		if(restrictToScope.isSelected()) {
+			try {
+				new URL(restrictToScopeText.getText());
+			} catch (MalformedURLException e) {
+				showValidationFailedDialog("The definied scope URL is not valid\nAffected Session: " +	getSessionName());
+				restrictToScopeText.setBackground(new Color(255, 102, 102));
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public URL getScopeUrl() {
+		if(restrictToScope.isSelected()) {
+			try {
+				URL scopeUrl = new URL(restrictToScopeText.getText());
+				return scopeUrl;
+			} catch (MalformedURLException e) {
+				return null;
+			}
+		}
+		return null;
+	}
+	
 	private void showValidationFailedDialog(String text) {
 		JOptionPane.showMessageDialog(this, text, "Validation Failed", JOptionPane.WARNING_MESSAGE);
 	}
@@ -263,6 +317,24 @@ public class SessionPanel extends JPanel {
 
 	public void setFilterRequestsWithSameHeader(boolean filterRequestsWithSameHeader) {
 		this.filterRequestsWithSameHeader.setSelected(filterRequestsWithSameHeader);
+	}
+	
+	public boolean isRestrictToScope() {
+		return restrictToScope.isSelected();
+	}
+	
+	public void setRestrictToScope(boolean restrictToScope) {
+		this.restrictToScope.setSelected(restrictToScope);
+		if(restrictToScope) {
+			restrictToScopeText.setVisible(true);
+		}
+		else {
+			restrictToScopeText.setVisible(false);
+		}
+	}
+	
+	public void setRestrictToScopeText(String text) {
+		this.restrictToScopeText.setText(text);
 	}
 
 	public ArrayList<TokenPanel> getTokenPanelList() {

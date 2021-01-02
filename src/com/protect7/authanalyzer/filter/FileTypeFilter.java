@@ -15,7 +15,7 @@ public class FileTypeFilter extends RequestFilter {
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(isSelected) {
+		if(isSelected && responseInfo != null) {
 			String url = requestInfo.getUrl().toString().toLowerCase();
 			for(String fileType : filterFileTypes) {
 				if(url.endsWith(fileType.toLowerCase()) && !fileType.equals("") || 

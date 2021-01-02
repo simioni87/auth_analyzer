@@ -1,30 +1,26 @@
 package com.protect7.authanalyzer.gui;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import javax.swing.JCheckBox;
 import javax.swing.RowFilter;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
-import javax.swing.event.RowSorterEvent;
-import javax.swing.event.RowSorterListener;
 import javax.swing.table.TableRowSorter;
 
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.util.BypassConstants;
 
 public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
-	
-	private final ArrayList<String> entryList = new ArrayList<String>();
 
 	public CustomRowSorter(RequestTableModel tableModel, JCheckBox showOnlyMarked, JCheckBox showDuplicates, JCheckBox showBypassed, 
-			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed) {
+			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed, JCheckBox showNA) {
 		super(tableModel);
 		showOnlyMarked.addActionListener(e -> tableModel.fireTableDataChanged());
 		showDuplicates.addActionListener(e -> tableModel.fireTableDataChanged());
 		showBypassed.addActionListener(e -> tableModel.fireTableDataChanged());
 		showPotentialBypassed.addActionListener(e -> tableModel.fireTableDataChanged());
 		showNotBypassed.addActionListener(e -> tableModel.fireTableDataChanged());
+		showNA.addActionListener(e -> tableModel.fireTableDataChanged());
 		setMaxSortKeys(1);
         setSortKeys(Collections.singletonList(new RowSorter.SortKey(0, SortOrder.DESCENDING)));
 		
@@ -66,20 +62,17 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 						}
 					}
 				}
+				if(showNA.isSelected()) {
+					for(int i = entry.getValueCount()-1; i>3; i--) {
+						if(entry.getValue(i).equals(BypassConstants.NA)) {
+							return true;
+						}
+					}
+				}
 				return false;
 			}
 		};
 		
 		setRowFilter(filter);
-		
-		addRowSorterListener(new RowSorterListener() {
-			
-			@Override
-			public void sorterChanged(RowSorterEvent e) {
-				if((tableModel.getRowCount()-e.getPreviousRowCount())>1) {
-					entryList.clear();
-				}
-			}
-		});
 	}
 }

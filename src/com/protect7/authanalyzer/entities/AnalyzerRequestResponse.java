@@ -15,10 +15,12 @@ public class AnalyzerRequestResponse {
 
 	private final IHttpRequestResponse requestResponse;
 	private final BypassConstants status;
+	private final String infoText;
 
-	public AnalyzerRequestResponse(IHttpRequestResponse requestResponse, BypassConstants status) {
+	public AnalyzerRequestResponse(IHttpRequestResponse requestResponse, BypassConstants status, String infoText) {
 		this.requestResponse = requestResponse;
 		this.status = status;
+		this.infoText = infoText;
 	}
 
 	public IHttpRequestResponse getRequestResponse() {
@@ -27,5 +29,9 @@ public class AnalyzerRequestResponse {
 
 	public BypassConstants getStatus() {
 		return status;
+	}
+
+	public String getInfoText() {
+		return infoText;
 	}
 }

@@ -7,6 +7,7 @@ import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -28,6 +29,8 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+
+import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.util.BypassConstants;
@@ -54,6 +57,7 @@ public class CenterPanel extends JPanel {
 	private final JCheckBox showBypassed;
 	private final JCheckBox showPotentialBypassed;
 	private final JCheckBox showNotBypassed;
+	private final JCheckBox showNA;
 	private int selectedId = -1;
 
 	public CenterPanel() {
@@ -73,6 +77,8 @@ public class CenterPanel extends JPanel {
 		tableFilterPanel.add(showPotentialBypassed);
 		showNotBypassed = new JCheckBox(BypassConstants.NOT_BYPASSED.toString(), true);
 		tableFilterPanel.add(showNotBypassed);
+		showNA = new JCheckBox(BypassConstants.NA.toString(), true);
+		tableFilterPanel.add(showNA);
 		tablePanel.add(new JScrollPane(tableFilterPanel), BorderLayout.NORTH);
 		
 		initTableWithModel();		
@@ -83,7 +89,7 @@ public class CenterPanel extends JPanel {
 		
 		JPanel tableConfigPanel = new JPanel();
 		clearTableButton = new JButton("Clear Table");
-		clearTableButton.addActionListener(e -> clearTable());
+		clearTableButton.addActionListener(e -> clearTablePressed());
 		tableConfigPanel.add(clearTableButton);
 		JButton exportDataButton = new JButton("Export Table Data");
 		exportDataButton.addActionListener(e -> exportData());
@@ -118,20 +124,25 @@ public class CenterPanel extends JPanel {
 				    if(row != -1) {
 				    	JPopupMenu contextMenu = new JPopupMenu();
 				    	final OriginalRequestResponse requestResponse = tableModel.getOriginalRequestResponse(table.convertRowIndexToModel(row));
+				    	JMenuItem markRowItem;
 				    	if(requestResponse.isMarked())  {
-				    		JMenuItem item = new JMenuItem("Unmark Row");
-					    	contextMenu.add(item);
-					    	item.addActionListener(e -> {
+				    		markRowItem = new JMenuItem("Unmark Row");
+				    		markRowItem.addActionListener(e -> {
 						    	requestResponse.setMarked(false);
 					    	});
 				    	}
 				    	else {
-				    		JMenuItem item = new JMenuItem("Mark Row");
-					    	contextMenu.add(item);
-					    	item.addActionListener(e -> {
+				    		markRowItem = new JMenuItem("Mark Row");
+				    		markRowItem.addActionListener(e -> {
 						    	requestResponse.setMarked(true);
 					    	});
 				    	}
+				    	JMenuItem repeatRequestItem = new JMenuItem("Repeat Request");
+				    	repeatRequestItem.addActionListener(e -> {
+				    		CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(requestResponse.getRequestResponse());
+				    	});
+				    	contextMenu.add(markRowItem);
+				    	contextMenu.add(repeatRequestItem);
 				    	contextMenu.show(event.getComponent(), event.getX(), event.getY());
 				    }
 				}				
@@ -154,18 +165,27 @@ public class CenterPanel extends JPanel {
 		selectedId = -1;
 	}
 	
-	public void clearTable() {
+	public void clearTablePressed() {
 		clearTableButton.setText("Wait for Clearing");
-		config.getAnalyzerThreadExecutor().execute(new Runnable() {
-			
-			@Override
-			public void run() {
-				config.clearSessionRequestMaps();
-				tableModel.clearRequestMap();
-				selectedId = -1;
-				clearTableButton.setText("Clear Table");
-			}
-		});
+		if(config.isRunning()) {
+			config.getAnalyzerThreadExecutor().execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					clearTable();
+				}
+			});
+		}
+		else {
+			clearTable();
+		}
+	}
+	
+	public void clearTable() {
+		config.clearSessionRequestMaps();
+		tableModel.clearRequestMap();
+		selectedId = -1;
+		clearTableButton.setText("Clear Table");
 	}
 	
 	private void exportData() {
@@ -180,12 +200,17 @@ public class CenterPanel extends JPanel {
     	group.add(xmlReport);
     	inputPanel.add(htmlReport);
     	inputPanel.add(xmlReport);
+    	JCheckBox doBase64Encode = new JCheckBox("Base64-encode requests and responses", true);
+    	doBase64Encode.setEnabled(false);
+    	htmlReport.addActionListener(e -> doBase64Encode.setEnabled(false));
+    	xmlReport.addActionListener(e -> doBase64Encode.setEnabled(true));
+    	inputPanel.add(doBase64Encode);
     	inputPanel.add(new JLabel(" "));
     	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
     	inputPanel.add(new JLabel(" "));
     	
     	inputPanel.add(new JLabel("Select Columns to include in export."));
-    	//HashSet<DataExporter.MainColumn> mainColumns = new HashSet<DataExporter.MainColumn>();
+    	
     	EnumSet<DataExporter.MainColumn> mainColumns = EnumSet.allOf(DataExporter.MainColumn.class); 
     	for(DataExporter.MainColumn mainColumn : DataExporter.MainColumn.values()) {
     		JCheckBox checkBox = new JCheckBox(mainColumn.getName(), true);
@@ -238,18 +263,33 @@ public class CenterPanel extends JPanel {
 					}
 					file = new File(newFileName);
 				}
-				
+				ArrayList<OriginalRequestResponse> filteredRequestResponseList = getFilteredRequestResponseList();
+				boolean success = false;
 				if(htmlReport.isSelected()) {
-					DataExporter.getDataExporter().createHTML(file, tableModel.getOriginalRequestResponseList(), config.getSessions(), 
+					success = DataExporter.getDataExporter().createHTML(file, filteredRequestResponseList, config.getSessions(), 
 							mainColumns, sessionColumns);
 				}
 				else {
-					DataExporter.getDataExporter().createXML(file, tableModel.getOriginalRequestResponseList(), config.getSessions(), 
-							mainColumns, sessionColumns);
+					success = DataExporter.getDataExporter().createXML(file, filteredRequestResponseList, config.getSessions(), 
+							mainColumns, sessionColumns, doBase64Encode.isSelected());
 				}
-				JOptionPane.showMessageDialog(this, "Successfully exported to\n" + file.getAbsolutePath());
+				if(success) {
+					JOptionPane.showMessageDialog(this, "Successfully exported to\n" + file.getAbsolutePath());
+				}
+				else {
+					JOptionPane.showMessageDialog(this, "Failed to export data");
+				}
 			}
 		}
+	}
+	
+	private ArrayList<OriginalRequestResponse> getFilteredRequestResponseList() {
+		ArrayList<OriginalRequestResponse> list = new ArrayList<OriginalRequestResponse>();
+		for(int row = 0;row < table.getRowCount();row++) {
+			OriginalRequestResponse requestResponse = tableModel.getOriginalRequestResponse(table.convertRowIndexToModel(row));
+			list.add(requestResponse);
+        }
+		return list;
 	}
 	
 	private void initTabbedPane() {
@@ -263,7 +303,7 @@ public class CenterPanel extends JPanel {
 		table.setModel(tableModel);
 		config.setTableModel(tableModel);
 		sorter = new CustomRowSorter(tableModel, showOnlyMarked, showDuplicates, showBypassed, 
-				showPotentialBypassed, showNotBypassed);
+				showPotentialBypassed, showNotBypassed, showNA);
         table.setRowSorter(sorter);
 		table.getColumnModel().getColumn(0).setMaxWidth(40);
 		table.getColumnModel().getColumn(1).setMaxWidth(90);
@@ -283,26 +323,45 @@ public class CenterPanel extends JPanel {
 				requestMessageEditorOriginal.setMessage(originalRequestResponse.getRequestResponse().getRequest(), true);
 				tabbedPane.setComponentAt(0, requestMessageEditorOriginal.getComponent());
 				
-				IMessageEditor responseMessageEditorOriginal = BurpExtender.callbacks.createMessageEditor(controllerOriginal, false);
-				responseMessageEditorOriginal.setMessage(originalRequestResponse.getRequestResponse().getResponse(), false);
-				tabbedPane.setComponentAt(1, responseMessageEditorOriginal.getComponent());
+				if(originalRequestResponse.getRequestResponse().getResponse() != null) {
+					IMessageEditor responseMessageEditorOriginal = BurpExtender.callbacks.createMessageEditor(controllerOriginal, false);
+					responseMessageEditorOriginal.setMessage(originalRequestResponse.getRequestResponse().getResponse(), false);
+					tabbedPane.setComponentAt(1, responseMessageEditorOriginal.getComponent());
+				}
+				else {
+					tabbedPane.setComponentAt(1, getMessageViewLabel(originalRequestResponse.getInfoText()));
+				}
 							
 				for(Session session : config.getSessions()) {
-					IHttpRequestResponse sessionRequestResponse = session.getRequestResponseMap().get(originalRequestResponse.getId()).getRequestResponse();
-					IMessageEditorController controller = new CustomIMessageEditorController(sessionRequestResponse.getHttpService(), 
-							sessionRequestResponse.getRequest(), sessionRequestResponse.getResponse());
-					
-					IMessageEditor requestMessageEditor = BurpExtender.callbacks.createMessageEditor(controller, false);
-					requestMessageEditor.setMessage(sessionRequestResponse.getRequest(), true);
-					tabbedPane.setComponentAt(session.getTabbedPaneRequestIndex(), requestMessageEditor.getComponent());
-					
-					IMessageEditor responseMessageEditor = BurpExtender.callbacks.createMessageEditor(controller, false);
-					responseMessageEditor.setMessage(sessionRequestResponse.getResponse(), false);
-					tabbedPane.setComponentAt(session.getTabbedPaneResponseIndex(), responseMessageEditor.getComponent());
-					
+					AnalyzerRequestResponse analyzerRequestResponse = session.getRequestResponseMap().get(originalRequestResponse.getId());
+					IHttpRequestResponse sessionRequestResponse = analyzerRequestResponse.getRequestResponse();
+					if(sessionRequestResponse != null) {
+						IMessageEditorController controller = new CustomIMessageEditorController(sessionRequestResponse.getHttpService(), 
+								sessionRequestResponse.getRequest(), sessionRequestResponse.getResponse());
+						
+						IMessageEditor requestMessageEditor = BurpExtender.callbacks.createMessageEditor(controller, false);
+						requestMessageEditor.setMessage(sessionRequestResponse.getRequest(), true);
+						tabbedPane.setComponentAt(session.getTabbedPaneRequestIndex(), requestMessageEditor.getComponent());
+						
+						IMessageEditor responseMessageEditor = BurpExtender.callbacks.createMessageEditor(controller, false);
+						responseMessageEditor.setMessage(sessionRequestResponse.getResponse(), false);
+						tabbedPane.setComponentAt(session.getTabbedPaneResponseIndex(), responseMessageEditor.getComponent());
+					}
+					else {
+						tabbedPane.setComponentAt(session.getTabbedPaneRequestIndex(), getMessageViewLabel(analyzerRequestResponse.getInfoText()));
+						tabbedPane.setComponentAt(session.getTabbedPaneResponseIndex(), getMessageViewLabel(analyzerRequestResponse.getInfoText()));
+					}
 				}
 			}
 		}
+	}
+	
+	private JLabel getMessageViewLabel(String text) {
+		String labelText = "";
+		if(text != null) {
+			labelText = text;
+		}
+		return new JLabel(labelText, JLabel.CENTER);
 	}
 	
 	private class CustomIMessageEditorController implements IMessageEditorController {

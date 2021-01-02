@@ -1,22 +1,18 @@
 package com.protect7.authanalyzer.gui;
 
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.UIManager;
 
 public class TokenPanel extends JPanel {
@@ -77,7 +73,8 @@ public class TokenPanel extends JPanel {
 		add(genericTextField, c);
 		
 		c.gridx = 4;
-		removeButton = new JButton("\u2716");
+		removeButton = new JButton();
+		removeButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
 		add(removeButton, c);
 		
 		removeTokenCheckBox.addActionListener(new ActionListener() {
@@ -335,38 +332,5 @@ public class TokenPanel extends JPanel {
 		} else {
 			return null;
 		}
-	}
-	
-	private class PlaceholderTextField extends JTextField {
-
-		private static final long serialVersionUID = 5734794485649557381L;
-		private String placeholder;
-
-	    public PlaceholderTextField(final int pColumns) {
-	        super(pColumns);
-	    }
-
-	    @Override
-	    protected void paintComponent(final Graphics pG) {
-	        super.paintComponent(pG);
-
-	        if (placeholder == null || placeholder.length() == 0 || getText().length() > 0) {
-	            return;
-	        }
-
-	        final Graphics2D g = (Graphics2D) pG;
-	        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-	        g.setColor(getDisabledTextColor());
-	        g.drawString(placeholder, getInsets().left, pG.getFontMetrics().getMaxAscent() + getInsets().top);
-	    }
-
-	    public void setPlaceholder(String placeholder) {
-	        this.placeholder = placeholder;
-	    }
-	    
-	    public String getPlaceholder() {
-	    	return placeholder;
-	    }
-
 	}
 }
