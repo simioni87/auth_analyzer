@@ -34,7 +34,7 @@ Define a Cookie header and a CSRF token (with auto value extract). The CSRF toke
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/session_header_with_csrf_token.png)
 
 ### Auto extract session Cookie
-Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session.
+Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session. The defined Cookie will be treated as a parameter and therefore no Cookie Header must be defined.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id.png)
 
@@ -95,7 +95,7 @@ The parameter will be replaced if it is present at one of the following location
 
 * **JSON Parameter**
 
-* **In Path** (e.g. /api/user/22794e00-4cc3-11eb-ae93-0242ac130002/profile --> if a parameter named "user" is presenet, the value "22794e00-4cc3-11eb-ae93-0242ac130002" will be repplaced)
+* **In Path** (e.g. /api/user/22794e00-4cc3-11eb-ae93-0242ac130002/profile --> if a parameter named "user" is presenet, the value "22794e00-4cc3-11eb-ae93-0242ac130002" will be replaced)
 
 ## Parameter removement
 The defined parameter can be removed completely for instance to test CSRF check mechanisms. 
