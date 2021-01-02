@@ -115,7 +115,7 @@ public class SessionPanel extends JPanel {
 			try {
 				Desktop.getDesktop().browse(new URI("https://github.com/simioni87/auth_analyzer/blob/main/README.md#parameter-extraction"));
 			} catch (Exception e1) {
-				JOptionPane.showMessageDialog(this, "Browser can not be openened.", "Error", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(this, "Browser can not be opened.", "Error", JOptionPane.WARNING_MESSAGE);
 			}
 		});
 		buttonPanel.add(infoButton);
