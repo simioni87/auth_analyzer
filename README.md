@@ -87,15 +87,17 @@ If a value is set (extracted or defined by the user) it will be replaced if the 
 ### Replacement Location
 The parameter will be replaced if it is present at one of the following locations:
 
-* **URL Parameter** 
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_replace_locations.png)
 
-* **Cookie Parameter**
+* **In Path** (e.g. /api/user/99/profile --> if a parameter named "user" is presenet, the value "99" will be replaced)
+
+* **URL Parameter** (e.g. email=hans.wurst@gmail.com)
+
+* **Cookie Parameter** (e.g. PHPSESSID=mb8rkrcdg8765dt91vpum4u21v)
 
 * **Body Parameter** either URL-Encoded or Multipart Form Data
 
-* **JSON Parameter**
-
-* **In Path** (e.g. /api/user/22794e00-4cc3-11eb-ae93-0242ac130002/profile --> if a parameter named "user" is presenet, the value "22794e00-4cc3-11eb-ae93-0242ac130002" will be replaced)
+* **JSON Parameter** (e.g. {"email":"hans.wurst@gmail.com"})
 
 ## Parameter removement
 The defined parameter can be removed completely for instance to test CSRF check mechanisms. 
@@ -125,17 +127,20 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Session Creation for each user role
 *	Renaming and Removing a Session
 *	Clone a Session
-*	Set any amount of replacing parameters
-*	Define how the parameter value will be discovered (automatic, static, prompt for input)
+*	Set any amount of parameters
+*	Define how the parameter value will be discovered (automatic, static, prompt for input, from to string)
 *	Remove a specified parameter
 *	Detailed Filter Rules
 *	Detailed Status Panel for each Session
 * Pause each Session separately
-* Renew Parameter Value
+* Renew Auto Extracted Parameter Value automatically
 * Repeat Request by context menu
 * Table Data Filter
 * Table Data Export Functionality
 *	Start / Stop / Pause the "Auth Analyzer"
+* Pause each Session seperatly
+* Restrict session to defined scope
+* Filter Requests with same header(s)
 * Drop Original Request functionality
 *	Detailed view of all processed Requests and Responses
 *	Send Header(s) and / or Parameter(s) directly to Auth Analyzer by Context Menu
