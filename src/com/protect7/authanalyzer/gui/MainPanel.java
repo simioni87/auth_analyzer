@@ -6,6 +6,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.border.EmptyBorder;
 
+import com.protect7.authanalyzer.controller.ContextMenuController;
+import burp.BurpExtender;
+
 public class MainPanel extends JPanel {
 
 	private static final long serialVersionUID = -8438576029794021570L;
@@ -21,5 +24,6 @@ public class MainPanel extends JPanel {
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
 		splitPane.setResizeWeight(0.5d);
+		BurpExtender.callbacks.registerContextMenuFactory(new ContextMenuController(configurationPanel));
 	}
 }
