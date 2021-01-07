@@ -138,6 +138,9 @@ public class CenterPanel extends JPanel {
 					    	});
 				    	}
 				    	JMenuItem repeatRequestItem = new JMenuItem("Repeat Request");
+				    	if(!CurrentConfig.getCurrentConfig().isRunning()) {
+				    		repeatRequestItem.setEnabled(false);
+				    	}
 				    	repeatRequestItem.addActionListener(e -> {
 				    		CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(requestResponse.getRequestResponse());
 				    	});

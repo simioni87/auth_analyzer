@@ -247,16 +247,6 @@ public class ConfigurationPanel extends JPanel {
 		
 		c.gridx = 3;
 		add(startStopButtonPanel, c);
-		
-		/*c.gridx = 3;
-		c.insets = new Insets(60, 0, 20, 0);
-		add(startStopButton, c);
-		c.gridx = 4;
-		add(pauseButton, c);
-		c.gridx = 5;
-		c.insets = new Insets(90, -175, 0, 0);
-		
-		add(dropOriginalButton, c);*/
 
 		try {
 			String storedData = BurpExtender.callbacks.loadExtensionSetting(STORE_LAST_USED);
@@ -581,8 +571,11 @@ public class ConfigurationPanel extends JPanel {
 				for (Token newToken : tokenList) {
 					for (Token oldToken : newSession.getTokens()) {
 						if (newToken.getName().equals(oldToken.getName())) {
-							newToken.setValue(oldToken.getValue());
-							newToken.setRequest(oldToken.getRequest());
+							if(newToken.isAutoExtract() && oldToken.isAutoExtract() ||
+								newToken.isFromToString() && oldToken.isFromToString()) {
+									newToken.setValue(oldToken.getValue());
+									newToken.setRequest(oldToken.getRequest());
+								}
 						}
 					}
 				}
