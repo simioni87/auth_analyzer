@@ -91,13 +91,13 @@ The parameter will be replaced if it is present at one of the following location
 
 * **In Path** (e.g. /api/user/99/profile --> if a parameter named "user" is presenet, the value "99" will be replaced)
 
-* **URL Parameter** (e.g. email=hans.wurst@gmail.com)
+* **URL Parameter** (e.g. email=hans.wurst[a]gmail.com)
 
 * **Cookie Parameter** (e.g. PHPSESSID=mb8rkrcdg8765dt91vpum4u21v)
 
 * **Body Parameter** either URL-Encoded or Multipart Form Data
 
-* **JSON Parameter** (e.g. {"email":"hans.wurst@gmail.com"})
+* **JSON Parameter** (e.g. {"email":"hans.wurst[a]gmail.com"})
 
 ## Parameter removement
 The defined parameter can be removed completely for instance to test CSRF check mechanisms. 
