@@ -73,7 +73,7 @@ public class StatusPanel extends JPanel{
 			headerToReplaceValue.setText("unused");
 		}
 		else {
-			headerToReplaceValue.setText(format(session.getHeadersToReplace()));
+			headerToReplaceValue.setText(format(session.getHeadersToReplace(), session));
 		}
 		amountOfFilteredRequests = 0;
 	
@@ -155,8 +155,14 @@ public class StatusPanel extends JPanel{
 				")</p> <p style='width:500px'>Value: " +  tokenValue.replace("\n", "<br>") + "</p></html>";
 	}
 	
-	private String format(String text) {
-		String htmlString = "<html><p style='width:500px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
+	private String format(String text, Session session) {
+		String htmlString;
+		if(session.isRemoveHeaders()) {
+			htmlString = "<html><p style='width:500px'><em>REMOVE HEADER(s)</em><br>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
+		}
+		else {
+			htmlString = "<html><p style='width:500px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
+		}
 		return htmlString;
 	}
 	

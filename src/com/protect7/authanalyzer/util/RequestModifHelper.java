@@ -28,22 +28,35 @@ public class RequestModifHelper {
 		// Check for Parameter Replacement in Path
 		replaceParamInPath(headers, session);
 		
-		for (String headerToReplace : getHeaderToReplaceList(session)) {
-			String trimmedHeaderToReplace = headerToReplace.trim();
-			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
-			if (headerKeyValuePair.length > 1) {
-				String headerKey = headerKeyValuePair[0].trim();
-				boolean headerReplaced = false;
-				for (int i = 0; i < headers.size(); i++) {
-					if (headers.get(i).startsWith(headerKey)) {
-						headers.set(i, trimmedHeaderToReplace);
-						headerReplaced = true;
-						break;
+		if(session.isRemoveHeaders()) {
+			String[] headersToReplaceSplit = session.getHeadersToReplace().replace("\r", "").split("\n");
+			Iterator<String> iterator = headers.iterator();
+			while(iterator.hasNext()) {
+				for(int i=0; i<headersToReplaceSplit.length; i++) {
+					if(iterator.next().split(":")[0].equals(headersToReplaceSplit[i].split(":")[0])) {
+						iterator.remove();
 					}
 				}
-				// Set new header if it not occurs
-				if (!headerReplaced) {
-					headers.add(trimmedHeaderToReplace);
+			}
+		}
+		else {
+			for (String headerToReplace : getHeaderToReplaceList(session)) {
+				String trimmedHeaderToReplace = headerToReplace.trim();
+				String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
+				if (headerKeyValuePair.length > 1) {
+					String headerKey = headerKeyValuePair[0].trim();
+					boolean headerReplaced = false;
+					for (int i = 0; i < headers.size(); i++) {
+						if (headers.get(i).startsWith(headerKey)) {
+							headers.set(i, trimmedHeaderToReplace);
+							headerReplaced = true;
+							break;
+						}
+					}
+					// Set new header if it not occurs
+					if (!headerReplaced) {
+						headers.add(trimmedHeaderToReplace);
+					}
 				}
 			}
 		}

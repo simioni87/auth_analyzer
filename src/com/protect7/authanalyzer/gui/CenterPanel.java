@@ -115,6 +115,10 @@ public class CenterPanel extends JPanel {
 			}
 			
 		});
+		setupTableContextMenu();
+	}
+	
+	private void setupTableContextMenu() {
 		table.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseReleased(MouseEvent event) {	
@@ -144,8 +148,13 @@ public class CenterPanel extends JPanel {
 				    	repeatRequestItem.addActionListener(e -> {
 				    		CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(requestResponse.getRequestResponse());
 				    	});
+				    	JMenuItem deleteRowItem = new JMenuItem("Delete Row");
+				    	deleteRowItem.addActionListener(e -> {
+				    		tableModel.deleteRequestResponse(table.convertRowIndexToModel(row));
+				    	});
 				    	contextMenu.add(markRowItem);
 				    	contextMenu.add(repeatRequestItem);
+				    	contextMenu.add(deleteRowItem);
 				    	contextMenu.show(event.getComponent(), event.getX(), event.getY());
 				    }
 				}				

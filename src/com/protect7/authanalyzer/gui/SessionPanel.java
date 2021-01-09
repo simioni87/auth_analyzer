@@ -34,6 +34,7 @@ public class SessionPanel extends JPanel {
 	private int textFieldWidth = 70;
 	private String sessionName = "";
 	private JTextArea headersToReplaceText = new JTextArea(3, textFieldWidth);
+	private JCheckBox removeHeaders;
 	private JCheckBox filterRequestsWithSameHeader;
 	private JCheckBox restrictToScope;
 	private PlaceholderTextField restrictToScopeText;
@@ -52,7 +53,7 @@ public class SessionPanel extends JPanel {
 		c.gridx = 0;
 		c.anchor = GridBagConstraints.WEST;
 		c.fill = GridBagConstraints.HORIZONTAL;
-		c.gridwidth = 2;
+		c.gridwidth = 3;
 		c.weighty = 1;
 		
 		statusPanel.setVisible(false);
@@ -72,17 +73,20 @@ public class SessionPanel extends JPanel {
 		headersToReplaceText.setToolTipText(
 				"<html>eg:<br>Cookie: session=06q7c9fj33rhb72f6qb60f52s6<br>AnyHeader: key=value</html>");
 		
-		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)");
-		filterRequestsWithSameHeader.setSelected(false);
+		removeHeaders = new JCheckBox("Remove Header(s)", false);
 		c.gridwidth = 1;
 		c.insets = new Insets(5, 0, 0, 20);
 		c.gridy++;
-		sessionPanel.add(filterRequestsWithSameHeader, c);
-		restrictToScope = new JCheckBox("Restrict to Scope");
+		sessionPanel.add(removeHeaders, c);
+		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)", false);
+		c.insets = new Insets(5, 0, 0, 20);
 		c.gridx = 1;
+		sessionPanel.add(filterRequestsWithSameHeader, c);
+		restrictToScope = new JCheckBox("Restrict to Scope", false);
+		c.gridx = 2;
 		sessionPanel.add(restrictToScope, c);
 		
-		c.gridwidth = 2;
+		c.gridwidth = 3;
 		c.gridx = 0;
 		c.insets = new Insets(5, 0, 0, 0);
 		c.gridy++;
@@ -220,20 +224,28 @@ public class SessionPanel extends JPanel {
 	public boolean isHeaderValid() {
 		headersToReplaceText.setBackground(UIManager.getColor("TextArea.background"));
 		//Allow empty header
-		if(headersToReplaceText.getText().trim().equals("")) {
+		if(headersToReplaceText.getText().equals("")) {
 			return true;
 		}
+		boolean valid = true;
 		String[] headerLines = headersToReplaceText.getText().replace("\r", "").split("\n");
+		if(headerLines.length == 0) {
+			valid = false;
+		}
 		for(String header : headerLines) {
 			String[] keyValueSplit = header.split(":");
 			if(keyValueSplit.length < 2) {
-				showValidationFailedDialog("The definied Header(s) to replace are not valid. \nAffected Session: " +
-			getSessionName() + "\nAffected Header: " + header);
-				headersToReplaceText.setBackground(new Color(255, 102, 102));
-				return false;
+				valid = false;
 			}
 		}
-		return true;
+		if(!valid) {
+			showValidationFailedDialog("The definied Header(s) to replace are not valid. \nAffected Session: " + getSessionName());
+			headersToReplaceText.setBackground(new Color(255, 102, 102));
+			return false;
+		}
+		else {
+			return true;
+		}
 	}
 	
 	public boolean isScopeValid() {
@@ -309,6 +321,10 @@ public class SessionPanel extends JPanel {
 		} else {
 			setHeadersToReplaceText(getHeadersToReplaceText() + "\n" + selectedText);
 		}
+	}
+	
+	public boolean isRemoveHeaders() {
+		return removeHeaders.isSelected();
 	}
 
 	public boolean isFilterRequestsWithSameHeader() {

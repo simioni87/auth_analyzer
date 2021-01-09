@@ -21,6 +21,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -50,10 +52,10 @@ public class ConfigurationPanel extends JPanel {
 	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running</html>";
 	private final String ANALYZER_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Analyzer Paused</html>";
 	private final String DROP_REQUEST_TEXT = "Drop Original Requests";
-	private final String STOP_DROP_REQUEST_TEXT = "<html><span style='color:red;'>Stop Drop Requests</span></html>";
+	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
 	private JButton startStopButton = new JButton();
 	private JButton pauseButton = new JButton();
-	private JButton dropOriginalButton = new JButton(DROP_REQUEST_TEXT);
+	private JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
 	private HashMap<String, SessionPanel> sessionPanelMap = new HashMap<>();
 	private JButton createSessionButton;
@@ -558,13 +560,14 @@ public class ConfigurationPanel extends JPanel {
 			}
 			Session newSession = null;
 			if (sessionListChanged) {
-				newSession = new Session(session, sessionPanel.getHeadersToReplaceText(),
+				newSession = new Session(session, sessionPanel.getHeadersToReplaceText(), sessionPanel.isRemoveHeaders(),
 						sessionPanel.isFilterRequestsWithSameHeader(), sessionPanel.isRestrictToScope(),
 						sessionPanel.getScopeUrl(), tokenList, sessionPanel.getStatusPanel());
 				config.addSession(newSession);
 			} else {
 				newSession = config.getSessionByName(session);
 				newSession.setHeadersToReplace(sessionPanel.getHeadersToReplaceText());
+				newSession.setRemoveHeaders(sessionPanel.isRemoveHeaders());
 				newSession.setFilterRequestsWithSameHeader(sessionPanel.isFilterRequestsWithSameHeader());
 				newSession.setRestrictToScope(sessionPanel.isRestrictToScope());
 				newSession.setScopeUrl(sessionPanel.getScopeUrl());

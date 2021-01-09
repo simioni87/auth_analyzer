@@ -25,7 +25,7 @@ public class TokenPanel extends JPanel {
 	private final String PLACEHOLDER_EXTRACT_FIELD_NAME = "Enter Extract Field Name...";
 	private final String PLACEHOLDER_STATIC_VALUE = "Enter Static Value...";
 	private final String PLACEHOLDER_FROM_TO_STRING = "Enter From To String...";
-	private final String TOOLTIP_EXTRACT_TOKEN_NAME = "<html>Name of the Parameter for which the static / extracted value will be replaced.<br>Respected Parameter locations: <strong>URL, Body, Cookie</strong>.</html>";
+	private final String TOOLTIP_EXTRACT_TOKEN_NAME = "<html>Name of the Parameter for which the static / extracted value will be replaced.<br>Respected Parameter locations: <strong>Path, URL, Body, Cookie</strong>.</html>";
 	private final String TOOLTIP_REMOVE = "<html><strong>Remove Parameter</strong><br>Removes all parameters with the given name.</html>";
 	private final String TOOLTIP_VALUE_EXTRACTION = "<html>Defines how the Parameter value will be discovered</html>";
 	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Name of:<br>- Cookie (Set-Cookie Header)<br>- HTML Input Field (Name Attribute) or <br>- JSON Data (Key)</strong>.</html>";

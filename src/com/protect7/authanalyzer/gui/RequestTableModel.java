@@ -40,6 +40,17 @@ public class RequestTableModel extends AbstractTableModel {
 		return false;
 	}
 	
+	public void deleteRequestResponse(final int listIndex) {
+		originalRequestResponseList.remove(listIndex);
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				fireTableRowsDeleted(listIndex, listIndex);
+			}
+		});
+	}
+	
 	public void clearRequestMap() {
 		originalRequestResponseList.clear();
 		fireTableDataChanged();

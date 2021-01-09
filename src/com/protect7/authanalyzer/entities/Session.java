@@ -19,6 +19,7 @@ public class Session {
 
 	private final String name;
 	private String headersToReplace;
+	private boolean removeHeaders;
 	private boolean filterRequestsWithSameHeader;
 	private boolean restrictToScope = false;
 	private URL scopeUrl;
@@ -29,8 +30,9 @@ public class Session {
 	private final StatusPanel statusPanel;
 	//private int tokenPriority = 0;
 
-	public Session(String name, String headersToReplace, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
+	public Session(String name, String headersToReplace, boolean removeHeaders, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
 		this.name = name;
+		this.removeHeaders = removeHeaders;
 		this.headersToReplace = headersToReplace;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
 		this.setRestrictToScope(restrictToScope);
@@ -155,4 +157,11 @@ public class Session {
 		return null;
 	}
 
+	public boolean isRemoveHeaders() {
+		return removeHeaders;
+	}
+
+	public void setRemoveHeaders(boolean removeHeaders) {
+		this.removeHeaders = removeHeaders;
+	}
 }
