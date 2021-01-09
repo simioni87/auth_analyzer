@@ -127,7 +127,9 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Session Creation for each user role
 *	Renaming and Removing a Session
 *	Clone a Session
-*	Set any amount of parameters
+* Set any amount of Headers to replace / add
+* Set Headers to remove
+*	Set any amount of parameters to replace
 *	Define how the parameter value will be discovered (automatic, static, prompt for input, from to string)
 *	Remove a specified parameter
 *	Detailed Filter Rules
