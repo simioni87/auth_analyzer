@@ -7,23 +7,23 @@ import javax.swing.JSplitPane;
 import javax.swing.border.EmptyBorder;
 
 import com.protect7.authanalyzer.controller.ContextMenuController;
-
-import burp.IBurpExtenderCallbacks;
+import burp.BurpExtender;
 
 public class MainPanel extends JPanel {
 
 	private static final long serialVersionUID = -8438576029794021570L;
 
-	public MainPanel(IBurpExtenderCallbacks callbacks) {
+	public MainPanel() {
 		setLayout(new BorderLayout(10, 10));
 		setBorder(new EmptyBorder(20, 20, 20, 20));
-		CenterPanel centerPanel = new CenterPanel(callbacks);
-		ConfigurationPanel configurationPanel = new ConfigurationPanel(centerPanel, callbacks);
-		JScrollPane scrollPane = new JScrollPane(configurationPanel);
-		//scrollPane.setPreferredSize(new Dimension(200, 200));
+		CenterPanel centerPanel = new CenterPanel();
+		JScrollPane scrollPane = new JScrollPane();
+		ConfigurationPanel configurationPanel = new ConfigurationPanel(centerPanel, scrollPane);
+		scrollPane.setViewportView(configurationPanel);
 		JSplitPane  splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, centerPanel);
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
-		callbacks.registerContextMenuFactory(new ContextMenuController(configurationPanel));
+		splitPane.setResizeWeight(0.5d);
+		BurpExtender.callbacks.registerContextMenuFactory(new ContextMenuController(configurationPanel));
 	}
 }

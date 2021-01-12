@@ -14,7 +14,7 @@ public class StatusCodeFilter extends RequestFilter {
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if (isSelected) {
+		if (isSelected && responseInfo != null) {
 			String statusCode = String.valueOf(responseInfo.getStatusCode());
 			for (String stringLiteral : filterStringLiterals) {
 				if (statusCode.equals(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {

@@ -1,40 +1,79 @@
 package com.protect7.authanalyzer.gui;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import burp.IBurpExtenderCallbacks;
-import burp.IHttpRequestResponse;
-import burp.IRequestInfo;
 
 public class RequestTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 1L;
-	private final IBurpExtenderCallbacks callbacks;
-	private HashMap<Integer, IHttpRequestResponse> originalRequestResponseMap = new HashMap<>();
+	private final ArrayList<OriginalRequestResponse> originalRequestResponseList = new ArrayList<OriginalRequestResponse>();
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
 	private final int STATIC_COLUMN_COUNT = 4;
-
-	public RequestTableModel(IBurpExtenderCallbacks callbacks) {
-		this.callbacks = callbacks;
+	
+	public ArrayList<OriginalRequestResponse> getOriginalRequestResponseList() {
+		return originalRequestResponseList;
 	}
 	
-	public void putNewRequestResponse(int key, IHttpRequestResponse requestResponse) {
-		int index = originalRequestResponseMap.size();
-		originalRequestResponseMap.put(key, requestResponse);
-		this.fireTableRowsInserted(index, index);
+	public synchronized void addNewRequestResponse(OriginalRequestResponse requestResponse) {
+		originalRequestResponseList.add(requestResponse);
+		final int index = originalRequestResponseList.size()-1;
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				fireTableRowsInserted(index, index);
+			}
+		});
+	}
+	
+	public boolean isDuplicate(int id, String endpoint) {
+
+		for(OriginalRequestResponse requestResponse : originalRequestResponseList) {
+			if(requestResponse.getEndpoint().equals(endpoint) && requestResponse.getId() < id) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void deleteRequestResponse(final int listIndex) {
+		originalRequestResponseList.remove(listIndex);
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				fireTableRowsDeleted(listIndex, listIndex);
+			}
+		});
 	}
 	
 	public void clearRequestMap() {
-		originalRequestResponseMap.clear();
+		originalRequestResponseList.clear();
 		fireTableDataChanged();
 	}
 	
-	public IHttpRequestResponse getOriginalRequestResponse(int value) {
-		return originalRequestResponseMap.get(value);
+	public OriginalRequestResponse getOriginalRequestResponse(int listIndex) {
+		if(listIndex < originalRequestResponseList.size()) {
+			return originalRequestResponseList.get(listIndex);
+		}
+		else {
+			return null;
+		}
 	}
-
+	
+	public OriginalRequestResponse getOriginalRequestResponseById(int id) {
+		for(OriginalRequestResponse requestResponse : originalRequestResponseList) {
+			if(requestResponse.getId() == id) {
+				return requestResponse;
+			}
+		}
+		return null;
+	}
+	
 	@Override
 	public int getColumnCount() {
 		return STATIC_COLUMN_COUNT + config.getSessions().size();
@@ -42,54 +81,34 @@ public class RequestTableModel extends AbstractTableModel {
 
 	@Override
 	public int getRowCount() {
-		return originalRequestResponseMap.size();
+		return originalRequestResponseList.size();
 	}
 
 	@Override
 	public Object getValueAt(int row, int column) {
-		int mapKey = getMapKeyByIndex(row);
-		if(!originalRequestResponseMap.containsKey(mapKey)) {
+		if(row >= originalRequestResponseList.size()) {
 			return null;
 		}
-		else {
-			IHttpRequestResponse messageInfoOriginal = originalRequestResponseMap.get(mapKey);
-			
-			IRequestInfo request = callbacks.getHelpers().analyzeRequest(messageInfoOriginal);
-			if(column == 0) {
-				return mapKey;
-			}
-			if(column == 1) {
-				return  request.getMethod();
-			}
-			if(column == 2) {
-				return messageInfoOriginal.getHttpService().getHost();
-			}
-			if(column == 3) {
-				if(request.getUrl().getQuery() == null) {
-					return request.getUrl().getPath();
-				}
-				else {
-					return request.getUrl().getPath() + "?" + request.getUrl().getQuery();
-				}
-			}
-			for(int i=0; i<config.getSessions().size(); i++) {
-				int tempColunmIndex = STATIC_COLUMN_COUNT+i;
-				if(column == tempColunmIndex) {
-					return config.getSessions().get(i).getRequestResponseMap().get(mapKey).getStatus();
-				}
-			}
-			throw new IndexOutOfBoundsException("Column index out of bounds: " + column);
+		OriginalRequestResponse originalRequestResponse = originalRequestResponseList.get(row);
+		if(column == 0) {
+			return originalRequestResponse.getId();
 		}
-	}
-	
-	private Integer getMapKeyByIndex(int index) {
-		Object[] keyArray = originalRequestResponseMap.keySet().toArray();
-		if(keyArray.length > index) {
-			return (Integer) keyArray[index];
+		if(column == 1) {
+			return  originalRequestResponse.getMethod();
 		}
-		else {
-			return -1;
+		if(column == 2) {
+			return originalRequestResponse.getHost();
 		}
+		if(column == 3) {
+			return originalRequestResponse.getUrl();
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			int tempColunmIndex = STATIC_COLUMN_COUNT+i;
+			if(column == tempColunmIndex) {
+				return config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getStatus();
+			}
+		}
+		throw new IndexOutOfBoundsException("Column index out of bounds: " + column);
 	}
 
 	@Override

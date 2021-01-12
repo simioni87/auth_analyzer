@@ -6,14 +6,23 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Scanner;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -31,7 +40,7 @@ import com.protect7.authanalyzer.filter.QueryFilter;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import burp.IBurpExtenderCallbacks;
+import burp.BurpExtender;
 
 public class ConfigurationPanel extends JPanel {
 
@@ -42,24 +51,29 @@ public class ConfigurationPanel extends JPanel {
 	private final String ANALYZER_STOPPED_TEXT = "<html><span style='color:red; font-weight: bold'>&#x26AB;</span> Analyzer Stopped</html>";
 	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running</html>";
 	private final String ANALYZER_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Analyzer Paused</html>";
+	private final String DROP_REQUEST_TEXT = "Drop Original Requests";
+	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
 	private JButton startStopButton = new JButton();
 	private JButton pauseButton = new JButton();
+	private JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
 	private HashMap<String, SessionPanel> sessionPanelMap = new HashMap<>();
 	private JButton createSessionButton;
 	private JButton cloneSessionButton;
 	private JButton renameSessionButton;
 	private JButton removeSessionButton;
+	private JButton saveSetupButton;
+	private JButton loadSetupButton;
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
 	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
 	boolean sessionListChanged = true;
 	private final CenterPanel centerPanel;
-	private final IBurpExtenderCallbacks callbacks;
+	private final JScrollPane scrollPane;
 
-	public ConfigurationPanel(CenterPanel centerPanel, IBurpExtenderCallbacks callbacks) {
+	public ConfigurationPanel(CenterPanel centerPanel, JScrollPane scrollPane) {
 		this.centerPanel = centerPanel;
-		this.callbacks = callbacks;
+		this.scrollPane = scrollPane;
 		JPanel sessionButtonPanel = new JPanel();
 		sessionButtonPanel.setLayout(new BoxLayout(sessionButtonPanel, BoxLayout.Y_AXIS));
 		createSessionButton = new JButton("New Session");
@@ -69,124 +83,147 @@ public class ConfigurationPanel extends JPanel {
 		renameSessionButton.setEnabled(false);
 		removeSessionButton = new JButton("Remove Session");
 		removeSessionButton.setEnabled(false);
-		createSessionButton.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session");
-				if(sessionName != null && isSessionNameValid(sessionName)) {
-					createSession(sessionName);
-				}
-			}
-		});
-		cloneSessionButton.addActionListener(new ActionListener() {		
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				String newSessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of New Session");
-				if(newSessionName != null && isSessionNameValid(newSessionName)) {
-					int currentIndex = sessionTabbedPane.getSelectedIndex();
-					String currentSessionName = sessionTabbedPane.getTitleAt(currentIndex);
-					cloneSession(newSessionName, sessionPanelMap.get(currentSessionName));
-				}
-			}
-		});
-		renameSessionButton.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int currentIndex = sessionTabbedPane.getSelectedIndex();
-				String currentTitle = sessionTabbedPane.getTitleAt(currentIndex);
-				String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Rename Current Session:", currentTitle);
-				if(sessionName != null && isSessionNameValid(sessionName)) {
-					if(doModify()) {
-						sessionTabbedPane.setTitleAt(currentIndex, sessionName);
-						sessionPanelMap.put(sessionName, sessionPanelMap.get(currentTitle));
-						sessionPanelMap.remove(currentTitle);
-						sessionPanelMap.get(sessionName).setSessionName(sessionName);
-					}
-				}
-			}
-		});
-		removeSessionButton.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(doModify()) {
-					int currentIndex = sessionTabbedPane.getSelectedIndex();
-					sessionPanelMap.remove(sessionTabbedPane.getTitleAt(currentIndex));
-					sessionTabbedPane.remove(currentIndex);
-					if(sessionTabbedPane.getTabCount() == 0) {
-						cloneSessionButton.setEnabled(false);
-						renameSessionButton.setEnabled(false);
-						removeSessionButton.setEnabled(false);
-					}
-				}
-			}
-		});
 		
+		saveSetupButton = new JButton("Save Setup");
+		loadSetupButton = new JButton("Load Setup");
+
+		createSessionButton.addActionListener(e -> {
+			String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session");
+			if (sessionName != null && isSessionNameValid(sessionName)) {
+				createSession(sessionName);
+			}
+		});
+
+		cloneSessionButton.addActionListener(e -> {
+			String newSessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of New Session");
+			if (newSessionName != null && isSessionNameValid(newSessionName)) {
+				int currentIndex = sessionTabbedPane.getSelectedIndex();
+				String currentSessionName = sessionTabbedPane.getTitleAt(currentIndex);
+				cloneSession(newSessionName, sessionPanelMap.get(currentSessionName));
+			}
+		});
+
+		renameSessionButton.addActionListener(e -> {
+			int currentIndex = sessionTabbedPane.getSelectedIndex();
+			String currentTitle = sessionTabbedPane.getTitleAt(currentIndex);
+			String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Rename Current Session:",
+					currentTitle);
+			if (sessionName != null && isSessionNameValid(sessionName)) {
+				if (doModify()) {
+					sessionTabbedPane.setTitleAt(currentIndex, sessionName);
+					sessionPanelMap.put(sessionName, sessionPanelMap.get(currentTitle));
+					sessionPanelMap.remove(currentTitle);
+					sessionPanelMap.get(sessionName).setSessionName(sessionName);
+				}
+			}
+		});
+
+		removeSessionButton.addActionListener(e -> {
+			if (doModify()) {
+				int currentIndex = sessionTabbedPane.getSelectedIndex();
+				sessionPanelMap.remove(sessionTabbedPane.getTitleAt(currentIndex));
+				sessionTabbedPane.remove(currentIndex);
+				if (sessionTabbedPane.getTabCount() == 0) {
+					cloneSessionButton.setEnabled(false);
+					renameSessionButton.setEnabled(false);
+					removeSessionButton.setEnabled(false);
+				}
+			}
+		});
+
+		saveSetupButton.addActionListener(e -> saveSetup());
+
+		loadSetupButton.addActionListener(e -> loadSetup());
+
 		sessionButtonPanel.add(createSessionButton);
 		sessionButtonPanel.add(cloneSessionButton);
 		sessionButtonPanel.add(renameSessionButton);
 		sessionButtonPanel.add(removeSessionButton);
-			
+		sessionButtonPanel.add(new JLabel(" "));
+		sessionButtonPanel.add(saveSetupButton);
+		sessionButtonPanel.add(loadSetupButton);
+
 		filterPanel = new JPanel();
 		filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
 
 		JCheckBox onlyInScopeButton = new JCheckBox("Only In Scope");
 		onlyInScopeButton.setSelected(true);
-		addFilter(new InScopeFilter(filterPanel.getComponentCount(), "Only In Scope requests are analyzed"), onlyInScopeButton, "");		
+		addFilter(new InScopeFilter(filterPanel.getComponentCount(), "Only In Scope requests are analyzed"),
+				onlyInScopeButton, "");
 		filterPanel.add(onlyInScopeButton);
 
 		JCheckBox onlyProxyButton = new JCheckBox("Only Proxy Traffic");
 		onlyProxyButton.setSelected(true);
-		addFilter(new OnlyProxyFilter(filterPanel.getComponentCount(), "Analyze only proxy traffic. Unselect to analyze repeater and proxy traffic."), onlyProxyButton, "");		
+		addFilter(
+				new OnlyProxyFilter(filterPanel.getComponentCount(),
+						"Analyze only proxy traffic. Unselect to analyze repeater and proxy traffic."),
+				onlyProxyButton, "");
 		filterPanel.add(onlyProxyButton);
 
 		JCheckBox fileTypeFilterButton = new JCheckBox("Exclude Filetypes");
 		fileTypeFilterButton.setSelected(true);
-		addFilter(new FileTypeFilter(filterPanel.getComponentCount(), "Excludes every specified filetype."), fileTypeFilterButton, "Enter filetypes to filter. Comma separated.\r\neg: jpg, png, js");
+		addFilter(new FileTypeFilter(filterPanel.getComponentCount(), "Excludes every specified filetype."),
+				fileTypeFilterButton, "Enter filetypes to filter. Comma separated.\r\neg: jpg, png, js");
 		filterPanel.add(fileTypeFilterButton);
 
 		JCheckBox methodFilterButton = new JCheckBox("Exclude HTTP Methods");
 		methodFilterButton.setSelected(true);
-		addFilter(new MethodFilter(filterPanel.getComponentCount(), "Excludes every specified http method."), methodFilterButton, "Enter HTTP methods to filter. Comma separated.\r\neg: OPTIONS, TRACE");
+		addFilter(new MethodFilter(filterPanel.getComponentCount(), "Excludes every specified http method."),
+				methodFilterButton, "Enter HTTP methods to filter. Comma separated.\r\neg: OPTIONS, TRACE");
 		filterPanel.add(methodFilterButton);
 
 		JCheckBox statusCodeFilterButton = new JCheckBox("Exclude Status Codes");
 		statusCodeFilterButton.setSelected(true);
-		addFilter(new StatusCodeFilter(filterPanel.getComponentCount(), "Excludes every specified status code."), statusCodeFilterButton, "Enter status codes to filter. Comma separated.\r\neg: 204, 304");
+		addFilter(new StatusCodeFilter(filterPanel.getComponentCount(), "Excludes every specified status code."),
+				statusCodeFilterButton, "Enter status codes to filter. Comma separated.\r\neg: 204, 304");
 		filterPanel.add(statusCodeFilterButton);
-		
+
 		JCheckBox pathFilterButton = new JCheckBox("Exclude Paths");
 		pathFilterButton.setSelected(false);
-		addFilter(new PathFilter(filterPanel.getComponentCount(), "Excludes every path that contains one of the specified string literals."), pathFilterButton, "Enter String literals for paths to be excluded. Comma separated.\r\neg: log, libraries");
+		addFilter(
+				new PathFilter(filterPanel.getComponentCount(),
+						"Excludes every path that contains one of the specified string literals."),
+				pathFilterButton,
+				"Enter String literals for paths to be excluded. Comma separated.\r\neg: log, libraries");
 		filterPanel.add(pathFilterButton);
-		
+
 		JCheckBox queryFilterButton = new JCheckBox("Exclude Queries / Params");
 		queryFilterButton.setSelected(false);
-		addFilter(new QueryFilter(filterPanel.getComponentCount(), "Excludes every GET query that contains one of the specified string literals."), queryFilterButton, "Enter string literals for queries to be excluded. Comma separated.\r\neg: log, core");
+		addFilter(
+				new QueryFilter(filterPanel.getComponentCount(),
+						"Excludes every GET query that contains one of the specified string literals."),
+				queryFilterButton,
+				"Enter string literals for queries to be excluded. Comma separated.\r\neg: log, core");
 		filterPanel.add(queryFilterButton);
 
 		startStopButton.setText(ANALYZER_STOPPED_TEXT);
 		startStopButton.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				startStopButtonPressed();
+				try {
+					startStopButtonPressed();
+				} catch (Exception ex) {
+					ex.printStackTrace(new PrintWriter(BurpExtender.callbacks.getStdout()));
+				}
+
 			}
 		});
-		
+
 		pauseButton.setText(PAUSE_TEXT);
 		pauseButton.setEnabled(false);
 		pauseButton.addActionListener(e -> pauseButtonPressed());
-		
+
+		dropOriginalButton.addActionListener(e -> dropOriginalButtonPressed());
+		dropOriginalButton.setEnabled(false);
+
 		setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.gridx = 0;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.PAGE_START;
 		c.insets = new Insets(40, 20, 20, 20);
-		
+
 		add(sessionButtonPanel, c);
 		c.gridx = 1;
 		c.insets = new Insets(5, 20, 20, 20);
@@ -194,119 +231,203 @@ public class ConfigurationPanel extends JPanel {
 		c.insets = new Insets(40, 20, 20, 40);
 		c.gridx = 2;
 		add(filterPanel, c);
-		c.gridx = 3;
-		c.insets = new Insets(60, 0, 20, 0);
-		add(startStopButton, c);
-		c.gridx = 4;
-		add(pauseButton, c);
 		
+		JPanel startStopButtonPanel = new JPanel();
+		startStopButtonPanel.setLayout(new GridBagLayout());
+		GridBagConstraints c1 = new GridBagConstraints();
+		c1.anchor = GridBagConstraints.WEST;
+		c1.gridy = 0;
+		c1.gridx = 0;
+		startStopButtonPanel.add(startStopButton, c1);
+		c1.gridx = 1;
+		startStopButtonPanel.add(pauseButton, c1);
+		c1.gridy = 1;
+		c1.gridx = 0;
+		c1.gridwidth = 2;
+		c1.insets = new Insets(10, 0, 0, 0);
+		startStopButtonPanel.add(dropOriginalButton, c1);
+		
+		c.gridx = 3;
+		add(startStopButtonPanel, c);
+
 		try {
-			loadSetup(STORE_LAST_USED);
-		}
-		catch (Exception e) {
+			String storedData = BurpExtender.callbacks.loadExtensionSetting(STORE_LAST_USED);
+			loadSetup(storedData);
+		} catch (Exception e) {
 			sessionPanelMap.clear();
 			sessionTabbedPane.removeAll();
-			callbacks.printError("Can not restore saved Data. Error Message: " + e.getMessage());
+			BurpExtender.callbacks.printOutput("Can not restore saved Data. Error Message: " + e.getMessage());
 		}
 	}
-	
-	private boolean isSessionNameValid(String sessionName) {
-		if(sessionName != null && !sessionName.equals("") && !sessionPanelMap.containsKey(sessionName) && 
-				!sessionName.equals("Original")) {
-			return true;
+
+	private void saveSetup() {
+		JFileChooser chooser = new JFileChooser();
+		int status = chooser.showSaveDialog(this);
+		if (status == JFileChooser.APPROVE_OPTION) {
+			File file = chooser.getSelectedFile();
+			if (!file.getName().endsWith(".json")) {
+				String newFileName;
+				if (file.getName().lastIndexOf(".") != -1) {
+					int index = file.getAbsolutePath().lastIndexOf(".");
+					newFileName = file.getAbsolutePath().substring(0, index);
+				} else {
+					newFileName = file.getAbsolutePath();
+				}
+				newFileName = newFileName + ".json";
+				file = new File(newFileName);
+			}
+			try {
+				FileWriter writer = new FileWriter(file);
+				createSessionObjects(false);
+				writer.write(getSetupAsJsonString());
+				writer.close();
+				JOptionPane.showMessageDialog(this, "Successfully saved to\n" + file.getAbsolutePath());
+			} catch (Exception e) {
+				BurpExtender.callbacks.printError("Error. Can not write setup to JSON file. " + e.getMessage());
+				JOptionPane.showMessageDialog(this, "Error.\nCan not write setup to JSON file.");
+			}
 		}
-		else {
-			JOptionPane.showMessageDialog(this, "The entered Session Name is invalid", 
-					"Session Name Invalid", JOptionPane.WARNING_MESSAGE);
+	}
+
+	private void loadSetup() {
+		if(doModify()) {
+			JFileChooser chooser = new JFileChooser();
+			int status = chooser.showOpenDialog(this);
+			if (status == JFileChooser.APPROVE_OPTION) {
+				File selectedFile = chooser.getSelectedFile();
+				if(selectedFile != null) {
+					Scanner scanner;
+					String jsonString = null;
+					try {
+						scanner = new Scanner(selectedFile);
+						while (scanner.hasNextLine()) {
+							jsonString = scanner.nextLine();
+						}
+						scanner.close();
+						sessionTabbedPane.removeAll();
+						loadSetup(jsonString);
+						JOptionPane.showMessageDialog(this, "Setup successfully loaded");
+					} catch (Exception e) {
+						BurpExtender.callbacks.printError("Error. Can not load setup from JSON file. " + e.getMessage());
+						JOptionPane.showMessageDialog(this, "Error.\nCan not load setup from JSON file.");
+					}
+				}
+			}
+		}
+	}
+
+	private void dropOriginalButtonPressed() {
+		if (CurrentConfig.getCurrentConfig().isDropOriginal()) {
+			setDropOriginalRequest(false);
+		} else {
+			setDropOriginalRequest(true);
+		}
+	}
+
+	private void setDropOriginalRequest(boolean dropRequests) {
+		if (dropRequests) {
+			dropOriginalButton.setText(STOP_DROP_REQUEST_TEXT);
+			CurrentConfig.getCurrentConfig().setDropOriginal(true);
+		} else {
+			dropOriginalButton.setText(DROP_REQUEST_TEXT);
+			CurrentConfig.getCurrentConfig().setDropOriginal(false);
+		}
+	}
+
+	private boolean isSessionNameValid(String sessionName) {
+		if (sessionName != null && !sessionName.equals("") && !sessionPanelMap.containsKey(sessionName)
+				&& !sessionName.equals("Original")) {
+			return true;
+		} else {
+			JOptionPane.showMessageDialog(this, "The entered Session Name is invalid", "Session Name Invalid",
+					JOptionPane.WARNING_MESSAGE);
 			return false;
 		}
 	}
-	
+
 	private SessionPanel createSession(String sessionName) {
-		if(doModify()) {
-			SessionPanel sessionPanel = new SessionPanel(sessionName);
+		if (doModify()) {
+			SessionPanel sessionPanel = new SessionPanel(sessionName, scrollPane);
 			sessionTabbedPane.add(sessionName, sessionPanel);
-			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount()-1);
+			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 1);
 			sessionPanelMap.put(sessionName, sessionPanel);
 			cloneSessionButton.setEnabled(true);
 			renameSessionButton.setEnabled(true);
 			removeSessionButton.setEnabled(true);
 			return sessionPanel;
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
-	
+
 	private boolean cloneSession(String newSessionName, SessionPanel sessionPanelToClone) {
-		if(doModify()) {
-			SessionPanel sessionPanel = new SessionPanel(newSessionName);
+		if (doModify()) {
+			SessionPanel sessionPanel = new SessionPanel(newSessionName, scrollPane);
 			sessionPanel.setHeadersToReplaceText(sessionPanelToClone.getHeadersToReplaceText());
 			sessionPanel.setFilterRequestsWithSameHeader(sessionPanelToClone.isFilterRequestsWithSameHeader());
-			for(TokenPanel tokenPanel : sessionPanelToClone.getTokenPanelList()) {
+			for (TokenPanel tokenPanel : sessionPanelToClone.getTokenPanelList()) {
 				TokenPanel newTokenPanel = sessionPanel.addToken(tokenPanel.getTokenName());
 				newTokenPanel.setIsRemoveToken(tokenPanel.isRemoveToken());
-				if(tokenPanel.isAutoExtract()) {
+				if (tokenPanel.isAutoExtract()) {
 					newTokenPanel.setAutoExtractFieldName(tokenPanel.getAutoExtractFieldName());
 				}
-				if(tokenPanel.isStaticValue()) {
+				if (tokenPanel.isStaticValue()) {
 					newTokenPanel.setStaticTokenValue(tokenPanel.getStaticTokenValue());
 				}
-				if(tokenPanel.isFromToString()) {
+				if (tokenPanel.isFromToString()) {
 					newTokenPanel.setFromToString(tokenPanel.getGrepFromString(), tokenPanel.getGrepToString());
 				}
-				if(tokenPanel.isPromptForInput()) {
+				if (tokenPanel.isPromptForInput()) {
 					newTokenPanel.setPromptForInput();
 				}
 			}
 			sessionTabbedPane.add(newSessionName, sessionPanel);
-			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount()-1);
+			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 1);
 			sessionPanelMap.put(newSessionName, sessionPanel);
 			return true;
-		}
-		else {
+		} else {
 			return false;
 		}
 	}
-	
-	// Creates a new session if session name not already exists and set header to replace text
+
+	// Creates a new session if session name not already exists and set header to
+	// replace text
 	public SessionPanel createSession(String sessionName, String headerToReplace) {
-		if(!sessionPanelMap.containsKey(sessionName)) {
+		if (!sessionPanelMap.containsKey(sessionName)) {
 			SessionPanel sessionPanel = createSession(sessionName);
-			if(sessionPanel != null) {
+			if (sessionPanel != null) {
 				sessionPanel.setHeadersToReplaceText(headerToReplace);
 				return sessionPanel;
 			}
 		}
 		return null;
 	}
-	
+
 	private boolean doModify() {
-		if(config.getTableModel().getRowCount() > 0 && !sessionListChanged) {
-			int selection = JOptionPane.showConfirmDialog(this, "You are going to modify your session setup."
-					+ "\nTable data will be lost.", "Change Session Setup", JOptionPane.OK_CANCEL_OPTION);
-			if(selection == JOptionPane.YES_OPTION) {
+		if (config.getTableModel().getRowCount() > 0 && !sessionListChanged) {
+			int selection = JOptionPane.showConfirmDialog(this,
+					"You are going to modify your session setup." + "\nTable data will be lost.",
+					"Change Session Setup", JOptionPane.OK_CANCEL_OPTION);
+			if (selection == JOptionPane.YES_OPTION) {
 				sessionListChanged = true;
 				centerPanel.clearTable();
 				return true;
-			}
-			else {
+			} else {
 				return false;
 			}
-		}
-		else {
+		} else {
 			sessionListChanged = true;
 			return true;
 		}
 	}
-	
+
 	public SessionPanel getSessionPanelByName(String name) {
 		return sessionPanelMap.get(name);
 	}
-	
+
 	public void setSelectedSession(String sessionName) {
-		for(int i=0; i<sessionTabbedPane.getTabCount(); i++) {
-			if(sessionTabbedPane.getTitleAt(i).equals(sessionName)) {
+		for (int i = 0; i < sessionTabbedPane.getTabCount(); i++) {
+			if (sessionTabbedPane.getTitleAt(i).equals(sessionName)) {
 				sessionTabbedPane.setSelectedIndex(i);
 				break;
 			}
@@ -315,12 +436,12 @@ public class ConfigurationPanel extends JPanel {
 
 	public ArrayList<String> getSessionNames() {
 		ArrayList<String> sessionNames = new ArrayList<String>();
-		for(int i=0; i<sessionTabbedPane.getTabCount(); i++) {
+		for (int i = 0; i < sessionTabbedPane.getTabCount(); i++) {
 			sessionNames.add(sessionTabbedPane.getTitleAt(i));
 		}
 		return sessionNames;
 	}
-	
+
 	private void addFilter(RequestFilter filter, JCheckBox onOffButton, String inputDialogText) {
 		config.addRequestFilter(filter);
 		filter.registerOnOffButton(onOffButton);
@@ -329,8 +450,7 @@ public class ConfigurationPanel extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (onOffButton.isSelected() && filter.hasStringLiterals()) {
-					String[] inputArray = getInputArray(onOffButton,
-							inputDialogText,
+					String[] inputArray = getInputArray(onOffButton, inputDialogText,
 							getArrayAsString(filter.getFilterStringLiterals()));
 					if (inputArray != null) {
 						filter.setFilterStringLiterals(inputArray);
@@ -343,88 +463,69 @@ public class ConfigurationPanel extends JPanel {
 
 	private void setFilterToolTipText(RequestFilter filter) {
 		JCheckBox filterCheckBox = filter.getOnOffButton();
-		if(filterCheckBox != null) {
-			if(filter.hasStringLiterals()) {
-				filterCheckBox.setToolTipText("<html>" + filter.getDescription() + "<br>String literals: <em>" + getArrayAsString(filter.getFilterStringLiterals()) + "</em></html>");
-			}
-			else {
+		if (filterCheckBox != null) {
+			if (filter.hasStringLiterals()) {
+				filterCheckBox.setToolTipText("<html>" + filter.getDescription() + "<br>String literals: <em>"
+						+ getArrayAsString(filter.getFilterStringLiterals()) + "</em></html>");
+			} else {
 				filterCheckBox.setToolTipText(filter.getDescription());
 			}
 		}
 	}
-	
+
 	private void startStopButtonPressed() {
-		if(sessionPanelMap.size() == 0) {
+		if (sessionPanelMap.size() == 0) {
 			JOptionPane.showMessageDialog(this, "No Session Created");
-		}
-		else {
+		} else {
 			if (config.isRunning() || pauseButton.getText().equals(PLAY_TEXT)) {
-				for(String session : sessionPanelMap.keySet()) {
+				for (String session : sessionPanelMap.keySet()) {
 					sessionPanelMap.get(session).setStopped();
 				}
 				createSessionButton.setEnabled(true);
 				renameSessionButton.setEnabled(true);
 				removeSessionButton.setEnabled(true);
 				cloneSessionButton.setEnabled(true);
+				saveSetupButton.setEnabled(true);
+				loadSetupButton.setEnabled(true);
 				pauseButton.setText(PAUSE_TEXT);
 				pauseButton.setEnabled(false);
+				dropOriginalButton.setEnabled(false);
+				setDropOriginalRequest(false);
 				config.setRunning(false);
 				startStopButton.setText(ANALYZER_STOPPED_TEXT);
 			} else {
-				//Validate all defined Tokens first
+				// Validate all defined Tokens first
 				boolean success = true;
-				for(String session : sessionPanelMap.keySet()) {
+				for (String session : sessionPanelMap.keySet()) {
 					SessionPanel sessionPanel = sessionPanelMap.get(session);
-					if(!sessionPanel.tokensValid() || !sessionPanel.isHeaderValid()) {
+					if (!sessionPanel.tokensValid() || !sessionPanel.isHeaderValid() || !sessionPanel.isScopeValid()) {
 						success = false;
 						setSelectedSession(session);
 						break;
 					}
 				}
-				if(success) {
-					if(sessionListChanged) {
-						config.clearSessionListAndTableModel();
+				if (success) {
+					createSessionObjects(true);
+					// Auto Store
+					try {
+						storeSetup(STORE_LAST_USED);
+					} catch (Exception e) {
+						BurpExtender.callbacks.printOutput("Can not store setup. Error Message: " + e.getMessage());
 					}
-					for(String session : sessionPanelMap.keySet()) {
-						SessionPanel sessionPanel = sessionPanelMap.get(session);
-						ArrayList<Token> tokenList = new ArrayList<Token>();
-						for(TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-							Token token = new Token(tokenPanel.getTokenName(), tokenPanel.getStaticTokenValue(), tokenPanel.getAutoExtractFieldName(), 
-									tokenPanel.getGrepFromString(), tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(), tokenPanel.isAutoExtract(), 
-									tokenPanel.isStaticValue(), tokenPanel.isFromToString(), tokenPanel.isPromptForInput());
-							tokenList.add(token);
-						}
-						Session newSession = null;
-						if(sessionListChanged) {
-							newSession = new Session(session, sessionPanel.getHeadersToReplaceText(), sessionPanel.isFilterRequestsWithSameHeader(),
-									tokenList, sessionPanel.getStatusPanel());
-							config.addSession(newSession);
-						}
-						else {
-							newSession = config.getSessionByName(session);
-							newSession.setHeadersToReplace(sessionPanel.getHeadersToReplaceText());
-							newSession.setFilterRequestsWithSameHeader(sessionPanel.isFilterRequestsWithSameHeader());
-							newSession.setTokens(tokenList);
-						}
-						sessionPanel.setRunning();
-						sessionPanel.getStatusPanel().init(newSession);
-						try {
-							storeSetup(STORE_LAST_USED);
-						}
-						catch (Exception e) {
-							callbacks.printError("Can not store setup. Error Message: " + e.getMessage());
-						}
-					}			
-					for(RequestFilter filter : config.getRequestFilterList()) {
+					
+					for (RequestFilter filter : config.getRequestFilterList()) {
 						filter.resetFilteredAmount();
 					}
-			
+
 					centerPanel.initCenterPanel(sessionListChanged);
 					createSessionButton.setEnabled(false);
 					cloneSessionButton.setEnabled(false);
 					renameSessionButton.setEnabled(false);
 					removeSessionButton.setEnabled(false);
+					saveSetupButton.setEnabled(false);
+					loadSetupButton.setEnabled(false);
 					pauseButton.setEnabled(true);
+					dropOriginalButton.setEnabled(true);
 					config.setRunning(true);
 					startStopButton.setText(ANALYZER_STARTED_TEXT);
 					sessionListChanged = false;
@@ -433,105 +534,171 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 	
+	private void createSessionObjects(boolean setRunning) {
+		if(sessionPanelMap.size() != config.getSessions().size()) {
+			sessionListChanged = true;
+		}
+		for (String session : sessionPanelMap.keySet()) {
+			if(config.getSessionByName(session) == null) {
+				sessionListChanged = true;
+				break;
+			}
+		}
+		if (sessionListChanged) {
+			config.clearSessionList();
+		}
+		for (String session : sessionPanelMap.keySet()) {
+			SessionPanel sessionPanel = sessionPanelMap.get(session);
+			ArrayList<Token> tokenList = new ArrayList<Token>();
+			for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
+				Token token = new Token(tokenPanel.getTokenName(), tokenPanel.getStaticTokenValue(),
+						tokenPanel.getAutoExtractFieldName(), tokenPanel.getGrepFromString(),
+						tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(),
+						tokenPanel.isAutoExtract(), tokenPanel.isStaticValue(), tokenPanel.isFromToString(),
+						tokenPanel.isPromptForInput());
+				tokenList.add(token);
+			}
+			Session newSession = null;
+			if (sessionListChanged) {
+				newSession = new Session(session, sessionPanel.getHeadersToReplaceText(), sessionPanel.isRemoveHeaders(),
+						sessionPanel.isFilterRequestsWithSameHeader(), sessionPanel.isRestrictToScope(),
+						sessionPanel.getScopeUrl(), tokenList, sessionPanel.getStatusPanel());
+				config.addSession(newSession);
+			} else {
+				newSession = config.getSessionByName(session);
+				newSession.setHeadersToReplace(sessionPanel.getHeadersToReplaceText());
+				newSession.setRemoveHeaders(sessionPanel.isRemoveHeaders());
+				newSession.setFilterRequestsWithSameHeader(sessionPanel.isFilterRequestsWithSameHeader());
+				newSession.setRestrictToScope(sessionPanel.isRestrictToScope());
+				newSession.setScopeUrl(sessionPanel.getScopeUrl());
+				for (Token newToken : tokenList) {
+					for (Token oldToken : newSession.getTokens()) {
+						if (newToken.getName().equals(oldToken.getName())) {
+							if(newToken.isAutoExtract() && oldToken.isAutoExtract() ||
+								newToken.isFromToString() && oldToken.isFromToString()) {
+									newToken.setValue(oldToken.getValue());
+									newToken.setRequest(oldToken.getRequest());
+								}
+						}
+					}
+				}
+				newSession.setTokens(tokenList);
+			}
+			if(setRunning) {
+				sessionPanel.setRunning();
+				sessionPanel.getStatusPanel().init(newSession);
+			}
+		}
+	}
+
 	private void storeSetup(String setupName) {
-		String storedSetupNames = callbacks.loadExtensionSetting(STORE_KEY_SETUP_NAMES);
+		String storedSetupNames = BurpExtender.callbacks.loadExtensionSetting(STORE_KEY_SETUP_NAMES);
 		boolean alreadySaved = false;
 		JsonArray storedSetupNameArray;
-		if(storedSetupNames != null) {
+		if (storedSetupNames != null) {
 			storedSetupNameArray = JsonParser.parseString(storedSetupNames).getAsJsonArray();
-			for(JsonElement storedSetupName : storedSetupNameArray) {
-				if(storedSetupName.getAsString().equals(setupName)) {
+			for (JsonElement storedSetupName : storedSetupNameArray) {
+				if (storedSetupName.getAsString().equals(setupName)) {
 					alreadySaved = true;
 					break;
 				}
 			}
-		}
-		else {
+		} else {
 			storedSetupNameArray = new JsonArray();
 		}
-		if(!alreadySaved) {
+		if (!alreadySaved) {
 			storedSetupNameArray.add(setupName);
-			callbacks.saveExtensionSetting(STORE_KEY_SETUP_NAMES, storedSetupNameArray.toString());
-		}
-		
+			BurpExtender.callbacks.saveExtensionSetting(STORE_KEY_SETUP_NAMES, storedSetupNameArray.toString());
+		}	
+		BurpExtender.callbacks.saveExtensionSetting(setupName, getSetupAsJsonString());
+	}
+	
+	private String getSetupAsJsonString() {
 		JsonArray sessionArray = new JsonArray();
-		for(Session session : config.getSessions()) {
-			// Save Current Session Setup. No way to save extension settings on project level
+		for (Session session : config.getSessions()) {
+			// Save Current Session Setup. No way to save extension settings on project
+			// level
 			Gson gson = new GsonBuilder().setExclusionStrategies(session.getExclusionStrategy()).create();
-			String sessionJsonAsString = gson.toJson(session);						
+			String sessionJsonAsString = gson.toJson(session);
 			JsonObject sessionElement = JsonParser.parseString(sessionJsonAsString).getAsJsonObject();
-			sessionElement.addProperty("panelPosition", Integer.toString(sessionTabbedPane.indexOfTab(session.getName())));
+			sessionElement.addProperty("panelPosition",	sessionTabbedPane.indexOfTab(session.getName()));
 			sessionElement.addProperty("name", session.getName());
 			sessionArray.add(sessionElement);
 		}
-		
+
 		JsonObject sessionsObject = new JsonObject();
 		sessionsObject.add("sessions", sessionArray);
-		
+
 		JsonArray filterArray = new JsonArray();
-		for(RequestFilter filter : config.getRequestFilterList()) {
+		for (RequestFilter filter : config.getRequestFilterList()) {
 			JsonObject filterElement = JsonParser.parseString(filter.toJson()).getAsJsonObject();
 			filterArray.add(filterElement);
 		}
 		sessionsObject.add("filters", filterArray);
-		callbacks.saveExtensionSetting(setupName, sessionsObject.toString());
+		return sessionsObject.toString();
 	}
-	
-	private void loadSetup(String setupName) {
-		String storedData = callbacks.loadExtensionSetting(setupName);
+
+	private void loadSetup(String jsonString) {
 		// Load Sessions
-		JsonArray storedSessionsArray = JsonParser.parseString(storedData).getAsJsonObject().get("sessions").getAsJsonArray();
+		JsonArray storedSessionsArray = JsonParser.parseString(jsonString).getAsJsonObject().get("sessions")
+				.getAsJsonArray();
 		SessionPanel[] sessionPanels = new SessionPanel[storedSessionsArray.size()];
-		for(JsonElement sessionEl : storedSessionsArray) {
+		for (JsonElement sessionEl : storedSessionsArray) {
 			JsonObject sessionObject = sessionEl.getAsJsonObject();
 			String sessionName = sessionObject.get("name").getAsString();
-			SessionPanel sessionPanel = new SessionPanel(sessionName);
+			SessionPanel sessionPanel = new SessionPanel(sessionName, scrollPane);
 			sessionPanel.setHeadersToReplaceText(sessionObject.get("headersToReplace").getAsString());
-			sessionPanel.setFilterRequestsWithSameHeader(sessionObject.get("filterRequestsWithSameHeader").getAsBoolean());
+			sessionPanel
+					.setFilterRequestsWithSameHeader(sessionObject.get("filterRequestsWithSameHeader").getAsBoolean());
+			if (sessionObject.get("restrictToScope") != null) {
+				sessionPanel.setRestrictToScope(sessionObject.get("restrictToScope").getAsBoolean());
+			}
+			if (sessionObject.get("scopeUrl") != null) {
+				sessionPanel.setRestrictToScopeText(sessionObject.get("scopeUrl").getAsString());
+			}
 			JsonArray tokenArray = sessionObject.get("tokens").getAsJsonArray();
-			for(JsonElement tokenElement : tokenArray) {
+			for (JsonElement tokenElement : tokenArray) {
 				JsonObject tokenObject = tokenElement.getAsJsonObject();
-				//create new token panel for each token
+				// create new token panel for each token
 				TokenPanel tokenPanel = sessionPanel.addToken(tokenObject.get("name").getAsString());
 				tokenPanel.setIsRemoveToken(tokenObject.get("remove").getAsBoolean());
-				tokenPanel.setTokenValueComboBox(tokenObject.get("autoExtract").getAsBoolean(), 
+				tokenPanel.setTokenValueComboBox(tokenObject.get("autoExtract").getAsBoolean(),
 						tokenObject.get("staticValue").getAsBoolean(), tokenObject.get("fromToString").getAsBoolean(),
 						tokenObject.get("promptForInput").getAsBoolean());
-				if(tokenObject.get("extractName") != null) {
+				if (tokenObject.get("extractName") != null) {
 					tokenPanel.setGenericTextFieldText(tokenObject.get("extractName").getAsString());
-				}
-				else if(tokenObject.get("grepFromString") != null && tokenObject.get("grepToString") != null) {
-					tokenPanel.setGenericTextFieldText("from [" + tokenObject.get("grepFromString").getAsString() + "] to [" +
-				tokenObject.get("grepToString").getAsString() + "]");
-				}
-				else if(tokenObject.get("value") != null) {
+				} else if (tokenObject.get("grepFromString") != null && tokenObject.get("grepToString") != null) {
+					tokenPanel.setGenericTextFieldText("from [" + tokenObject.get("grepFromString").getAsString()
+							+ "] to [" + tokenObject.get("grepToString").getAsString() + "]");
+				} else if (tokenObject.get("value") != null) {
 					tokenPanel.setGenericTextFieldText(tokenObject.get("value").getAsString());
 				}
 			}
 			sessionPanels[sessionObject.get("panelPosition").getAsInt()] = sessionPanel;
 		}
-		for(SessionPanel sessionPanel : sessionPanels) {
+		for (SessionPanel sessionPanel : sessionPanels) {
 			sessionTabbedPane.add(sessionPanel.getSessionName(), sessionPanel);
-			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount()-1);
+			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 1);
 			sessionPanelMap.put(sessionPanel.getSessionName(), sessionPanel);
 			cloneSessionButton.setEnabled(true);
 			renameSessionButton.setEnabled(true);
 			removeSessionButton.setEnabled(true);
 		}
-		if(sessionTabbedPane.getSelectedIndex()>0) {
+		if (sessionTabbedPane.getSelectedIndex() > 0) {
 			sessionTabbedPane.setSelectedIndex(0);
 		}
-		
-		//Load Filters
-		JsonArray storedFiltersArray = JsonParser.parseString(storedData).getAsJsonObject().get("filters").getAsJsonArray();
-		for(JsonElement filterEl : storedFiltersArray) {
+
+		// Load Filters
+		JsonArray storedFiltersArray = JsonParser.parseString(jsonString).getAsJsonObject().get("filters")
+				.getAsJsonArray();
+		for (JsonElement filterEl : storedFiltersArray) {
 			JsonObject filterObject = filterEl.getAsJsonObject();
 			RequestFilter requestFilter = config.getRequestFilterAt(filterObject.get("filterIndex").getAsInt());
 			requestFilter.setIsSelected(filterObject.get("isSelected").getAsBoolean());
-			if(filterObject.get("stringLiterals") != null) {
+			if (filterObject.get("stringLiterals") != null) {
 				JsonArray tokenArray = filterObject.get("stringLiterals").getAsJsonArray();
 				String[] stringLiterals = new String[tokenArray.size()];
-				for(int i=0; i< tokenArray.size(); i++) {
+				for (int i = 0; i < tokenArray.size(); i++) {
 					stringLiterals[i] = tokenArray.get(i).getAsString();
 				}
 				requestFilter.setFilterStringLiterals(stringLiterals);
@@ -539,15 +706,14 @@ public class ConfigurationPanel extends JPanel {
 			}
 		}
 	}
-	
+
 	private void pauseButtonPressed() {
 		if (config.isRunning()) {
 			config.setRunning(false);
 			pauseButton.setText(PLAY_TEXT);
 			startStopButton.setText(ANALYZER_PAUSED_TEXT);
 			pauseButton.setToolTipText("Currently Paused");
-		}
-		else {
+		} else {
 			config.setRunning(true);
 			pauseButton.setText(PAUSE_TEXT);
 			startStopButton.setText(ANALYZER_STARTED_TEXT);

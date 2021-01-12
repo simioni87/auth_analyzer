@@ -8,114 +8,143 @@ package com.protect7.authanalyzer.controller;
  * @author Simon Reinhart
  */
 
-import java.util.ArrayList;
+import java.net.URL;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import javax.swing.JOptionPane;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
+import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.entities.TokenPriority;
+import com.protect7.authanalyzer.entities.TokenRequest;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import burp.IBurpExtenderCallbacks;
-import burp.ICookie;
+import com.protect7.authanalyzer.util.ExtractionHelper;
+import com.protect7.authanalyzer.util.RequestModifHelper;
+import burp.BurpExtender;
 import burp.IHttpRequestResponse;
-import burp.IParameter;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public class RequestController {
 
-	private final IBurpExtenderCallbacks callbacks;
-	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
-
-	public RequestController(IBurpExtenderCallbacks callbacks) {
-		this.callbacks = callbacks;
-	}
-
-	public synchronized void analyze(IHttpRequestResponse originalRequestResponse) {
+	public void analyze(IHttpRequestResponse originalRequestResponse) {
+		
 		// Fail-Safe - Check if messageInfo can be processed
-		if (originalRequestResponse == null || originalRequestResponse.getRequest() == null
-				|| originalRequestResponse.getResponse() == null) {
-			callbacks.printError("Cannot analyze request with null values.");
+		if (originalRequestResponse == null || originalRequestResponse.getRequest() == null) {
+			BurpExtender.callbacks.printError("Cannot analyze request with null values.");
 		} else {
-			int mapId = config.getNextMapId();
-			boolean success = true;
-			IRequestInfo originalRequestInfo = callbacks.getHelpers().analyzeRequest(originalRequestResponse);
-			for (Session session : config.getSessions()) {
-				if (session.isFilterRequestsWithSameHeader()
+			int mapId = CurrentConfig.getCurrentConfig().getNextMapId();
+			IRequestInfo originalRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(originalRequestResponse);
+			for (Session session : CurrentConfig.getCurrentConfig().getSessions()) {
+				boolean isFiltered = false;
+				if(!session.getStatusPanel().isRunning()) {
+					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+							null, BypassConstants.NA, "Filtered due to paused session.");
+					session.putRequestResponse(mapId, analyzerRequestResponse);
+					session.getStatusPanel().incrementAmountOfFitleredRequests();
+					isFiltered = true;
+				}
+				else if (session.isFilterRequestsWithSameHeader()
 						&& isSameHeader(originalRequestInfo.getHeaders(), session)) {
-					// No other session will be analyzed if one session has same header. The
-					// assumption is that the given request was send
-					// automatically by the application the user was navigating through. We do not
-					// want to
-					// analyze such a request.
-					success = false;
-					break;
-				} else {
+					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+							null, BypassConstants.NA, "Filtered due to same header.");
+					session.putRequestResponse(mapId, analyzerRequestResponse);
+					session.getStatusPanel().incrementAmountOfFitleredRequests();
+					isFiltered = true;
+				} 
+				else if(session.isRestrictToScope() && !scopeMatches(originalRequestInfo.getUrl(), session)) {
+					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+							null, BypassConstants.NA, "Filtered due to scope restriction.");
+					session.putRequestResponse(mapId, analyzerRequestResponse);
+					session.getStatusPanel().incrementAmountOfFitleredRequests();
+					isFiltered = true;
+				} 
+				if(!isFiltered) {
+				
 					// Handle Session
-					byte[] modifiedRequest = originalRequestResponse.getRequest();
-					for (Token token : session.getTokens()) {
-						if (token.getValue() != null || token.isRemove() || token.isPromptForInput()) {
-							modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, token);
-						}
-					}
+					TokenPriority tokenPriority = new TokenPriority();
+					byte[] modifiedRequest = RequestModifHelper.getModifiedRequest(originalRequestResponse.getRequest(), session, tokenPriority);
 					// Analyze modifiedRequest
-					IRequestInfo modifiedRequestInfo = callbacks.getHelpers().analyzeRequest(modifiedRequest);
+					IRequestInfo modifiedRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(modifiedRequest);
 					byte[] modifiedMessageBody = Arrays.copyOfRange(modifiedRequest,
 							modifiedRequestInfo.getBodyOffset(), modifiedRequest.length);
 
-					List<String> modifiedHeaders = getModifiedHeaders(modifiedRequestInfo.getHeaders(), session);
-
-					byte[] message = callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody);
+					List<String> modifiedHeaders = RequestModifHelper.getModifiedHeaders(modifiedRequestInfo.getHeaders(), session);
+					byte[] message = BurpExtender.callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody);
 
 					// Perform modified request
-					IHttpRequestResponse sessionRequestResponse = callbacks
+					IHttpRequestResponse sessionRequestResponse = BurpExtender.callbacks
 							.makeHttpRequest(originalRequestResponse.getHttpService(), message);
-
-					IResponseInfo sessionResponseInfo = callbacks.getHelpers()
+					
+					IResponseInfo sessionResponseInfo = BurpExtender.callbacks.getHelpers()
 							.analyzeResponse(sessionRequestResponse.getResponse());
 					// Analyze Response of modified Request
 					if (sessionRequestResponse.getRequest() != null && sessionRequestResponse.getResponse() != null) {
 						// Extract Token Values if applicable
 						for (Token token : session.getTokens()) {
+							boolean success = false;
 							if (token.isAutoExtract()) {
-								extractCurrentTokenValue(sessionRequestResponse.getResponse(), sessionResponseInfo,
-										token);
-								session.getStatusPanel().updateTokenStatus(token);
+								success = ExtractionHelper.extractCurrentTokenValue(sessionRequestResponse.getResponse(), sessionResponseInfo, token);
 							}
 							if (token.isFromToString()) {
-								extractTokenWithFromToString(sessionRequestResponse.getResponse(), token);
+								success = ExtractionHelper.extractTokenWithFromToString(sessionRequestResponse.getResponse(), token);
+							}
+							if(success) {
 								session.getStatusPanel().updateTokenStatus(token);
+								// Token value successfully extracted. Set TokenRequestResponse for renew feature.
+								if(token.getRequest() == null || token.getRequest().getPriority() <= tokenPriority.getPriority()) {
+									token.setRequest(new TokenRequest(mapId, sessionRequestResponse.getRequest(), 
+											sessionRequestResponse.getHttpService(), tokenPriority.getPriority()));
+								}
 							}
 						}
-						IResponseInfo originalResponseInfo = callbacks.getHelpers()
-								.analyzeResponse(originalRequestResponse.getResponse());
-						BypassConstants bypassConstant = analyzeResponse(originalRequestResponse.getResponse(),
-								sessionRequestResponse.getResponse(), originalResponseInfo, sessionResponseInfo);
-						AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-								sessionRequestResponse, bypassConstant);
-						session.putRequestResponse(mapId, analyzerRequestResponse);
+						if(originalRequestResponse.getResponse() != null) {
+							IResponseInfo originalResponseInfo = BurpExtender.callbacks.getHelpers()
+									.analyzeResponse(originalRequestResponse.getResponse());
+							BypassConstants bypassConstant = analyzeResponse(originalRequestResponse.getResponse(),
+									sessionRequestResponse.getResponse(), originalResponseInfo, sessionResponseInfo);
+							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+									sessionRequestResponse, bypassConstant, null);
+							session.putRequestResponse(mapId, analyzerRequestResponse);
+						}
+						else {
+							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+									sessionRequestResponse, BypassConstants.NA, null);
+							session.putRequestResponse(mapId, analyzerRequestResponse);
+						}
 					} else {
-						// Fail-Safe
-						success = false;
-						callbacks.printError("Modified Request / Response has null value");
-						break;
+						AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
+								null, BypassConstants.NA, "Session Request / Response is null. Probably no response received from server.");
+						session.putRequestResponse(mapId, analyzerRequestResponse);
 					}
 				}
 			}
-			if (success) {
-				config.getTableModel().putNewRequestResponse(mapId, originalRequestResponse);
+			String url = "";
+			if(originalRequestInfo.getUrl().getQuery() == null) {
+				url = originalRequestInfo.getUrl().getPath();
+			}
+			else {
+				url = originalRequestInfo.getUrl().getPath() + "?" + originalRequestInfo.getUrl().getQuery();
+			}
+			String infoText = null;
+			if(originalRequestResponse.getResponse() == null) {
+				infoText = "Request Dropped. No Response to show.";
+			}
+			OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse, originalRequestInfo.getMethod(), url, infoText);
+			CurrentConfig.getCurrentConfig().getTableModel().addNewRequestResponse(requestResponse);
+		}
+	}
+	
+	private boolean scopeMatches(URL url, Session session) {
+		URL scopeUrl = session.getScopeUrl();
+		if(scopeUrl != null) {
+			if(url.getHost().equals(scopeUrl.getHost()) && url.getProtocol().equals(scopeUrl.getProtocol()) &&
+					(url.getPath().equals(scopeUrl.getPath()) || scopeUrl.getPath().equals("") || scopeUrl.getPath().equals("/"))) {
+				return true;
 			}
 		}
+		return false;
 	}
 
 	public boolean isSameHeader(List<String> headers, Session session) {
@@ -127,280 +156,11 @@ public class RequestController {
 			}
 		}
 		if (requestContainsHeader) {
-			// Update Session Panel
-			session.getStatusPanel().incrementAmountOfFitleredRequests();
 			return true;
 		}
 		return false;
 	}
 
-	// need content-length, header as string
-	public List<String> getModifiedHeaders(List<String> headers, Session session) {
-		for (String headerToReplace : getHeaderToReplaceList(session)) {
-			String trimmedHeaderToReplace = headerToReplace.trim();
-			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
-			if (headerKeyValuePair.length > 1) {
-				String headerKey = headerKeyValuePair[0].trim();
-				boolean headerReplaced = false;
-				for (int i = 0; i < headers.size(); i++) {
-					if (headers.get(i).startsWith(headerKey)) {
-						headers.set(i, trimmedHeaderToReplace);
-						headerReplaced = true;
-						break;
-					}
-				}
-				// Set new header if it not occurs
-				if (!headerReplaced) {
-					headers.add(trimmedHeaderToReplace);
-				}
-			}
-		}
-		return headers;
-	}
-
-	private ArrayList<String> getHeaderToReplaceList(Session session) {
-		ArrayList<String> headerToReplaceList = new ArrayList<String>();
-		String[] headersToReplace = session.getHeadersToReplace().replace("\r", "").split("\n");
-		for (String headerToReplace : headersToReplace) {
-			String trimmedHeaderToReplace = headerToReplace.trim();
-			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
-			if (headerKeyValuePair.length > 1) {
-				boolean containsToken = false;
-				for (Token token : session.getTokens()) {
-					if (trimmedHeaderToReplace.contains(token.getHeaderInsertionPointNameStart())) {
-						int startIndex = trimmedHeaderToReplace.indexOf(token.getHeaderInsertionPointNameStart());
-						int endIndex = trimmedHeaderToReplace.indexOf("]§", startIndex) + 2;
-						if (startIndex != -1 && endIndex != -1) {
-							containsToken = true;
-							if (token.getValue() != null) {
-								String modifiedHeader = trimmedHeaderToReplace.substring(0, startIndex)
-										+ token.getValue() + trimmedHeaderToReplace.substring(endIndex);
-								headerToReplaceList.add(modifiedHeader);
-							} else {
-								String defaultValue = trimmedHeaderToReplace.substring(
-										startIndex + token.getHeaderInsertionPointNameStart().length() + 1,
-										endIndex - 2);
-								String modifiedHeader = trimmedHeaderToReplace.substring(0, startIndex) + defaultValue
-										+ trimmedHeaderToReplace.substring(endIndex);
-								headerToReplaceList.add(modifiedHeader);
-							}
-						}
-					}
-				}
-				if (!containsToken) {
-					headerToReplaceList.add(trimmedHeaderToReplace);
-				}
-			}
-		}
-		return headerToReplaceList;
-	}
-
-	public byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token) {
-		byte[] modifiedRequest = request;
-		for (IParameter parameter : originalRequestInfo.getParameters()) {
-			if (parameter.getName().equals(token.getName())) {
-				String paramLocationText = null;
-				// Helper can only handle URL, COOKIE and BODY Parameters
-				if (parameter.getType() == IParameter.PARAM_URL) {
-					paramLocationText = "URL";
-				}
-				if (parameter.getType() == IParameter.PARAM_COOKIE) {
-					paramLocationText = "Cookie";
-				}
-				if (parameter.getType() == IParameter.PARAM_BODY) {
-					paramLocationText = "Body";
-				}
-				// Handle JSON as well (self implemented)
-				if (parameter.getType() == IParameter.PARAM_JSON) {
-					paramLocationText = "Json";
-				}
-				if (paramLocationText != null) {
-					if (token.isPromptForInput()) {
-						String paramValue = JOptionPane.showInputDialog(session.getStatusPanel(),
-								"<html><strong>Auth Analyzer</strong><br>" + "Enter Parameter Value<br>Session: "
-										+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
-										+ "Parameter Location: " + paramLocationText + "<br></html>");
-						if (paramValue != null) {
-							token.setValue(paramValue);
-							session.getStatusPanel().updateTokenStatus(token);
-						} else {
-							token.setValue("");
-						}
-					}
-					if (token.isRemove()) {
-						if (parameter.getType() == IParameter.PARAM_JSON) {
-							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
-						} else {
-							modifiedRequest = callbacks.getHelpers().removeParameter(modifiedRequest, parameter);
-						}
-					} else if (token.getValue() != null) {
-						if (parameter.getType() == IParameter.PARAM_JSON) {
-							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
-						} else {
-							IParameter modifiedParameter = callbacks.getHelpers().buildParameter(token.getName(),
-									token.getValue(), parameter.getType());
-							modifiedRequest = callbacks.getHelpers().updateParameter(modifiedRequest,
-									modifiedParameter);
-						}
-					}
-				}
-			}
-		}
-		return modifiedRequest;
-	}
-
-	private byte[] getModifiedJsonRequest(byte[] request, IRequestInfo originalRequestInfo, Token token) {
-		if (!token.isRemove() && token.getValue() == null) {
-			return request;
-		}
-		JsonObject jsonObject = null;
-		try {
-			String bodyAsString = new String(
-					Arrays.copyOfRange(request, originalRequestInfo.getBodyOffset(), request.length));
-			jsonObject = JsonParser.parseString(bodyAsString).getAsJsonObject();
-		} catch (Exception e) {
-			callbacks.printError("Can not parse JSON Request Body. Error Message: " + e.getMessage());
-			return request;
-		}
-		modifyJsonTokenValue(jsonObject, token);
-		String jsonBody = jsonObject.toString();
-		List<String> headers = originalRequestInfo.getHeaders();
-		for (int i = 0; i < headers.size(); i++) {
-			if (headers.get(i).startsWith("Content-Length:")) {
-				headers.set(i, "Content-Length: " + jsonBody.length());
-			}
-		}
-		byte[] modifiedRequest = callbacks.getHelpers().buildHttpMessage(headers, jsonBody.getBytes());
-		return modifiedRequest;
-	}
-
-	private void modifyJsonTokenValue(JsonElement jsonElement, Token token) {
-		if (jsonElement.isJsonObject()) {
-			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			Iterator<Map.Entry<String, JsonElement>> it = jsonObject.entrySet().iterator();
-			while (it.hasNext()) {
-				Map.Entry<String, JsonElement> entry = it.next();
-				if (entry.getValue().isJsonArray() || entry.getValue().isJsonObject()) {
-					modifyJsonTokenValue(entry.getValue(), token);
-				}
-				if (entry.getValue().isJsonPrimitive()) {
-					if (entry.getKey().equals(token.getName())) {
-						if (token.isRemove()) {
-							jsonObject.remove(entry.getKey());
-						} else {
-							jsonObject.addProperty(entry.getKey(), token.getValue());
-						}
-					}
-				}
-			}
-		}
-		if (jsonElement.isJsonArray()) {
-			for (JsonElement arrayJsonEl : jsonElement.getAsJsonArray()) {
-				if (arrayJsonEl.isJsonObject()) {
-					modifyJsonTokenValue(arrayJsonEl.getAsJsonObject(), token);
-				}
-			}
-		}
-	}
-
-	private String getJsonTokenValue(JsonElement jsonElement, Token token) {
-		if (jsonElement.isJsonObject()) {
-			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-				if (entry.getValue().isJsonArray() || entry.getValue().isJsonObject()) {
-					return getJsonTokenValue(entry.getValue(), token);
-				}
-				if (entry.getValue().isJsonPrimitive()) {
-					if (entry.getKey().equals(token.getExtractName())) {
-						return entry.getValue().getAsString();
-					}
-				}
-			}
-		}
-		if (jsonElement.isJsonArray()) {
-			for (JsonElement arrayJsonEl : jsonElement.getAsJsonArray()) {
-				if (arrayJsonEl.isJsonObject()) {
-					return getJsonTokenValue(arrayJsonEl.getAsJsonObject(), token);
-				}
-			}
-		}
-		return null;
-	}
-
-	public void extractCurrentTokenValue(byte[] sessionResponse, IResponseInfo sessionResponseInfo, Token token) {
-		boolean extractedFromCookie = false;
-		for (ICookie cookie : sessionResponseInfo.getCookies()) {
-			if (cookie.getName().equals(token.getExtractName())) {
-				token.setValue(cookie.getValue());
-				extractedFromCookie = true;
-				break;
-			}
-		}
-		if (!extractedFromCookie) {
-			if (sessionResponseInfo.getStatedMimeType().equals("HTML")
-					|| sessionResponseInfo.getInferredMimeType().equals("HTML")) {
-				try {
-					String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
-							sessionResponseInfo.getBodyOffset(), sessionResponse.length));
-					String value = getTokenValueFromInputField(bodyAsString, token.getExtractName());
-					if (value != null) {
-						token.setValue(value);
-					}
-				} catch (Exception e) {
-					callbacks.printError("Can not parse HTML Response. Error Message: " + e.getMessage());
-				}
-			}
-			if (sessionResponseInfo.getStatedMimeType().equals("JSON")
-					|| sessionResponseInfo.getInferredMimeType().equals("JSON")) {
-				try {
-					String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
-							sessionResponseInfo.getBodyOffset(), sessionResponse.length));
-					JsonObject jsonObject = JsonParser.parseString(bodyAsString).getAsJsonObject();
-					String value = getJsonTokenValue(jsonObject, token);
-					if (value != null) {
-						token.setValue(value);
-					}
-				} catch (Exception e) {
-					callbacks.printError("Can not parse JSON Response. Error Message: " + e.getMessage());
-				}
-			}
-		}
-	}
-
-	public String getTokenValueFromInputField(String document, String name) {
-		Document doc = Jsoup.parse(document);
-		Elements csrfFields = doc.getElementsByAttributeValue("name", name);
-		if (csrfFields.size() > 0) {
-			String csrfValue = csrfFields.get(0).attr("value");
-			return csrfValue;
-		}
-		return null;
-	}
-
-	public void extractTokenWithFromToString(byte[] sessionResponse, Token token) {
-		try {
-			String responseAsString = new String(sessionResponse);
-			int beginIndex = responseAsString.indexOf(token.getGrepFromString());
-			if (beginIndex != -1) {
-				beginIndex = beginIndex + token.getGrepFromString().length();
-				// Only single lines in extraction scope
-				String lineWithValue = responseAsString.substring(beginIndex).split("\n")[0];
-				String value = null;
-				if (token.getGrepToString().equals("")) {
-					value = lineWithValue;
-				} else {
-					if (lineWithValue.contains(token.getGrepToString())) {
-						value = lineWithValue.substring(0, lineWithValue.indexOf(token.getGrepToString()));
-					}
-				}
-				if (value != null) {
-					token.setValue(value);
-				}
-			}
-		} catch (Exception e) {
-			callbacks.printError("Can not extract from to value. Error Message: " + e.getMessage());
-		}
-	}
 
 	/*
 	 * Bypass if: - Both Responses have same Response Body and Status Code

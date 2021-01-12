@@ -8,13 +8,17 @@ import com.protect7.authanalyzer.util.Version;
 public class BurpExtender implements IBurpExtender, ITab {
 
 	private MainPanel panel;
+	public static IBurpExtenderCallbacks callbacks;
 
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
+		BurpExtender.callbacks = callbacks;
 		callbacks.setExtensionName("Auth Analyzer");
-		panel = new MainPanel(callbacks);
+		panel = new MainPanel();
 		callbacks.addSuiteTab(this);
-		callbacks.registerHttpListener(new HttpListener(callbacks));
+		HttpListener httpListener = new HttpListener();
+		callbacks.registerHttpListener(httpListener);
+		callbacks.registerProxyListener(httpListener);
 		callbacks.printOutput("Auth Analyzer successfully started");
 		callbacks.printOutput("Version " + Version.VERSION);
 		callbacks.printOutput("Created by Simon Reinhart");

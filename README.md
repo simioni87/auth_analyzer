@@ -6,15 +6,21 @@ The Burp extension helps you to find authorization bugs. Just navigate through t
 ## How does it work?
 (1) Create or Clone a Session for every user you want to test.
 
-(2) Specify the session characteristics (Header(s) and / or Parameter(s) to replace)
+(2) Save and load session setup
 
-(3) Set Filters if needed
+(3) Specify the session characteristics (Header(s) and / or Parameter(s) to replace)
 
-(4) Press Start
+(4) Set Filters if needed
 
-(5) Navigate through Web App with another user and track results of the repeated requests
+(5) Start / Stop and Pause Auth Analyzer
 
-(6) Manually analyze original and repeated requests / responses 
+(6) Specify table filter
+
+(7) Navigate through Web App with another user and track results of the repeated requests
+
+(8) Export table data to XML or HTML
+
+(9) Manually analyze original and repeated requests / responses 
 
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/complete_gui.png)
@@ -28,7 +34,7 @@ Define a Cookie header and a CSRF token (with auto value extract). The CSRF toke
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/session_header_with_csrf_token.png)
 
 ### Auto extract session Cookie
-Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session.
+Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session. The defined Cookie will be treated as a parameter and therefore no Cookie Header must be defined.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id.png)
 
@@ -46,6 +52,16 @@ Since the Authorization Header is not treated as a parameter (as it is done with
 Just create as many sessions as you want to test several roles at a time. 
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/several_sessions.png)
+
+### Refresh Auto Exracted Parameter Value
+Just press "Renew" on the session status panel or repeat the affected request by the context menu (mouse right click in the table entry). Hint: The login request(s) can be marked and filtered afterwards.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/renew_session.png)
+
+### Test idempotent Operations
+Original Requests can be dropped for testing idempotent operations.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/idempotent_operations.png)
 
 ## Parameter Extraction
 The Auth Analyzer has the possibility to define parameters which are replaced before the request for the given session will be repeated. The value for the given parameter can be set according to different requirements. Following is possible:
@@ -71,13 +87,17 @@ If a value is set (extracted or defined by the user) it will be replaced if the 
 ### Replacement Location
 The parameter will be replaced if it is present at one of the following locations:
 
-* **URL Parameter** 
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_replace_locations.png)
 
-* **Cookie Parameter**
+* **In Path** (e.g. /api/user/99/profile --> if a parameter named "user" is presenet, the value "99" will be replaced)
+
+* **URL Parameter** (e.g. email=hans.wurst[a]gmail.com)
+
+* **Cookie Parameter** (e.g. PHPSESSID=mb8rkrcdg8765dt91vpum4u21v)
 
 * **Body Parameter** either URL-Encoded or Multipart Form Data
 
-* **JSON Parameter**
+* **JSON Parameter** (e.g. {"email":"hans.wurst[a]gmail.com"})
 
 ## Parameter removement
 The defined parameter can be removed completely for instance to test CSRF check mechanisms. 
@@ -107,12 +127,24 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Session Creation for each user role
 *	Renaming and Removing a Session
 *	Clone a Session
-*	Set any amount of replacing parameters
-*	Define how the parameter value will be discovered (automatic, static, prompt for input)
+* Set any amount of Headers to replace / add
+* Set Headers to remove
+*	Set any amount of parameters to replace
+*	Define how the parameter value will be discovered (automatic, static, prompt for input, from to string)
 *	Remove a specified parameter
 *	Detailed Filter Rules
 *	Detailed Status Panel for each Session
+* Pause each Session separately
+* Renew Auto Extracted Parameter Value automatically
+* Repeat Request by context menu
+* Table Data Filter
+* Table Data Export Functionality
 *	Start / Stop / Pause the "Auth Analyzer"
+* Pause each Session seperatly
+* Restrict session to defined scope
+* Filter Requests with same header(s)
+* Drop Original Request functionality
 *	Detailed view of all processed Requests and Responses
 *	Send Header(s) and / or Parameter(s) directly to Auth Analyzer by Context Menu
 *	Auto save current configuration
+* Save to file and load from file current configuration
