@@ -2,6 +2,8 @@
 
 ## What is it?
 The Burp extension helps you to find authorization bugs. Just navigate through the web application with a high privileged user and let the Auth Analyzer repeat your requests for any defined non-privileged user. With the possibility to define Parameters the Auth Analyzer is able to extract and replace parameter values automatically. With this for instance, CSRF tokens or even whole session characteristics can be auto extracted from responses and replaced in further requests. Each response will be analyzed and tagged on its bypass status. 
+## Why should I use Auth Analyzer?
+There are other existing Burp Extensions doing basically similar stuff. However, the force of the parameter feature and automatic value extraction is the main reason for choosing Auth Analyzer. With this you don’t have to know the content of the data which must be exchanged. You can easily define your parameters and cookies and Auth Analyzer will catch on the fly the values needed. Auth Analyzer does not perform any preflight requests. It does basically just the same thing as your web app. With your defined user roles / sessions.
 
 ## How does it work?
 (1) Create or Clone a Session for every user you want to test.
@@ -28,15 +30,15 @@ The Burp extension helps you to find authorization bugs. Just navigate through t
 
 ## Sample Usage
 
-### Session Header and CSRF Token Parameter
-Define a Cookie header and a CSRF token (with auto value extract). The CSRF token value will be extracted if it is present in an HTML Input Tag, a Set-Cookie Header or a JSON Response of the given session.
-
-![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/session_header_with_csrf_token.png)
-
 ### Auto extract session Cookie
 Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session. The defined Cookie will be treated as a parameter and therefore no Cookie Header must be defined.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id.png)
+
+### Session Header and CSRF Token Parameter
+Define a Cookie header and a CSRF token (with auto value extract). The CSRF token value will be extracted if it is present in an HTML Input Tag, a Set-Cookie Header or a JSON Response of the given session.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/session_header_with_csrf_token.png)
 
 ### Auto extract from JavaScript variable
 Since the "Auto Extract" method only works on "HTML Input Fields", "JSON Objects" or "Set-Cookie Headers" we must use the generic extraction method called "From To String". With this extraction method we can extract any value from a response if it is located between a unique starting and ending string. The Auth Analyzer provides a context menu method to set the "From String" and "To String" automatically. Just mark the String you want to extract and set as "From-To Extract" by the context menu.
@@ -62,6 +64,24 @@ Just press "Renew" on the session status panel or repeat the affected request by
 Original Requests can be dropped for testing idempotent operations.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/idempotent_operations.png)
+
+### Test anonymous sessions
+If an anonymous user needs a valid characteristic (e.g., a valid cookie value) you have to define the header as usual. Otherwise, you can define a header to remove as follows:
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/test_anonymous.png)
+
+### Test CORS configuration
+You can easily test a large number of endpoints on its individual CORS settings by adding an Origin header at "Header(s) to replace" and set an "HTTP Method" Filter for all methods expect the OPTIONS method.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/test_cors.png)
+
+### Verify the Bypass Status
+The Auth Analyzer provides a build in comparison view to verify the differences between two responses. Just mark the message you want to analyze and change the message view (1). You are now able to compare the two requests (2) (3). The built in "Diff" Feature will calculate and show the differences between the two requests in real time (4)
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/compare_view.png)
+
+Expanded Diff view:
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/diff_view.png)
 
 ## Parameter Extraction
 The Auth Analyzer has the possibility to define parameters which are replaced before the request for the given session will be repeated. The value for the given parameter can be set according to different requirements. Following is possible:
@@ -127,22 +147,22 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Session Creation for each user role
 *	Renaming and Removing a Session
 *	Clone a Session
-* Set any amount of Headers to replace / add
-* Set Headers to remove
+*	Set any amount of Headers to replace / add
+*	Set Headers to remove
 *	Set any amount of parameters to replace
 *	Define how the parameter value will be discovered (automatic, static, prompt for input, from to string)
 *	Remove a specified parameter
 *	Detailed Filter Rules
 *	Detailed Status Panel for each Session
-* Pause each Session separately
-* Renew Auto Extracted Parameter Value automatically
-* Repeat Request by context menu
-* Table Data Filter
-* Table Data Export Functionality
+*	Pause each Session separately
+*	Renew Auto Extracted Parameter Value automatically
+*	Repeat Request by context menu
+*	Table Data Filter
+*	Table Data Export Functionality
 *	Start / Stop / Pause the "Auth Analyzer"
-* Pause each Session seperatly
-* Restrict session to defined scope
-* Filter Requests with same header(s)
+*	Pause each Session seperatly
+*	Restrict session to defined scope
+*	Filter Requests with same header(s)
 * Drop Original Request functionality
 *	Detailed view of all processed Requests and Responses
 *	Send Header(s) and / or Parameter(s) directly to Auth Analyzer by Context Menu
