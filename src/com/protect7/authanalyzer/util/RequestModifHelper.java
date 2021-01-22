@@ -15,6 +15,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.entities.TokenLocation;
 import com.protect7.authanalyzer.entities.TokenPriority;
 
 import burp.BurpExtender;
@@ -29,34 +30,32 @@ public class RequestModifHelper {
 		replaceParamInPath(headers, session);
 		
 		if(session.isRemoveHeaders()) {
-			String[] headersToReplaceSplit = session.getHeadersToReplace().replace("\r", "").split("\n");
+			String[] headersToRemoveSplit = session.getHeadersToRemove().replace("\r", "").split("\n");
 			Iterator<String> iterator = headers.iterator();
 			while(iterator.hasNext()) {
-				for(int i=0; i<headersToReplaceSplit.length; i++) {
-					if(iterator.next().split(":")[0].equals(headersToReplaceSplit[i].split(":")[0])) {
+				String header = iterator.next();
+				for(int i=0; i<headersToRemoveSplit.length; i++) {
+					if(header.split(":")[0].equals(headersToRemoveSplit[i].split(":")[0])) {
 						iterator.remove();
 					}
 				}
 			}
 		}
-		else {
-			for (String headerToReplace : getHeaderToReplaceList(session)) {
-				String trimmedHeaderToReplace = headerToReplace.trim();
-				String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
-				if (headerKeyValuePair.length > 1) {
-					String headerKey = headerKeyValuePair[0].trim();
-					boolean headerReplaced = false;
-					for (int i = 0; i < headers.size(); i++) {
-						if (headers.get(i).startsWith(headerKey)) {
-							headers.set(i, trimmedHeaderToReplace);
-							headerReplaced = true;
-							break;
-						}
+		for (String headerToReplace : getHeaderToReplaceList(session)) {
+			int keyIndex = headerToReplace.indexOf(":");
+			if (keyIndex != -1) {
+				String headerKey = headerToReplace.substring(0, keyIndex+1);
+				boolean headerReplaced = false;
+				for (int i = 0; i < headers.size(); i++) {
+					if (headers.get(i).startsWith(headerKey)) {
+						headers.set(i, headerToReplace);
+						headerReplaced = true;
+						break;
 					}
-					// Set new header if it not occurs
-					if (!headerReplaced) {
-						headers.add(trimmedHeaderToReplace);
-					}
+				}
+				// Set new header if it not occurs
+				if (!headerReplaced) {
+					headers.add(headerToReplace);
 				}
 			}
 		}
@@ -66,7 +65,7 @@ public class RequestModifHelper {
 	private static List<String> replaceParamInPath(List<String> headers, Session session) {
 		String pathHeader = headers.get(0);
 		for(Token token : session.getTokens()) {
-			if(token.getValue() != null && !token.isRemove()) {
+			if(token.getValue() != null && !token.isRemove() && token.doReplaceAtLocation(TokenLocation.PATH)) {
 				String tokenInPathName = "/"+token.getName()+"/";
 				int startIndex = pathHeader.indexOf(tokenInPathName);
 				if(startIndex != -1) {
@@ -86,28 +85,27 @@ public class RequestModifHelper {
 		ArrayList<String> headerToReplaceList = new ArrayList<String>();
 		String[] headersToReplace = session.getHeadersToReplace().replace("\r", "").split("\n");
 		for (String headerToReplace : headersToReplace) {
-			String trimmedHeaderToReplace = headerToReplace.trim();
-			String[] headerKeyValuePair = trimmedHeaderToReplace.split(":");
+			String[] headerKeyValuePair = headerToReplace.split(":");
 			if (headerKeyValuePair.length > 1) {
 				for (Token token : session.getTokens()) {
-					if (trimmedHeaderToReplace.contains(token.getHeaderInsertionPointNameStart())) {
-						int startIndex = trimmedHeaderToReplace.indexOf(token.getHeaderInsertionPointNameStart());
-						int endIndex = trimmedHeaderToReplace.indexOf("]§", startIndex) + 2;
+					if (headerToReplace.contains(token.getHeaderInsertionPointNameStart())) {
+						int startIndex = headerToReplace.indexOf(token.getHeaderInsertionPointNameStart());
+						int endIndex = headerToReplace.indexOf("]§", startIndex) + 2;
 						if (startIndex != -1 && endIndex != -1) {
 							if (token.getValue() != null) {
-								trimmedHeaderToReplace = trimmedHeaderToReplace.substring(0, startIndex)
-										+ token.getValue() + trimmedHeaderToReplace.substring(endIndex);
+								headerToReplace = headerToReplace.substring(0, startIndex)
+										+ token.getValue() + headerToReplace.substring(endIndex);
 							} else {
-								String defaultValue = trimmedHeaderToReplace.substring(
+								String defaultValue = headerToReplace.substring(
 										startIndex + token.getHeaderInsertionPointNameStart().length() + 1,
 										endIndex - 2);
-								trimmedHeaderToReplace = trimmedHeaderToReplace.substring(0, startIndex) + defaultValue
-										+ trimmedHeaderToReplace.substring(endIndex);
+								headerToReplace = headerToReplace.substring(0, startIndex) + defaultValue
+										+ headerToReplace.substring(endIndex);
 							}
 						}
 					}
 				}
-				headerToReplaceList.add(trimmedHeaderToReplace);
+				headerToReplaceList.add(headerToReplace);
 			}
 		}
 		return headerToReplaceList;
@@ -118,7 +116,7 @@ public class RequestModifHelper {
 		byte[] modifiedRequest = originalRequest;
 		for (Token token : session.getTokens()) {
 			if (token.getValue() != null || token.isRemove() || token.isPromptForInput()) {
-				modifiedRequest = RequestModifHelper.getModifiedRequest(modifiedRequest, originalRequestInfo, session, token, tokenPriority);
+				modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, token, tokenPriority);
 			}
 		}
 		return modifiedRequest;
@@ -128,27 +126,35 @@ public class RequestModifHelper {
 		byte[] modifiedRequest = request;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
 			if (parameter.getName().equals(token.getName())) {
-				String paramLocationText = null;
+				String paramLocation = null;
 				// Helper can only handle URL, COOKIE and BODY Parameters
 				if (parameter.getType() == IParameter.PARAM_URL) {
-					paramLocationText = "URL";
+					if(token.doReplaceAtLocation(TokenLocation.URL)) {
+						paramLocation = "URL";
+					}
 				}
 				if (parameter.getType() == IParameter.PARAM_COOKIE) {
-					paramLocationText = "Cookie";
+					if(token.doReplaceAtLocation(TokenLocation.COOKIE)) {
+						paramLocation = "Cookie";
+					}
 				}
 				if (parameter.getType() == IParameter.PARAM_BODY) {
-					paramLocationText = "Body";
+					if(token.doReplaceAtLocation(TokenLocation.BODY)) {
+						paramLocation = "Body";
+					}
 				}
 				// Handle JSON as well (self implemented)
 				if (parameter.getType() == IParameter.PARAM_JSON) {
-					paramLocationText = "Json";
+					if(token.doReplaceAtLocation(TokenLocation.JSON)) {
+						paramLocation = "Json";
+					}
 				}
-				if (paramLocationText != null) {
+				if (paramLocation != null) {
 					if (token.isPromptForInput()) {
 						String paramValue = JOptionPane.showInputDialog(session.getStatusPanel(),
 								"<html><strong>Auth Analyzer</strong><br>" + "Enter Parameter Value<br>Session: "
 										+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
-										+ "Parameter Location: " + paramLocationText + "<br></html>");
+										+ "Parameter Location: " + paramLocation + "<br></html>");
 						if (paramValue != null) {
 							token.setValue(paramValue);
 							session.getStatusPanel().updateTokenStatus(token);

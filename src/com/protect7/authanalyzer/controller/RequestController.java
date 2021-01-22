@@ -20,6 +20,7 @@ import com.protect7.authanalyzer.entities.TokenRequest;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.ExtractionHelper;
+import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.RequestModifHelper;
 import burp.BurpExtender;
 import burp.IHttpRequestResponse;
@@ -88,7 +89,7 @@ public class RequestController {
 								success = ExtractionHelper.extractCurrentTokenValue(sessionRequestResponse.getResponse(), sessionResponseInfo, token);
 							}
 							if (token.isFromToString()) {
-								success = ExtractionHelper.extractTokenWithFromToString(sessionRequestResponse.getResponse(), token);
+								success = ExtractionHelper.extractTokenWithFromToString(sessionRequestResponse.getResponse(), sessionResponseInfo, token);
 							}
 							if(success) {
 								session.getStatusPanel().updateTokenStatus(token);
@@ -133,6 +134,8 @@ public class RequestController {
 			}
 			OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse, originalRequestInfo.getMethod(), url, infoText);
 			CurrentConfig.getCurrentConfig().getTableModel().addNewRequestResponse(requestResponse);
+			
+			GenericHelper.animateBurpExtensionTab();
 		}
 	}
 	

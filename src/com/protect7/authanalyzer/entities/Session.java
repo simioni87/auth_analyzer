@@ -10,7 +10,6 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.protect7.authanalyzer.gui.StatusPanel;
@@ -19,6 +18,7 @@ public class Session {
 
 	private final String name;
 	private String headersToReplace;
+	private String headersToRemove;
 	private boolean removeHeaders;
 	private boolean filterRequestsWithSameHeader;
 	private boolean restrictToScope = false;
@@ -30,12 +30,13 @@ public class Session {
 	private final StatusPanel statusPanel;
 	//private int tokenPriority = 0;
 
-	public Session(String name, String headersToReplace, boolean removeHeaders, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
+	public Session(String name, String headersToReplace, boolean removeHeaders, String headersToRemove, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
 		this.name = name;
 		this.removeHeaders = removeHeaders;
 		this.headersToReplace = headersToReplace;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
 		this.setRestrictToScope(restrictToScope);
+		this.headersToRemove = headersToRemove;
 		this.setScopeUrl(scopeUrl);
 		this.setTokens(tokens);
 		this.statusPanel = statusPanel;
@@ -163,5 +164,13 @@ public class Session {
 
 	public void setRemoveHeaders(boolean removeHeaders) {
 		this.removeHeaders = removeHeaders;
+	}
+
+	public String getHeadersToRemove() {
+		return headersToRemove;
+	}
+
+	public void setHeadersToRemove(String headersToRemove) {
+		this.headersToRemove = headersToRemove;
 	}
 }

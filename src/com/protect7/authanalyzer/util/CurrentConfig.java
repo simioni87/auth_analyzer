@@ -3,7 +3,6 @@ package com.protect7.authanalyzer.util;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-
 import com.protect7.authanalyzer.controller.RequestController;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.filter.RequestFilter;

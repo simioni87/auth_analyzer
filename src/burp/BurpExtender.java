@@ -1,20 +1,25 @@
 package burp;
 
 import java.awt.Component;
+
+import javax.swing.JTabbedPane;
+
 import com.protect7.authanalyzer.controller.HttpListener;
 import com.protect7.authanalyzer.gui.MainPanel;
 import com.protect7.authanalyzer.util.Version;
 
 public class BurpExtender implements IBurpExtender, ITab {
 
-	private MainPanel panel;
+	public static final String EXTENSION_NAME = "Auth Analyzer";
+	public static MainPanel mainPanel;
 	public static IBurpExtenderCallbacks callbacks;
+	public static JTabbedPane burpTabbedPane = null;
 
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
 		BurpExtender.callbacks = callbacks;
 		callbacks.setExtensionName("Auth Analyzer");
-		panel = new MainPanel();
+		mainPanel = new MainPanel();
 		callbacks.addSuiteTab(this);
 		HttpListener httpListener = new HttpListener();
 		callbacks.registerHttpListener(httpListener);
@@ -28,12 +33,11 @@ public class BurpExtender implements IBurpExtender, ITab {
 
 	@Override
 	public String getTabCaption() {
-		return "Auth Analyzer";
+		return EXTENSION_NAME;
 	}
 
 	@Override
 	public Component getUiComponent() {
-		return panel;
+		return mainPanel;
 	}
-
 }

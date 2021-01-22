@@ -1,6 +1,5 @@
 package com.protect7.authanalyzer.gui;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.GridBagConstraints;
@@ -12,7 +11,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -20,35 +18,34 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JScrollBar;
-import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.border.Border;
+import com.protect7.authanalyzer.util.GenericHelper;
 
 public class SessionPanel extends JPanel {
 
 	private static final long serialVersionUID = 1L;
-	private int textFieldWidth = 70;
+	private final int textFieldWidth = 70;
 	private String sessionName = "";
-	private JTextArea headersToReplaceText = new JTextArea(3, textFieldWidth);
-	private JCheckBox removeHeaders;
-	private JCheckBox filterRequestsWithSameHeader;
-	private JCheckBox restrictToScope;
-	private PlaceholderTextField restrictToScopeText;
-	private JButton addTokenButton;
-	private JPanel sessionPanel = new JPanel();
-	private StatusPanel statusPanel = new StatusPanel();
-	private JPanel tokenHeaderPanel = getTokenHeaderPanel();
-	private GridBagConstraints c = new GridBagConstraints();
+	private final PlaceholderTextArea headersToReplaceText = new PlaceholderTextArea(3, textFieldWidth);
+	private final JCheckBox removeHeaders;
+	private final JCheckBox filterRequestsWithSameHeader;
+	private final JCheckBox restrictToScope;
+	private final JLabel headerToRemoveLabel = new JLabel("Header(s) to Remove");
+	private final PlaceholderTextArea headersToRemoveText = new PlaceholderTextArea(3, textFieldWidth);
+	private final JLabel restrictToScopeLabel = new JLabel("Restrict to Scope");
+	private final PlaceholderTextField restrictToScopeText = new PlaceholderTextField();
+	private final JButton addTokenButton;
+	private final JPanel sessionPanel = new JPanel();
+	private final StatusPanel statusPanel = new StatusPanel();
+	private final JPanel tokenHeaderPanel = new JPanel();
+	private final GridBagConstraints c = new GridBagConstraints();
 	private final ArrayList<TokenPanel> tokenPanels = new ArrayList<TokenPanel>();
-	private final JScrollPane scrollPane;
+	private final MainPanel mainPanel;
 
-	public SessionPanel(String sessionName, JScrollPane scrollPane) {
+	public SessionPanel(String sessionName, MainPanel mainPanel) {
 		this.sessionName = sessionName;
-		this.scrollPane = scrollPane;
+		this.mainPanel = mainPanel;
 		sessionPanel.setLayout(new GridBagLayout());
 		c.gridx = 0;
 		c.anchor = GridBagConstraints.WEST;
@@ -58,16 +55,13 @@ public class SessionPanel extends JPanel {
 		
 		statusPanel.setVisible(false);
 		add(statusPanel, c);
-
-		headersToReplaceText.setLineWrap(true);
-		Border border = BorderFactory.createLineBorder(Color.LIGHT_GRAY);
-		headersToReplaceText.setBorder(border);
 		setupContextMenu();
 
 		JLabel headerToReplaceLabel = new JLabel("Header(s) to Replace");
 		c.gridy = 0;
 		sessionPanel.add(headerToReplaceLabel, c);
 		headersToReplaceText.setAlignmentX(Component.LEFT_ALIGNMENT);
+		headersToReplaceText.setPlaceholder("Enter Header(s) to Replace..."); 
 		c.gridy++;
 		sessionPanel.add(headersToReplaceText, c);
 		headersToReplaceText.setToolTipText(
@@ -79,7 +73,6 @@ public class SessionPanel extends JPanel {
 		c.gridy++;
 		sessionPanel.add(removeHeaders, c);
 		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)", false);
-		c.insets = new Insets(5, 0, 0, 20);
 		c.gridx = 1;
 		sessionPanel.add(filterRequestsWithSameHeader, c);
 		restrictToScope = new JCheckBox("Restrict to Scope", false);
@@ -88,22 +81,26 @@ public class SessionPanel extends JPanel {
 		
 		c.gridwidth = 3;
 		c.gridx = 0;
-		c.insets = new Insets(5, 0, 0, 0);
 		c.gridy++;
-		restrictToScopeText = new PlaceholderTextField();
-		restrictToScopeText.setPlaceholder("Enter URL e.g. https://example.com/path)...");
+		headerToRemoveLabel.setVisible(false);
+		sessionPanel.add(headerToRemoveLabel, c);
+		c.gridy++;
+		c.insets = new Insets(0, 0, 0, 0);
+		headersToRemoveText.setPlaceholder("Enter Header(s) Key(s) to Remove..."); 
+		headersToRemoveText.setVisible(false);
+		sessionPanel.add(headersToRemoveText, c);
+		removeHeaders.addActionListener(e -> updateGui());		
+		
+		c.gridy++;
+		c.insets = new Insets(5, 0, 0, 0);
+		restrictToScopeLabel.setVisible(false);
+		sessionPanel.add(restrictToScopeLabel, c);
+		c.gridy++;
+		c.insets = new Insets(0, 0, 0, 0);
+		restrictToScopeText.setPlaceholder("Enter Restrict to Scope URL / Path (e.g. https://example.com/path)...");
 		restrictToScopeText.setVisible(false);
 		sessionPanel.add(restrictToScopeText, c);
-		restrictToScope.addActionListener(e -> {
-			if(restrictToScope.isSelected()) {
-				restrictToScopeText.setVisible(true);
-				revalidate();
-			}
-			else {
-				restrictToScopeText.setVisible(false);
-				revalidate();
-			}
-		});
+		restrictToScope.addActionListener(e -> updateGui());
 		
 		c.gridy++;
 		c.insets = new Insets(10, 0, 0, 0);
@@ -133,6 +130,27 @@ public class SessionPanel extends JPanel {
 		sessionPanel.add(tokenHeaderPanel, c);
 		add(sessionPanel);
 	}
+	
+	private void updateGui() {
+		if(removeHeaders.isSelected()) {
+			headerToRemoveLabel.setVisible(true);
+			headersToRemoveText.setVisible(true);
+		}
+		else {
+			headerToRemoveLabel.setVisible(false);
+			headersToRemoveText.setVisible(false);
+		}
+		if(restrictToScope.isSelected()) {
+			restrictToScopeLabel.setVisible(true);
+			restrictToScopeText.setVisible(true);
+		}
+		else {
+			restrictToScopeLabel.setVisible(false);
+			restrictToScopeText.setVisible(false);
+		}
+		revalidate();
+		mainPanel.updateDividerLocation();
+	}
 
 	public void setRunning() {
 		statusPanel.setVisible(true);
@@ -150,6 +168,9 @@ public class SessionPanel extends JPanel {
 		tokenPanels.add(tokenPanel);
 		c.gridy++;
 		sessionPanel.add(tokenPanel, c);
+		if(tokenPanels.size() == 1) {
+			setTokenHeaderPanelContent();
+		}
 		sessionPanel.revalidate();
 		
 		tokenPanel.getRemoveButton().addActionListener(e -> {
@@ -160,19 +181,9 @@ public class SessionPanel extends JPanel {
 				tokenHeaderPanel.setVisible(false);
 			}
 			revalidate();
+			mainPanel.updateDividerLocation();
 		});
-		
-		if(scrollPane != null) {
-			SwingUtilities.invokeLater(new Runnable() {
-				
-				@Override
-				public void run() {
-					JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
-					scrollBar.setValue(scrollBar.getMaximum());
-				}
-			});
-			
-		}
+		mainPanel.updateDividerLocation();
 		return tokenPanel;
 	}
 	
@@ -240,7 +251,7 @@ public class SessionPanel extends JPanel {
 		}
 		if(!valid) {
 			showValidationFailedDialog("The definied Header(s) to replace are not valid. \nAffected Session: " + getSessionName());
-			headersToReplaceText.setBackground(new Color(255, 102, 102));
+			headersToReplaceText.setBackground(GenericHelper.getErrorBgColor());
 			return false;
 		}
 		else {
@@ -255,7 +266,7 @@ public class SessionPanel extends JPanel {
 				new URL(restrictToScopeText.getText());
 			} catch (MalformedURLException e) {
 				showValidationFailedDialog("The definied scope URL is not valid\nAffected Session: " +	getSessionName());
-				restrictToScopeText.setBackground(new Color(255, 102, 102));
+				restrictToScopeText.setBackground(GenericHelper.getErrorBgColor());
 				return false;
 			}
 		}
@@ -314,6 +325,14 @@ public class SessionPanel extends JPanel {
 	public void setHeadersToReplaceText(String text) {
 		this.headersToReplaceText.setText(text);
 	}
+	
+	public String getHeadersToRemoveText() {
+		return headersToRemoveText.getText();
+	}
+	
+	public void setHeadersToRemoveText(String text) {
+		this.headersToRemoveText.setText(text);
+	}
 
 	public void appendHeadersToReplaceText(String selectedText) {
 		if (getHeadersToReplaceText().endsWith("\n") || getHeadersToReplaceText().equals("")) {
@@ -325,6 +344,11 @@ public class SessionPanel extends JPanel {
 	
 	public boolean isRemoveHeaders() {
 		return removeHeaders.isSelected();
+	}
+	
+	public void setRemoveHeaders(boolean removeHeaders) {
+		this.removeHeaders.setSelected(removeHeaders);
+		updateGui();
 	}
 
 	public boolean isFilterRequestsWithSameHeader() {
@@ -341,16 +365,14 @@ public class SessionPanel extends JPanel {
 	
 	public void setRestrictToScope(boolean restrictToScope) {
 		this.restrictToScope.setSelected(restrictToScope);
-		if(restrictToScope) {
-			restrictToScopeText.setVisible(true);
-		}
-		else {
-			restrictToScopeText.setVisible(false);
-		}
+		updateGui();
 	}
 	
 	public void setRestrictToScopeText(String text) {
 		this.restrictToScopeText.setText(text);
+	}
+	public String getRestrictToScopeText() {
+		return restrictToScopeText.getText();
 	}
 
 	public ArrayList<TokenPanel> getTokenPanelList() {
@@ -365,30 +387,30 @@ public class SessionPanel extends JPanel {
 		this.sessionName = sessionName;
 	}
 	
-	private JPanel getTokenHeaderPanel() {
-		JPanel tokenHeaderPanel = new JPanel();
-		tokenHeaderPanel.setLayout(new GridBagLayout());
-		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 0;
-		c.gridy = 0;
-		c.fill = GridBagConstraints.NONE;
-		c.gridwidth = 1;
-		c.insets = new Insets(10, 70, 0, 0);
-		
-		tokenHeaderPanel.add(new JLabel("Parameter Name"), c);
-		
-		c.insets = new Insets(10, 65, 0, 0);
-		c.gridx = 1;
-		tokenHeaderPanel.add(new JLabel("Remove"), c);
-		
-		c.insets = new Insets(10, 15, 0, 0);
-		c.gridx = 2;
-		tokenHeaderPanel.add(new JLabel("Parameter Value"), c);
-		
-		c.insets = new Insets(10, 50, 0, 0);
-		c.gridx = 3;
-		tokenHeaderPanel.add(new JLabel("Extract Field Name / Static Value / From To String"), c);
-		
-		return tokenHeaderPanel;
+	private void setTokenHeaderPanelContent() {
+		if(tokenPanels.size()>0) {
+			tokenHeaderPanel.removeAll();
+			tokenHeaderPanel.setLayout(new GridBagLayout());
+			GridBagConstraints c = new GridBagConstraints();
+			c.gridx = 0;
+			c.gridy = 0;
+			c.fill = GridBagConstraints.NONE;
+			c.gridwidth = 1;
+			c.insets = new Insets(10, 70, 0, 0);
+			
+			tokenHeaderPanel.add(new JLabel("Parameter Name"), c);
+			
+			c.insets = new Insets(10, 65, 0, 0);
+			c.gridx = 1;
+			tokenHeaderPanel.add(new JLabel("Remove"), c);
+			
+			c.insets = new Insets(10, 15, 0, 0);
+			c.gridx = 2;
+			tokenHeaderPanel.add(new JLabel("Parameter Value"), c);
+			
+			c.insets = new Insets(10, 45, 0, 0);
+			c.gridx = 3;
+			tokenHeaderPanel.add(new JLabel("Extract Field Name / Static Value / From To String"), c);
+		}
 	}
 }
