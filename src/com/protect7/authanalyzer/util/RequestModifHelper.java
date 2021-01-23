@@ -155,12 +155,8 @@ public class RequestModifHelper {
 								"<html><strong>Auth Analyzer</strong><br>" + "Enter Parameter Value<br>Session: "
 										+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
 										+ "Parameter Location: " + paramLocation + "<br></html>");
-						if (paramValue != null) {
-							token.setValue(paramValue);
-							session.getStatusPanel().updateTokenStatus(token);
-						} else {
-							token.setValue("");
-						}
+						token.setValue(paramValue);
+						session.getStatusPanel().updateTokenStatus(token);
 					}
 					if (token.isRemove()) {
 						if (parameter.getType() == IParameter.PARAM_JSON) {
