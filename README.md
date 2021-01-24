@@ -72,7 +72,7 @@ The defined parameter can be removed completely for instance to test CSRF check 
 ### Auto extract session Cookie
 Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session. The defined Cookie will be treated as a parameter and therefore no Cookie Header must be defined.
 
-![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id.png)
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id_1.png)
 
 Hint: You can restrict the extract and replace conditions for a parameter to avoid malfunction at the extracting / replacing stage.
 
@@ -91,12 +91,12 @@ Since the "Auto Extract" method only works on "HTML Input Fields", "JSON Objects
 ### Auto extract and insert a Bearer Token
 Since the Authorization Header is not treated as a parameter (as it is done with the Cookie Header), we can use a header insertion point to achieve what we want. Just mark and right click the value you want to replace in the specified header. The "defaultvalue" will be used if no parameter value is extracted yet.
 
-![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/autp_extract_and_insert_bearer_token.png)
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_and_insert_bearer_token.png)
 
 ### Test several roles at a time
 Just create as many sessions as you want to test several roles at a time. 
 
-![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/several_sessions.png)
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/several_sessions_1.png)
 
 ### Refresh Auto Exracted Parameter Value
 Just press "Renew" on the session status panel or repeat the affected request by the context menu (mouse right click in the table entry). Hint: The login request(s) can be marked and filtered afterwards.
