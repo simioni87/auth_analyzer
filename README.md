@@ -4,9 +4,9 @@
 The Burp extension helps you to find authorization bugs. Just navigate through the web application with a high privileged user and let the Auth Analyzer repeat your requests for any defined non-privileged user. With the possibility to define Parameters the Auth Analyzer is able to extract and replace parameter values automatically. With this for instance, CSRF tokens or even whole session characteristics can be auto extracted from responses and replaced in further requests. Each response will be analyzed and tagged on its bypass status. 
 
 ## Why should I use Auth Analyzer?
-There are other existing Burp Extensions doing basically similar stuff. However, the force of the parameter feature and automatic value extraction is the main reason for choosing Auth Analyzer. With this you don’t have to know the content of the data which must be exchanged. You can easily define your parameters and cookies and Auth Analyzer will catch on the fly the values needed. Auth Analyzer does not perform any preflight requests. It does basically just the same thing as your web app. With your defined user roles / sessions.
+There are other existing Burp Extensions doing basically similar stuff. However, the force of the parameter feature and automatic value extraction is the main reason for choosing Auth Analyzer. With this you don’t have to know the content of the data which must be exchanged. You can easily define your parameters and cookies and Auth Analyzer will catch on the fly the values needed. The Auth Analyzer does not perform any preflight requests. It does basically just the same thing as your web app. With your defined user roles / sessions.
 
-## Auth Analyzer Overview
+## GUI Overview
 (1) Create or Clone a Session for every user you want to test.
 
 (2) Save and load session setup
@@ -29,7 +29,7 @@ There are other existing Burp Extensions doing basically similar stuff. However,
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/complete_gui.png)
 
 ## Parameter Extraction
-The Auth Analyzer has the possibility to define parameters which are replaced before the request for the given session will be repeated. The value for the given parameter can be set according to different requirements. Following is possible:
+The Auth Analyzer has the possibility to define parameters which are replaced before the request for the given session will be repeated. The value for the given parameter can be set according to different requirements.
 ### Auto Extract
 The parameter value will be extracted if it occurs in a response with one of the following constraints:
 
@@ -39,11 +39,20 @@ The parameter value will be extracted if it occurs in a response with one of the
 
 * A **JSON Response** contains a key set to the **Extract Field Name**
 
+Per default the Auth Analyzer tries to auto extract the parameter value from all locations. However, clicking on the parameter settings icon lets you restrict the auto extract location according to your needs.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_auto_extract_location.png)
+
 ### From To String
 The parameter will be extracted if the response contains the specified **From String** and **To String** in a line. The From-To String can be set either manually or directly by the corresponding context menu. Just mark the word you want to extract in any response and set as "From-To Extract" for the parameter you like.
 
+Per default the Auth Analyzer tries to extract the value from header and body at most textual responses. However, clicking on the parameter settings icon lets you restrict the From-To extract location according to your needs.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_fromto_extract_location.png)
+
 ### Static Value
 A static parameter value can be defined. This can be used for instance for static CSRF tokens or login credentials.
+
 ### Prompt for Input
 You will be prompted for input if the defined parameter is present in a request. This can be used for instance to set 2FA codes.
 
@@ -63,6 +72,11 @@ The parameter will be replaced if it is present at one of the following location
 * **Body Parameter** either URL-Encoded or Multipart Form Data
 
 * **JSON Parameter** (e.g. {"email":"hans.wurst[a]gmail.com"})
+
+Per default all the parameter value will be replaced at each location. However, clicking on the parameter settings icon lets you restrict the location according to your needs.
+
+![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_replace_location.png)
+
 
 ## Parameter removement
 The defined parameter can be removed completely for instance to test CSRF check mechanisms. 
