@@ -73,7 +73,7 @@ The parameter will be replaced if it is present at one of the following location
 
 * **JSON Parameter** (e.g. {"email":"hans.wurst[a]gmail.com"})
 
-Per default all the parameter value will be replaced at each location. However, clicking on the parameter settings icon lets you restrict the location according to your needs.
+Per default the parameter value will be replaced at each location. However, clicking on the parameter settings icon lets you restrict the location according to your needs.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_replace_location.png)
 
