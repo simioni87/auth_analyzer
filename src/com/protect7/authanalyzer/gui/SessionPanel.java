@@ -61,7 +61,7 @@ public class SessionPanel extends JPanel {
 		c.gridy = 0;
 		sessionPanel.add(headerToReplaceLabel, c);
 		headersToReplaceText.setAlignmentX(Component.LEFT_ALIGNMENT);
-		headersToReplaceText.setPlaceholder("Enter Header(s) to Replace..."); 
+		headersToReplaceText.setPlaceholder("Cookie: Session=d3c2b484-5fed-11eb-ae93-0242ac130002;"); 
 		c.gridy++;
 		sessionPanel.add(headersToReplaceText, c);
 		headersToReplaceText.setToolTipText(
@@ -86,7 +86,7 @@ public class SessionPanel extends JPanel {
 		sessionPanel.add(headerToRemoveLabel, c);
 		c.gridy++;
 		c.insets = new Insets(0, 0, 0, 0);
-		headersToRemoveText.setPlaceholder("Enter Header(s) Key(s) to Remove..."); 
+		headersToRemoveText.setPlaceholder("Cookie:"); 
 		headersToRemoveText.setVisible(false);
 		sessionPanel.add(headersToRemoveText, c);
 		removeHeaders.addActionListener(e -> updateGui());		
