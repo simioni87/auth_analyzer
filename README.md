@@ -1,4 +1,33 @@
 # Auth Analyzer
+### Table of Contents
+- [Auth Analyzer](#auth-analyzer)
+  * [What is it?](#what-is-it)
+  * [Why should I use Auth Analyzer?](#why-should-i-use-auth-analyzer)
+  * [GUI Overview](#gui-overview)
+  * [Parameter Extraction](#parameter-extraction)
+    + [Auto Extract](#auto-extract)
+    + [From To String](#from-to-string)
+    + [Static Value](#static-value)
+    + [Prompt for Input](#prompt-for-input)
+  * [Parameter Replacement](#parameter-replacement)
+    + [Replacement Location](#replacement-location)
+  * [Parameter removement](#parameter-removement)
+  * [Sample Usage](#sample-usage)
+    + [Auto extract session Cookie](#auto-extract-session-cookie)
+    + [Session Header and CSRF Token Parameter](#session-header-and-csrf-token-parameter)
+    + [Auto extract from JavaScript variable](#auto-extract-from-javascript-variable)
+    + [Auto extract and insert a Bearer Token](#auto-extract-and-insert-a-bearer-token)
+    + [Test several roles at a time](#test-several-roles-at-a-time)
+    + [Refresh Auto Exracted Parameter Value](#refresh-auto-exracted-parameter-value)
+    + [Test idempotent Operations](#test-idempotent-operations)
+    + [Test anonymous sessions](#test-anonymous-sessions)
+    + [Test CORS configuration](#test-cors-configuration)
+    + [Test CSRF Check mechanism](#test-csrf-check-mechanism)
+    + [Verify the Bypass Status](#verify-the-bypass-status)
+  * [Processing Filter](#processing-filter)
+  * [Bypass Detection](#bypass-detection)
+  * [Features](#features)
+
 
 ## What is it?
 The Burp extension helps you to find authorization bugs. Just navigate through the web application with a high privileged user and let the Auth Analyzer repeat your requests for any defined non-privileged user. With the possibility to define Parameters the Auth Analyzer is able to extract and replace parameter values automatically. With this for instance, CSRF tokens or even whole session characteristics can be auto extracted from responses and replaced in further requests. Each response will be analyzed and tagged on its bypass status. 
