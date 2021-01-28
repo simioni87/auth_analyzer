@@ -12,9 +12,8 @@ import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Scanner;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -27,7 +26,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -66,7 +64,7 @@ public class ConfigurationPanel extends JPanel {
 	private JButton pauseButton = new JButton();
 	private JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
-	private HashMap<String, SessionPanel> sessionPanelMap = new HashMap<>();
+	private LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
 	private JButton createSessionButton;
 	private JButton cloneSessionButton;
 	private JButton renameSessionButton;
