@@ -1,23 +1,26 @@
 package com.protect7.authanalyzer.gui;
 
+import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.util.GenericHelper;
 
 public class StatusPanel extends JPanel{
 	
-	private final JLabel headerLabel = new JLabel();
+	private final JLabel headerLabel = new JLabel("<html><p><strong>Header(s) to Replace</strong></html>");
 	private final JLabel headerToReplaceValue = new JLabel("");
+	private final JLabel headerRemoveLabel = new JLabel("<html><p><strong>Header(s) to Remove</strong></html>");
+	private final JLabel headerToRemoveValue = new JLabel("");
 	private final JLabel amountOfFilteredRequestsLabel = new JLabel("");
 	private final String SESSION_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Session Running</html>";
 	private final String SESSION_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Session Paused</html>";
@@ -34,10 +37,20 @@ public class StatusPanel extends JPanel{
 		removeAll();
 		setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 0;
 		c.gridy = 0;
+		c.gridx = 0;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(10, 0, 0, 0);
+	
+		add(headerLabel, c);
+		
+		c.gridx = 1;
+		c.anchor = GridBagConstraints.NORTH;
+		amountOfFilteredRequestsLabel.setText("");
+		add(amountOfFilteredRequestsLabel, c);
+		
+		c.gridx = 2;
+		c.anchor = GridBagConstraints.WEST;
 		onOffSwitch = new JButton(SESSION_STARTED_TEXT);
 		running = true;
 		onOffSwitch.addActionListener(e -> {
@@ -52,44 +65,53 @@ public class StatusPanel extends JPanel{
 		});		
 		add(onOffSwitch, c);
 		
-		c.gridx = 1;
-		c.anchor = GridBagConstraints.EAST;
-		amountOfFilteredRequestsLabel.setText("");
-		add(amountOfFilteredRequestsLabel, c);
-		
-		c.anchor = GridBagConstraints.WEST;
 		c.gridwidth = 3;
-		c.gridx = 0;		
-		
-		c.fill = GridBagConstraints.BOTH;
-		c.gridy++;;
-		headerLabel.setText("<html><p><strong>Header(s) to Replace</strong></html>");
-		add(headerLabel, c);
-
+		c.gridx = 0;
 		c.gridy++;;
 		c.insets = new Insets(5, 0, 0, 0);
 		add(headerToReplaceValue, c);
 		if(session.getHeadersToReplace().equals("")) {
-			headerToReplaceValue.setText("unused");
+			headerToReplaceValue.setText("No Headers specified");
 		}
 		else {
 			headerToReplaceValue.setText(format(session.getHeadersToReplace(), session));
 		}
 		amountOfFilteredRequests = 0;
 	
+		if(session.isRemoveHeaders()) {
+			c.gridy++;
+			c.insets = new Insets(10, 0, 0, 0);
+			add(headerRemoveLabel, c);
+			c.insets = new Insets(5, 0, 0, 0);
+			c.gridy++;
+			add(headerToRemoveValue, c);
+			if(session.getHeadersToRemove().equals("")) {
+				headerToRemoveValue.setText("No Headers specified");
+			}
+			else {
+				headerToRemoveValue.setText(format(session.getHeadersToRemove(), session));
+			}
+		}
+		
 		c.insets = new Insets(10, 0, 0, 0);
-
 		c.gridy++;
+		if(session.getTokens().size() == 0) {
+			JLabel dummyLabel = new JLabel("<html><p style='width:500px'>&nbsp;</p></html>");
+			c.gridwidth = 2;
+			c.gridx = 0;
+			add(dummyLabel, c);
+		}
 		for(Token token : session.getTokens()) {
 			c.gridwidth = 2;
-			c.fill = GridBagConstraints.BOTH;
 			c.gridx = 0;
+			c.anchor = GridBagConstraints.WEST;
 			JLabel tokenLabel = new JLabel(getTokenText(token));
 			tokenLabelMap.put(token.getName(), tokenLabel);
 			add(tokenLabel, c);
 			if(token.isAutoExtract() || token.isFromToString()) {
-				c.gridx = 3;
+				c.gridx = 2;
 				c.gridwidth = 1;
+				c.anchor = GridBagConstraints.NORTH;
 				JButton renewButton = new JButton("Renew");
 				tokenButtonMap.put(token.getName(), renewButton);
 				if(token.getRequest() == null) {
@@ -144,7 +166,7 @@ public class StatusPanel extends JPanel{
 				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 				String timestap = sdf.format(new Date());
 				tokenValue = "(Timestamp: " + timestap + ") ";
-				tokenValue += "<span style='color:green; font-weight: bold'>" + token.getValue().replace("<", "&lt;") + "</span>";				
+				tokenValue += "<span>" + token.getValue().replace("<", "&lt;") + "</span>";				
 			}
 			else {
 				tokenValue = token.getValue().replace("<", "&lt;");
@@ -156,13 +178,7 @@ public class StatusPanel extends JPanel{
 	}
 	
 	private String format(String text, Session session) {
-		String htmlString;
-		if(session.isRemoveHeaders()) {
-			htmlString = "<html><p style='width:500px'><em>REMOVE HEADER(s)</em><br>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
-		}
-		else {
-			htmlString = "<html><p style='width:500px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
-		}
+		String htmlString = "<html><p style='width:500px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
 		return htmlString;
 	}
 	
@@ -173,11 +189,13 @@ public class StatusPanel extends JPanel{
 	public void incrementAmountOfFitleredRequests() {
 		amountOfFilteredRequests++;
 		amountOfFilteredRequestsLabel.setText("Amount of Filtered Requests: " + amountOfFilteredRequests);
+		GenericHelper.uiUpdateAnimation(amountOfFilteredRequestsLabel, Color.RED);
 	}
 	
 	public void updateTokenStatus(Token token) {
 		JLabel tokenLabel = tokenLabelMap.get(token.getName());
 		tokenLabel.setText(getTokenText(token));
+		GenericHelper.uiUpdateAnimation(tokenLabel, new Color(0, 153, 0));
 		if(token.getValue() != null && tokenButtonMap.get(token.getName()) != null) {
 			tokenButtonMap.get(token.getName()).setEnabled(true);
 		}

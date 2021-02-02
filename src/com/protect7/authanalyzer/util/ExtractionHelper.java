@@ -3,17 +3,16 @@ package com.protect7.authanalyzer.util;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Map;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import com.protect7.authanalyzer.entities.AutoExtractLocation;
+import com.protect7.authanalyzer.entities.FromToExtractLocation;
 import com.protect7.authanalyzer.entities.Token;
-
 import burp.BurpExtender;
 import burp.ICookie;
 import burp.IResponseInfo;
@@ -21,14 +20,16 @@ import burp.IResponseInfo;
 public class ExtractionHelper {
 
 	public static boolean extractCurrentTokenValue(byte[] sessionResponse, IResponseInfo sessionResponseInfo, Token token) {
-		for (ICookie cookie : sessionResponseInfo.getCookies()) {
-			if (cookie.getName().equals(token.getExtractName())) {
-				token.setValue(cookie.getValue());
-				return true;
+		if(token.doAutoExtractAtLocation(AutoExtractLocation.COOKIE)) {
+			for (ICookie cookie : sessionResponseInfo.getCookies()) {
+				if (cookie.getName().equals(token.getExtractName())) {
+					token.setValue(cookie.getValue());
+					return true;
+				}
 			}
 		}
-		if (sessionResponseInfo.getStatedMimeType().equals("HTML")
-				|| sessionResponseInfo.getInferredMimeType().equals("HTML")) {
+		if (token.doAutoExtractAtLocation(AutoExtractLocation.HTML) && (sessionResponseInfo.getStatedMimeType().equals("HTML")
+				|| sessionResponseInfo.getInferredMimeType().equals("HTML"))) {
 			try {
 				String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
 						sessionResponseInfo.getBodyOffset(), sessionResponse.length));
@@ -41,8 +42,8 @@ public class ExtractionHelper {
 				BurpExtender.callbacks.printError("Can not parse HTML Response. Error Message: " + e.getMessage());
 			}
 		}
-		if (sessionResponseInfo.getStatedMimeType().equals("JSON")
-				|| sessionResponseInfo.getInferredMimeType().equals("JSON")) {
+		if (token.doAutoExtractAtLocation(AutoExtractLocation.JSON) && (sessionResponseInfo.getStatedMimeType().equals("JSON")
+				|| sessionResponseInfo.getInferredMimeType().equals("JSON"))) {
 			try {
 				String bodyAsString = new String(Arrays.copyOfRange(sessionResponse,
 						sessionResponseInfo.getBodyOffset(), sessionResponse.length));
@@ -71,25 +72,48 @@ public class ExtractionHelper {
 		return null;
 	}
 
-	public static boolean extractTokenWithFromToString(byte[] sessionResponse, Token token) {
+	public static boolean extractTokenWithFromToString(byte[] sessionResponse, IResponseInfo responseInfo, Token token) {
 		try {
-			String responseAsString = new String(sessionResponse);
-			int beginIndex = responseAsString.indexOf(token.getGrepFromString());
-			if (beginIndex != -1) {
-				beginIndex = beginIndex + token.getGrepFromString().length();
-				// Only single lines in extraction scope
-				String lineWithValue = responseAsString.substring(beginIndex).split("\n")[0];
-				String value = null;
-				if (token.getGrepToString().equals("")) {
-					value = lineWithValue;
-				} else {
-					if (lineWithValue.contains(token.getGrepToString())) {
-						value = lineWithValue.substring(0, lineWithValue.indexOf(token.getGrepToString()));
+			boolean doExtract = token.doFromToExtractAtLocation(FromToExtractLocation.ALL);
+			for(FromToExtractLocation locationType : FromToExtractLocation.values()) {
+				if(locationType != FromToExtractLocation.ALL && locationType != FromToExtractLocation.HEADER && locationType != FromToExtractLocation.BODY) {
+					if (token.doFromToExtractAtLocation(locationType) && (responseInfo.getStatedMimeType().toUpperCase().equals(locationType.toString())
+							|| responseInfo.getInferredMimeType().toUpperCase().equals(locationType.toString()))) {
+						doExtract = true;
+						break;
 					}
 				}
-				if (value != null) {
-					token.setValue(value);
-					return true;
+			}
+			if(doExtract) {
+				String responseAsString = null;
+				if(token.doFromToExtractAtLocation(FromToExtractLocation.HEADER) && token.doFromToExtractAtLocation(FromToExtractLocation.BODY)) {
+					responseAsString = new String(sessionResponse);
+				}
+				else if(token.doFromToExtractAtLocation(FromToExtractLocation.HEADER) && !token.doFromToExtractAtLocation(FromToExtractLocation.BODY)) {
+					responseAsString = new String(Arrays.copyOfRange(sessionResponse, 0, responseInfo.getBodyOffset()));
+				}
+				else if(!token.doFromToExtractAtLocation(FromToExtractLocation.HEADER) && token.doFromToExtractAtLocation(FromToExtractLocation.BODY)) {
+					responseAsString = new String(Arrays.copyOfRange(sessionResponse, responseInfo.getBodyOffset(), sessionResponse.length));
+				}
+				if(responseAsString != null) {
+					int beginIndex = responseAsString.indexOf(token.getGrepFromString());
+					if (beginIndex != -1) {
+						beginIndex = beginIndex + token.getGrepFromString().length();
+						// Only single lines in extraction scope
+						String lineWithValue = responseAsString.substring(beginIndex).split("\n")[0];
+						String value = null;
+						if (token.getGrepToString().equals("")) {
+							value = lineWithValue;
+						} else {
+							if (lineWithValue.contains(token.getGrepToString())) {
+								value = lineWithValue.substring(0, lineWithValue.indexOf(token.getGrepToString()));
+							}
+						}
+						if (value != null) {
+							token.setValue(value);
+							return true;
+						}
+					}
 				}
 			}
 		} catch (Exception e) {

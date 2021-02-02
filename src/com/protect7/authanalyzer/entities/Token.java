@@ -1,6 +1,7 @@
 package com.protect7.authanalyzer.entities;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import com.protect7.authanalyzer.gui.StatusPanel;
@@ -25,10 +26,12 @@ public class Token {
 	private final boolean fromToString;
 	private final boolean promptForInput;
 	private TokenRequest request = null;
+	private final EnumSet<TokenLocation> tokenLocationSet; 
+	private final EnumSet<AutoExtractLocation> autoExtractLocationSet;
+	private final EnumSet<FromToExtractLocation> fromToExtractLocationSet;	
 	
-	
-	public Token(String name, String value, String extractName, String grepFromString, String grepToString, boolean remove,
-			boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput) {
+	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, 
+			String grepFromString, String grepToString, boolean remove,	boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput) {
 		this.name = name;
 		this.value = value;
 		this.extractName = extractName;
@@ -39,6 +42,9 @@ public class Token {
 		this.staticValue = staticValue;
 		this.fromToString = fromToString;
 		this.promptForInput = promptForInput;
+		this.tokenLocationSet = tokenLocationSet;
+		this.autoExtractLocationSet = autoExtractLocationSet;
+		this.fromToExtractLocationSet = fromToExtractLocationSet;
 	}
 	
 	public String getName() {
@@ -108,13 +114,25 @@ public class Token {
 	}
 	
 	private boolean extractValue(IHttpRequestResponse requestResponse) {
+		IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(requestResponse.getResponse());
 		if (isAutoExtract()) {
-			IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(requestResponse.getResponse());
 			return ExtractionHelper.extractCurrentTokenValue(requestResponse.getResponse(), responseInfo, this);
 		}
 		if (isFromToString()) {
-			return ExtractionHelper.extractTokenWithFromToString(requestResponse.getResponse(), this);
+			return ExtractionHelper.extractTokenWithFromToString(requestResponse.getResponse(), responseInfo, this);
 		}
 		return false;
+	}
+	
+	public boolean doReplaceAtLocation(TokenLocation tokenLocation) {
+		return tokenLocationSet.contains(tokenLocation);
+	}
+
+	public boolean doAutoExtractAtLocation(AutoExtractLocation autoExtractLocation) {
+		return autoExtractLocationSet.contains(autoExtractLocation);
+	}
+	
+	public boolean doFromToExtractAtLocation(FromToExtractLocation fromToExtractLocation) {
+		return fromToExtractLocationSet.contains(fromToExtractLocation);
 	}
 }

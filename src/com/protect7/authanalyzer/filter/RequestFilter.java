@@ -1,8 +1,12 @@
 package com.protect7.authanalyzer.filter;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JCheckBox;
+
+import com.protect7.authanalyzer.util.GenericHelper;
+
 import burp.IBurpExtenderCallbacks;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
@@ -37,6 +41,7 @@ public abstract class RequestFilter {
 		if(getOnOffButton() != null) {
 			String textWihtoutFilterAmount = getOnOffButton().getText().split(" \\(")[0];
 			getOnOffButton().setText(textWihtoutFilterAmount + " (Filtered: " + amountOfFilteredRequests + ")");
+			GenericHelper.uiUpdateAnimation(getOnOffButton(), Color.RED);
 		}
 	}
 	

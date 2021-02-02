@@ -6,14 +6,22 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.UIManager;
+import com.protect7.authanalyzer.entities.AutoExtractLocation;
+import com.protect7.authanalyzer.entities.FromToExtractLocation;
+import com.protect7.authanalyzer.entities.TokenLocation;
+import com.protect7.authanalyzer.util.GenericHelper;
 
 public class TokenPanel extends JPanel {
 
@@ -32,14 +40,17 @@ public class TokenPanel extends JPanel {
 	private final String TOOLTIP_STATIC_VALUE = "<html>The defined value will be used</html>";
 	private final String TOOLTIP_FROM_TO_STRING = "<html>The value between the \"From\" and \"To\" String will be extracted.<br>The desired value can be marked in message editor and directly<br>set as From-To String by the context menu.</html>";
 	private final String TOOLTIP_PROMPT_FOR_INPUT = "<html>Value can be entered manually if request has a Parameter with corresponding name</html>";
-	private final PlaceholderTextField nameTextField;
+	private final PlaceholderTextArea nameTextField;
 	private final JButton removeButton;
 	private final JCheckBox removeTokenCheckBox;
 	private final JComboBox<String> tokenValueComboBox;
-	private final PlaceholderTextField genericTextField;
+	private final PlaceholderTextArea genericTextField;
 	private String placeholderCache = "";
 	private int currentValueComboBoxIndex = 0;
 	private String[] valueTempText = {"", "", "", ""};
+	private EnumSet<TokenLocation> tokenLocationSet = EnumSet.allOf(TokenLocation.class); 
+	private EnumSet<AutoExtractLocation> autoExtractLocationSet = EnumSet.allOf(AutoExtractLocation.class); 
+	private EnumSet<FromToExtractLocation> fromToExtractLocationSet = FromToExtractLocation.getDefaultSet();
 
 	public TokenPanel() {
 		setLayout(new GridBagLayout());
@@ -50,7 +61,7 @@ public class TokenPanel extends JPanel {
 		c.gridwidth = 1;
 		c.insets = new Insets(10, 5, 0, 5);
 		
-		nameTextField = new PlaceholderTextField(20);
+		nameTextField = new PlaceholderTextArea(1, 20);
 		nameTextField.setToolTipText(TOOLTIP_EXTRACT_TOKEN_NAME);
 		nameTextField.setPlaceholder("Enter Token Name...");
 		add(nameTextField, c);
@@ -67,12 +78,18 @@ public class TokenPanel extends JPanel {
 		add(tokenValueComboBox, c);
 		
 		c.gridx = 3;
-		genericTextField = new PlaceholderTextField(30);
+		genericTextField = new PlaceholderTextArea(1, 27);
 		genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
 		genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
 		add(genericTextField, c);
 		
 		c.gridx = 4;
+		JButton settingsButton = new JButton();
+		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
+		settingsButton.addActionListener(e -> showSettingsDialog());
+		add(settingsButton, c);
+		
+		c.gridx = 5;
 		removeButton = new JButton();
 		removeButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
 		add(removeButton, c);
@@ -90,17 +107,6 @@ public class TokenPanel extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				valueComboBoxChanged(tokenValueComboBox.getSelectedItem().toString());
-			}
-		});
-		
-		//AutoUpdate Token Extract Name
-		genericTextField.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				if(tokenValueComboBox.getSelectedItem().equals(OPTION_AUTO_EXTRACT) && 
-						genericTextField.getText().equals("")) {
-					genericTextField.setText(nameTextField.getText());
-				}
 			}
 		});
 	}
@@ -139,6 +145,7 @@ public class TokenPanel extends JPanel {
 			genericTextField.setPlaceholder("");
 			genericTextField.setToolTipText(TOOLTIP_STATIC_VALUE);
 		}
+		genericTextField.repaint();
 	}
 
 	private void setFieldsEnabledDisabled() {
@@ -292,11 +299,11 @@ public class TokenPanel extends JPanel {
 	}
 	
 	public void setRedColorNameTextField() {
-		nameTextField.setBackground(new Color(255, 102, 102));
+		nameTextField.setBackground(GenericHelper.getErrorBgColor());
 	}
 	
 	public void setRedColorGenericTextField() {
-		genericTextField.setBackground(new Color(255, 102, 102));
+		genericTextField.setBackground(GenericHelper.getErrorBgColor());
 	}
 	
 	public void setDefaultColorAllTextFields() {
@@ -328,9 +335,123 @@ public class TokenPanel extends JPanel {
 		}
 		if (fromString != null && toString != null && !fromString.equals("")) {
 			String[] fromToArry = { fromString, toString };
+			// No no lines allowed in from string or to string
+			if(fromString.contains("\n") || toString.contains("\n")) {
+				return null;
+			}
 			return fromToArry;
 		} else {
 			return null;
 		}
+	}
+
+	public EnumSet<TokenLocation> getTokenLocationSet() {
+		return tokenLocationSet;
+	}
+
+	public void setTokenLocationSet(EnumSet<TokenLocation> tokenLocationSet) {
+		this.tokenLocationSet = tokenLocationSet;
+	}
+	
+	public EnumSet<AutoExtractLocation> getAutoExtractLocationSet() {
+		return autoExtractLocationSet;
+	}
+
+	public void setAutoExtractLocationSet(EnumSet<AutoExtractLocation> autoExtractLocationSet) {
+		this.autoExtractLocationSet = autoExtractLocationSet;
+	}
+	
+	public EnumSet<FromToExtractLocation> getFromToExtractLocationSet() {
+		return fromToExtractLocationSet;
+	}
+
+	public void setFromToExtractLocationSet(EnumSet<FromToExtractLocation> fromToExtractLocationSet) {
+		this.fromToExtractLocationSet = fromToExtractLocationSet;
+	}
+	
+	private void showSettingsDialog() {
+		JPanel inputPanel = new JPanel();
+		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
+		JLabel infoLabel;
+		if(removeTokenCheckBox.isSelected()) {
+			infoLabel = new JLabel("Remove Parameter at:");
+		}
+		else {
+			infoLabel = new JLabel("Replace Parameter at:");
+		}
+		inputPanel.add(infoLabel);
+		for(TokenLocation tokenLocation : TokenLocation.values()) {
+			JCheckBox locationCheckBox = new JCheckBox(tokenLocation.getName());
+			locationCheckBox.setSelected(tokenLocationSet.contains(tokenLocation));
+			locationCheckBox.addActionListener(e -> {
+				if(locationCheckBox.isSelected()) {
+					tokenLocationSet.add(tokenLocation);
+				}
+				else {
+					tokenLocationSet.remove(tokenLocation);
+				}
+			});
+			inputPanel.add(locationCheckBox);
+		}
+		if(!removeTokenCheckBox.isSelected() && isAutoExtract() || isFromToString()) {
+			inputPanel.add(new JLabel(" "));
+	    	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
+	    	inputPanel.add(new JLabel(" "));
+	    	inputPanel.add(new JLabel("Try to extract value from:"));
+	    	if(isAutoExtract()) {
+	    		for(AutoExtractLocation autoExtractLocation : AutoExtractLocation.values()) {
+	    			JCheckBox locationCheckBox = new JCheckBox(autoExtractLocation.getName());
+	    			locationCheckBox.setSelected(autoExtractLocationSet.contains(autoExtractLocation));
+	    			locationCheckBox.addActionListener(e -> {
+	    				if(locationCheckBox.isSelected()) {
+	    					autoExtractLocationSet.add(autoExtractLocation);
+	    				}
+	    				else {
+	    					autoExtractLocationSet.remove(autoExtractLocation);
+	    				}
+	    			});
+	    			inputPanel.add(locationCheckBox);
+	    		}
+			}
+	    	if(isFromToString()) {
+	    		final ArrayList<JCheckBox> locationCheckBoxList = new ArrayList<JCheckBox>();
+		    	for(FromToExtractLocation fromToExtractLocation : FromToExtractLocation.values()) {
+		    		JCheckBox locationCheckBox = new JCheckBox(fromToExtractLocation.getName());
+		    		locationCheckBox.setSelected(fromToExtractLocationSet.contains(fromToExtractLocation));
+		    		if(fromToExtractLocation == FromToExtractLocation.ALL) {
+		    			locationCheckBox.addActionListener(e -> {
+		    				if(locationCheckBox.isSelected()) {
+		    					fromToExtractLocationSet.add(fromToExtractLocation);
+			    				for(JCheckBox checkBox :locationCheckBoxList) {
+			    					checkBox.setEnabled(false);
+			    				}
+			    			}
+			    			else {
+			    				fromToExtractLocationSet.remove(fromToExtractLocation);
+			    				for(JCheckBox checkBox :locationCheckBoxList) {
+			    					checkBox.setEnabled(true);
+			    				}
+			    			}
+		    			});
+		    		}
+		    		else {
+		    			if(fromToExtractLocation != FromToExtractLocation.HEADER && fromToExtractLocation != FromToExtractLocation.BODY)  {
+		    				locationCheckBoxList.add(locationCheckBox);
+			    			locationCheckBox.setEnabled(!fromToExtractLocationSet.contains(FromToExtractLocation.ALL));
+		    			}
+		    			locationCheckBox.addActionListener(e -> {
+		    				if(locationCheckBox.isSelected()) {
+		    					fromToExtractLocationSet.add(fromToExtractLocation);
+			    			}
+			    			else {
+			    				fromToExtractLocationSet.remove(fromToExtractLocation);
+			    			}
+		    			});
+		    		}
+		    		inputPanel.add(locationCheckBox);
+		    	}
+	    	}
+		}
+		JOptionPane.showConfirmDialog(this, inputPanel, "Parameter Settings for " + getTokenName(), JOptionPane.CLOSED_OPTION);
 	}
 }

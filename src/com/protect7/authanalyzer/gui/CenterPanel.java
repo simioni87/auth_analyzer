@@ -3,39 +3,37 @@ package com.protect7.authanalyzer.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
 import java.util.ArrayList;
-import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JFileChooser;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
-import com.protect7.authanalyzer.util.DataExporter;
+import com.protect7.authanalyzer.util.Diff_match_patch;
+import com.protect7.authanalyzer.util.Diff_match_patch.Diff;
+import com.protect7.authanalyzer.util.Diff_match_patch.LinesToCharsResult;
 import burp.BurpExtender;
 import burp.IHttpRequestResponse;
 import burp.IHttpService;
@@ -49,8 +47,22 @@ public class CenterPanel extends JPanel {
 	private final JTable table;
 	private final ListSelectionModel selectionModel;
 	private RequestTableModel tableModel;
+	private final JPanel messageViewPanel;
 	private CustomRowSorter sorter;
-	private final JTabbedPane tabbedPane = new JTabbedPane();
+	private final String BUTTON_TEXT_COMPARE_VIEW = "Compare View  \u29C9";
+	private final String BUTTON_TEXT_SINGLE_VIEW = "Single View  \u25A2";
+	private final String BUTTON_TEXT_EXPAND_DIFF = "Expand Diff View  \u25B7";
+	private final String BUTTON_TEXT_COLLAPSE_DIFF = "Collapse Diff View  \u25BD";
+	private final RequestResponsePanel tabbedPanel1;
+	private final RequestResponsePanel tabbedPanel2;
+	private final String TEXT_DIFF_VIEW_DEFAULT = "<strong>Diff View</strong>";
+	private final JEditorPane diffPane = new JEditorPane("text/html", TEXT_DIFF_VIEW_DEFAULT);
+	private final JButton changeMessageViewButton = new JButton(BUTTON_TEXT_COMPARE_VIEW);
+	private final JButton expandDiffButton = new JButton(BUTTON_TEXT_EXPAND_DIFF);
+	private final JCheckBox syncTabCheckBox = new JCheckBox("Sync Tabs      ", true);
+	private final JCheckBox showDiffCheckBox = new JCheckBox("Show Diff", false);
+	private final JScrollPane comparisonScrollPane = new JScrollPane(diffPane);
+	private final JSplitPane  splitPane;
 	private final JButton clearTableButton;
 	private final JCheckBox showOnlyMarked;
 	private final JCheckBox showDuplicates;
@@ -79,7 +91,7 @@ public class CenterPanel extends JPanel {
 		tableFilterPanel.add(showNotBypassed);
 		showNA = new JCheckBox(BypassConstants.NA.toString(), true);
 		tableFilterPanel.add(showNA);
-		tablePanel.add(new JScrollPane(tableFilterPanel), BorderLayout.NORTH);
+		tablePanel.add(new JScrollPane(tableFilterPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.NORTH);
 		
 		initTableWithModel();		
 		table.setDefaultRenderer(Integer.class, new BypassCellRenderer());
@@ -92,16 +104,105 @@ public class CenterPanel extends JPanel {
 		clearTableButton.addActionListener(e -> clearTablePressed());
 		tableConfigPanel.add(clearTableButton);
 		JButton exportDataButton = new JButton("Export Table Data");
-		exportDataButton.addActionListener(e -> exportData());
+		exportDataButton.addActionListener(e -> new DataExportPanel(this));
 		tableConfigPanel.add(exportDataButton);
 		tablePanel.add(tableConfigPanel, BorderLayout.SOUTH);
 		
-		initTabbedPane();
+		tabbedPanel1 = new RequestResponsePanel(0, this);
+		tabbedPanel2 = new RequestResponsePanel(1, this);
+		JPanel messageViewButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+		messageViewButtons.add(changeMessageViewButton);
+		syncTabCheckBox.setEnabled(false);
+		messageViewButtons.add(syncTabCheckBox);
+		showDiffCheckBox.setEnabled(false);
+		messageViewButtons.add(showDiffCheckBox);
+		messageViewButtons.add(expandDiffButton);
+		messageViewPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		messageViewPanel.add(messageViewButtons, c);
+		c.fill = GridBagConstraints.BOTH;
+		c.weightx = 1.0;
+		c.weighty = 1.0;
+		c.gridy++;
+		messageViewPanel.add(tabbedPanel1, c);
+		c.gridy++;
+		messageViewPanel.add(tabbedPanel2, c);
+		tabbedPanel2.setVisible(false);
+		c.gridy++;
+		diffPane.setEditable(false);
+		comparisonScrollPane.setVisible(false);
+		messageViewPanel.add(comparisonScrollPane, c);
+		expandDiffButton.setEnabled(false);
+		changeMessageViewButton.addActionListener(e -> {
+			if(changeMessageViewButton.getText().equals(BUTTON_TEXT_COMPARE_VIEW)) {
+				changeMessageViewButton.setText(BUTTON_TEXT_SINGLE_VIEW);
+				tabbedPanel2.setVisible(true);
+				if(showDiffCheckBox.isSelected()) {
+					comparisonScrollPane.setVisible(true);
+					expandDiffButton.setEnabled(true);
+				}
+				syncTabCheckBox.setEnabled(true);
+				showDiffCheckBox.setEnabled(true);
+				changeRequestResponseView(true);
+				updateDiffPane();
+			}
+			else {
+				changeMessageViewButton.setText(BUTTON_TEXT_COMPARE_VIEW);
+				tabbedPanel1.setVisible(true);
+				tabbedPanel2.setVisible(false);
+				comparisonScrollPane.setVisible(false);
+				syncTabCheckBox.setEnabled(false);
+				showDiffCheckBox.setEnabled(false);
+				expandDiffButton.setText(BUTTON_TEXT_EXPAND_DIFF);
+				expandDiffButton.setEnabled(false);
+			}
+		});
+		expandDiffButton.addActionListener(e -> {
+			if(expandDiffButton.getText().equals(BUTTON_TEXT_EXPAND_DIFF)) {
+				expandDiffButton.setText(BUTTON_TEXT_COLLAPSE_DIFF);
+				tabbedPanel1.setVisible(false);
+				tabbedPanel2.setVisible(false);
+				syncTabCheckBox.setEnabled(false);
+				showDiffCheckBox.setEnabled(false);
+				showDiffCheckBox.setSelected(true);
+				comparisonScrollPane.setVisible(true);
+			}
+			else {
+				expandDiffButton.setText(BUTTON_TEXT_EXPAND_DIFF);
+				tabbedPanel1.setVisible(true);
+				tabbedPanel2.setVisible(true);
+				syncTabCheckBox.setEnabled(true);
+				showDiffCheckBox.setEnabled(true);
+			}
+		});
+		showDiffCheckBox.addActionListener(e -> {
+			if(showDiffCheckBox.isSelected()) {
+				comparisonScrollPane.setVisible(true);
+				expandDiffButton.setEnabled(true);
+				updateDiffPane();
+			}
+			else {
+				comparisonScrollPane.setVisible(false);
+				expandDiffButton.setEnabled(false);
+			}
+			SwingUtilities.invokeLater(new Runnable() {
+				
+				@Override
+				public void run() {
+					messageViewPanel.revalidate();
+				}
+			});
+		});
 		
-		tabbedPane.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+		
+		messageViewPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+		tabbedPanel1.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+		tabbedPanel2.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
-		JSplitPane  splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablePanel, tabbedPane);
-		splitPane.setResizeWeight(0.5);
+		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablePanel, messageViewPanel);
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
 
@@ -111,11 +212,108 @@ public class CenterPanel extends JPanel {
 
 			@Override
 			public void valueChanged(ListSelectionEvent e) { 
-				changeRequestResponseView(table, tableModel);
+				changeRequestResponseView(false);
 			}
 			
 		});
 		setupTableContextMenu();
+	}
+	
+	public void updateOtherTabbedPane(int tabbedPaneId, int index) {
+		if(syncTabCheckBox.isSelected()) {
+			boolean pending = false;
+			if(tabbedPaneId == 0) {
+				pending = tabbedPanel2.setTabbedPaneIndex(index);
+			}
+			if(tabbedPaneId == 1) {
+				pending = tabbedPanel1.setTabbedPaneIndex(index);
+			}
+			if(!pending) {
+				updateDiffPane();
+			}
+		}
+		else {
+			updateDiffPane();
+		}
+	}
+	
+	public void updateDiffPane() {
+		if(changeMessageViewButton.getText().equals(BUTTON_TEXT_SINGLE_VIEW) && showDiffCheckBox.isSelected()) {
+			String msg1 = tabbedPanel1.getCurrentMessageString();
+			String msg2 = tabbedPanel2.getCurrentMessageString();
+			if(msg1 == null || msg2 == null) {
+				diffPane.setText(TEXT_DIFF_VIEW_DEFAULT);
+			}
+			else {
+				// On test machine it took approx. 3s to calc two msg with 200KB
+				if(msg1.length() > 200000 || msg2.length() > 200000) {
+					diffPane.setText(getHTMLCenterText("Message is too big. Can not calculate differences."));
+				}
+				else {
+					diffPane.setText(getHTMLCenterText("Calculating differences..."));
+					new Thread(new Runnable() {
+						
+						@Override
+						public void run() {
+							Diff_match_patch dmp = new Diff_match_patch();
+							LinesToCharsResult a = dmp.diff_linesToChars(msg1, msg2);
+							String lineText1 = a.getChars1();
+							String lineText2 = a.getChars2();
+							List<String> lineArray = a.getLineArray();
+							LinkedList<Diff> diffs = dmp.diff_main(lineText1, lineText2, false);
+							dmp.diff_charsToLines(diffs, lineArray);
+							final String diffPaneText = getHTMLfromDiff(diffs);
+							diffPane.setText(diffPaneText);
+							SwingUtilities.invokeLater(new Runnable() {
+								
+								@Override
+								public void run() {
+									comparisonScrollPane.getVerticalScrollBar().setValue(0);
+									comparisonScrollPane.getHorizontalScrollBar().setValue(0);
+									messageViewPanel.revalidate();
+								}
+							});
+						}
+					}).start();
+				}
+			}
+		}
+	}
+	
+	private String getHTMLfromDiff(LinkedList<Diff_match_patch.Diff> diff) {
+		int inserts = 0;
+		int deletes = 0;
+		StringBuilder document = new StringBuilder();
+	    for (Diff_match_patch.Diff currentDiff : diff) {
+	      String text = currentDiff.text.replace("<", "&lt;").replace("\n", "<br>");
+	      if(currentDiff.operation == Diff_match_patch.Operation.INSERT) {
+	    	  document.append("<span style='background-color:#c2f9c2;color:#000000;'>").append(text).append("</span>");
+	    	  inserts++;
+	      }
+	      if(currentDiff.operation == Diff_match_patch.Operation.DELETE) {
+	    	  document.append("<span style='background-color:#ffb2b2;color:#000000;'>").append(text).append("</span>");
+	    	  deletes++;
+	      }
+	      if(currentDiff.operation == Diff_match_patch.Operation.EQUAL) {
+	    	  document.append("<span>").append(text).append("</span>");
+	      }
+	    }
+	    String headerText = "";
+	    String selectedSession1 = tabbedPanel1.getSelectedSession();
+	    String selectedMsg1 = tabbedPanel1.getSelectedMessage();
+	    String selectedSession2 = tabbedPanel2.getSelectedSession();
+	    String selectedMsg2 = tabbedPanel2.getSelectedMessage();
+	    if(selectedSession1 != null && selectedSession2 != null && selectedMsg1 != null && selectedMsg2 != null) {
+	    	headerText = "<span><strong>Diff: " + selectedSession1 + " (" + selectedMsg1 + ") &#x2794; " +
+	    			 selectedSession2 + " (" + selectedMsg2 +  ")</strong></span>";
+	    	headerText += "<p><span style='background-color:#c2f9c2;color:#000000;'>Inserts: " + inserts + "</span>&nbsp;&nbsp;&nbsp;<span style='background:#ffb2b2;color:#000000;'>Deletes: " + 
+	    			 deletes + "</span></p>";
+	    }
+	    return headerText+"<p style ='font-family: Courier New,font-size:13pt;'>"+document.toString()+"</p>";
+	}
+	
+	private String getHTMLCenterText(String content) {
+		return "<br><br><br><center>"+content+"</center>";
 	}
 	
 	private void setupTableContextMenu() {
@@ -163,18 +361,13 @@ public class CenterPanel extends JPanel {
 	}
 	
 	//Paint center panel according to session list
-	public void initCenterPanel(boolean sessionListChanged) {
-		if(sessionListChanged) {
-			initTableWithModel();
-		}
-		initTabbedPane();
-		for(Session session : config.getSessions()) {
-			tabbedPane.add(session.getName() + " Request", new JPanel());
-			session.setTabbedPaneRequestIndex(tabbedPane.getTabCount() - 1);
-			tabbedPane.add(session.getName() + " Response", new JPanel());
-			session.setTabbedPaneResponseIndex(tabbedPane.getTabCount() - 1);
-		}
+	public void initCenterPanel() {
+		initTableWithModel();
+		tabbedPanel1.init();
+		tabbedPanel2.init();
 		selectedId = -1;
+		diffPane.setText(TEXT_DIFF_VIEW_DEFAULT);
+		splitPane.setResizeWeight(0.5d);
 	}
 	
 	public void clearTablePressed() {
@@ -197,117 +390,17 @@ public class CenterPanel extends JPanel {
 		config.clearSessionRequestMaps();
 		tableModel.clearRequestMap();
 		selectedId = -1;
+		diffPane.setText(TEXT_DIFF_VIEW_DEFAULT);
 		clearTableButton.setText("Clear Table");
 	}
 	
-	private void exportData() {
-		JPanel inputPanel = new JPanel();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
-		
-		inputPanel.add(new JLabel("Choose the format of the export."));
-    	JRadioButton htmlReport = new JRadioButton("HTML Export", true);
-    	JRadioButton xmlReport = new JRadioButton("XML Export");
-    	ButtonGroup group = new ButtonGroup();
-    	group.add(htmlReport);
-    	group.add(xmlReport);
-    	inputPanel.add(htmlReport);
-    	inputPanel.add(xmlReport);
-    	JCheckBox doBase64Encode = new JCheckBox("Base64-encode requests and responses", true);
-    	doBase64Encode.setEnabled(false);
-    	htmlReport.addActionListener(e -> doBase64Encode.setEnabled(false));
-    	xmlReport.addActionListener(e -> doBase64Encode.setEnabled(true));
-    	inputPanel.add(doBase64Encode);
-    	inputPanel.add(new JLabel(" "));
-    	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
-    	inputPanel.add(new JLabel(" "));
-    	
-    	inputPanel.add(new JLabel("Select Columns to include in export."));
-    	
-    	EnumSet<DataExporter.MainColumn> mainColumns = EnumSet.allOf(DataExporter.MainColumn.class); 
-    	for(DataExporter.MainColumn mainColumn : DataExporter.MainColumn.values()) {
-    		JCheckBox checkBox = new JCheckBox(mainColumn.getName(), true);
-    		checkBox.addActionListener(e -> {
-    			if(checkBox.isSelected()) {
-    				mainColumns.add(mainColumn);
-    			}
-    			else {
-    				mainColumns.remove(mainColumn);
-    			}
-    		});
-    		inputPanel.add(checkBox);
-    	}
-    	EnumSet<DataExporter.SessionColumn> sessionColumns = EnumSet.allOf(DataExporter.SessionColumn.class); 
-    	for(DataExporter.SessionColumn sessionColumn : DataExporter.SessionColumn.values()) {
-    		JCheckBox checkBox = new JCheckBox(sessionColumn.getName(), true);
-    		checkBox.addActionListener(e -> {
-    			if(checkBox.isSelected()) {
-    				sessionColumns.add(sessionColumn);
-    			}
-    			else {
-    				sessionColumns.remove(sessionColumn);
-    			}
-    		});
-    		inputPanel.add(checkBox);
-    	}
-    	inputPanel.add(new JLabel(" "));
-
-		int result = JOptionPane.showConfirmDialog(this, inputPanel, "Export Table Data",
-				JOptionPane.OK_CANCEL_OPTION);
-		if (result == JOptionPane.OK_OPTION) {
-			JFileChooser chooser = new JFileChooser();
-			int status = chooser.showSaveDialog(this);
-			if(status == JFileChooser.APPROVE_OPTION) {
-				File file = chooser.getSelectedFile();
-				if(!file.getName().endsWith(".html") || !file.getName().endsWith(".xml")) {
-					String newFileName;
-					if(file.getName().lastIndexOf(".") != -1) {
-						int index = file.getAbsolutePath().lastIndexOf(".");
-						newFileName = file.getAbsolutePath().substring(0, index);
-					}
-					else {
-						newFileName = file.getAbsolutePath();
-					}
-					if(htmlReport.isSelected()) {
-						newFileName = newFileName + ".html";
-					}
-					else {
-						newFileName = newFileName + ".xml";
-					}
-					file = new File(newFileName);
-				}
-				ArrayList<OriginalRequestResponse> filteredRequestResponseList = getFilteredRequestResponseList();
-				boolean success = false;
-				if(htmlReport.isSelected()) {
-					success = DataExporter.getDataExporter().createHTML(file, filteredRequestResponseList, config.getSessions(), 
-							mainColumns, sessionColumns);
-				}
-				else {
-					success = DataExporter.getDataExporter().createXML(file, filteredRequestResponseList, config.getSessions(), 
-							mainColumns, sessionColumns, doBase64Encode.isSelected());
-				}
-				if(success) {
-					JOptionPane.showMessageDialog(this, "Successfully exported to\n" + file.getAbsolutePath());
-				}
-				else {
-					JOptionPane.showMessageDialog(this, "Failed to export data");
-				}
-			}
-		}
-	}
-	
-	private ArrayList<OriginalRequestResponse> getFilteredRequestResponseList() {
+	public ArrayList<OriginalRequestResponse> getFilteredRequestResponseList() {
 		ArrayList<OriginalRequestResponse> list = new ArrayList<OriginalRequestResponse>();
 		for(int row = 0;row < table.getRowCount();row++) {
 			OriginalRequestResponse requestResponse = tableModel.getOriginalRequestResponse(table.convertRowIndexToModel(row));
 			list.add(requestResponse);
         }
 		return list;
-	}
-	
-	private void initTabbedPane() {
-		tabbedPane.removeAll();
-		tabbedPane.add("Original Request", new JPanel());		
-		tabbedPane.add("Original Response", new JPanel());
 	}
 	
 	private void initTableWithModel() {
@@ -318,30 +411,43 @@ public class CenterPanel extends JPanel {
 				showPotentialBypassed, showNotBypassed, showNA);
         table.setRowSorter(sorter);
 		table.getColumnModel().getColumn(0).setMaxWidth(40);
-		table.getColumnModel().getColumn(1).setMaxWidth(90);
+		table.getColumnModel().getColumn(1).setMaxWidth(80);
 		table.getColumnModel().getColumn(2).setPreferredWidth(200);
 		table.getColumnModel().getColumn(3).setPreferredWidth(400);
 	}
 
-	private void changeRequestResponseView(JTable table, RequestTableModel tableModel) {
+	private void changeRequestResponseView(boolean force) {
 		if(table.getSelectedRow() != -1) {
 			int modelRowIndex = table.convertRowIndexToModel(table.getSelectedRow());
 			OriginalRequestResponse originalRequestResponse = tableModel.getOriginalRequestResponse(modelRowIndex);
-			if(originalRequestResponse != null && selectedId != originalRequestResponse.getId()) {
+			if(force || (originalRequestResponse != null && selectedId != originalRequestResponse.getId())) {
 				selectedId = originalRequestResponse.getId();
+				boolean compareViewVisible = changeMessageViewButton.getText().equals(BUTTON_TEXT_SINGLE_VIEW);
 				IMessageEditorController controllerOriginal = new CustomIMessageEditorController(originalRequestResponse.getRequestResponse().getHttpService(), 
 						originalRequestResponse.getRequestResponse().getRequest(), originalRequestResponse.getRequestResponse().getResponse());
 				IMessageEditor requestMessageEditorOriginal = BurpExtender.callbacks.createMessageEditor(controllerOriginal, false);
 				requestMessageEditorOriginal.setMessage(originalRequestResponse.getRequestResponse().getRequest(), true);
-				tabbedPane.setComponentAt(0, requestMessageEditorOriginal.getComponent());
-				
+				tabbedPanel1.setRequestMessage(tabbedPanel1.TITLE_ORIGINAL, requestMessageEditorOriginal.getComponent(), requestMessageEditorOriginal);
+				if(compareViewVisible) {
+					IMessageEditor requestMessageEditorOriginal2 = BurpExtender.callbacks.createMessageEditor(controllerOriginal, false);
+					requestMessageEditorOriginal2.setMessage(originalRequestResponse.getRequestResponse().getRequest(), true);
+					tabbedPanel2.setRequestMessage(tabbedPanel1.TITLE_ORIGINAL, requestMessageEditorOriginal2.getComponent(), requestMessageEditorOriginal2);
+				}	
 				if(originalRequestResponse.getRequestResponse().getResponse() != null) {
 					IMessageEditor responseMessageEditorOriginal = BurpExtender.callbacks.createMessageEditor(controllerOriginal, false);
 					responseMessageEditorOriginal.setMessage(originalRequestResponse.getRequestResponse().getResponse(), false);
-					tabbedPane.setComponentAt(1, responseMessageEditorOriginal.getComponent());
+					tabbedPanel1.setResponseMessage(tabbedPanel1.TITLE_ORIGINAL, responseMessageEditorOriginal.getComponent(), responseMessageEditorOriginal);
+					if(compareViewVisible) {
+						IMessageEditor responseMessageEditorOriginal2 = BurpExtender.callbacks.createMessageEditor(controllerOriginal, false);
+						responseMessageEditorOriginal2.setMessage(originalRequestResponse.getRequestResponse().getResponse(), false);
+						tabbedPanel2.setResponseMessage(tabbedPanel1.TITLE_ORIGINAL, responseMessageEditorOriginal2.getComponent(), responseMessageEditorOriginal2);
+					}
 				}
 				else {
-					tabbedPane.setComponentAt(1, getMessageViewLabel(originalRequestResponse.getInfoText()));
+					tabbedPanel1.setResponseMessage(tabbedPanel1.TITLE_ORIGINAL, getMessageViewLabel(originalRequestResponse.getInfoText()), null);
+					if(compareViewVisible) {
+						tabbedPanel2.setResponseMessage(tabbedPanel1.TITLE_ORIGINAL, getMessageViewLabel(originalRequestResponse.getInfoText()), null);
+					}
 				}
 							
 				for(Session session : config.getSessions()) {
@@ -353,17 +459,39 @@ public class CenterPanel extends JPanel {
 						
 						IMessageEditor requestMessageEditor = BurpExtender.callbacks.createMessageEditor(controller, false);
 						requestMessageEditor.setMessage(sessionRequestResponse.getRequest(), true);
-						tabbedPane.setComponentAt(session.getTabbedPaneRequestIndex(), requestMessageEditor.getComponent());
+						tabbedPanel1.setRequestMessage(session.getName(), requestMessageEditor.getComponent(), requestMessageEditor);
+						if(compareViewVisible) {
+							IMessageEditor requestMessageEditor2 = BurpExtender.callbacks.createMessageEditor(controller, false);
+							requestMessageEditor2.setMessage(sessionRequestResponse.getRequest(), true);
+							tabbedPanel2.setRequestMessage(session.getName(), requestMessageEditor2.getComponent(), requestMessageEditor2);
+						}
 						
 						IMessageEditor responseMessageEditor = BurpExtender.callbacks.createMessageEditor(controller, false);
 						responseMessageEditor.setMessage(sessionRequestResponse.getResponse(), false);
-						tabbedPane.setComponentAt(session.getTabbedPaneResponseIndex(), responseMessageEditor.getComponent());
+						tabbedPanel1.setResponseMessage(session.getName(), responseMessageEditor.getComponent(), responseMessageEditor);
+						if(compareViewVisible) {
+							IMessageEditor responseMessageEditor2 = BurpExtender.callbacks.createMessageEditor(controller, false);
+							responseMessageEditor2.setMessage(sessionRequestResponse.getResponse(), false);
+							tabbedPanel2.setResponseMessage(session.getName(), responseMessageEditor2.getComponent(), responseMessageEditor2);
+						}
 					}
 					else {
-						tabbedPane.setComponentAt(session.getTabbedPaneRequestIndex(), getMessageViewLabel(analyzerRequestResponse.getInfoText()));
-						tabbedPane.setComponentAt(session.getTabbedPaneResponseIndex(), getMessageViewLabel(analyzerRequestResponse.getInfoText()));
+						tabbedPanel1.setRequestMessage(session.getName(), getMessageViewLabel(analyzerRequestResponse.getInfoText()), null);
+						tabbedPanel1.setResponseMessage(session.getName(), getMessageViewLabel(analyzerRequestResponse.getInfoText()), null);
+						if(compareViewVisible) {
+							tabbedPanel2.setRequestMessage(session.getName(), getMessageViewLabel(analyzerRequestResponse.getInfoText()), null);
+							tabbedPanel2.setResponseMessage(session.getName(), getMessageViewLabel(analyzerRequestResponse.getInfoText()), null);
+						}
 					}
 				}
+				updateDiffPane();
+				SwingUtilities.invokeLater(new Runnable() {
+					
+					@Override
+					public void run() {
+						messageViewPanel.revalidate();
+					}
+				});
 			}
 		}
 	}
@@ -375,7 +503,7 @@ public class CenterPanel extends JPanel {
 		}
 		return new JLabel(labelText, JLabel.CENTER);
 	}
-	
+
 	private class CustomIMessageEditorController implements IMessageEditorController {
 		
 		private final IHttpService httpService;

@@ -31,7 +31,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 			IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(messageInfo);
 			IResponseInfo responseInfo = null;
 			if(messageInfo.getResponse() != null) {
-				BurpExtender.callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
+				responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(messageInfo.getResponse());
 			}
 			for(int i=0; i<config.getRequestFilterList().size(); i++) {
 				RequestFilter filter = config.getRequestFilterAt(i);
