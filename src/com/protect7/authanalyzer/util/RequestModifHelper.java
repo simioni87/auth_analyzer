@@ -1,6 +1,9 @@
 package com.protect7.authanalyzer.util;
 
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -63,7 +66,16 @@ public class RequestModifHelper {
 	}
 	
 	private static List<String> replaceParamInPath(List<String> headers, Session session) {
-		String pathHeader = headers.get(0);
+		int paramIndex = headers.get(0).indexOf("?");
+		String pathHeader;
+		String appendix = "";
+		if(paramIndex != -1) {
+			pathHeader = headers.get(0).substring(0, paramIndex);
+			appendix = headers.get(0).substring(paramIndex);
+		}
+		else {
+			pathHeader = headers.get(0);
+		}
 		for(Token token : session.getTokens()) {
 			if(token.getValue() != null && !token.isRemove() && token.doReplaceAtLocation(TokenLocation.PATH)) {
 				String tokenInPathName = "/"+token.getName()+"/";
@@ -72,10 +84,38 @@ public class RequestModifHelper {
 					startIndex = startIndex + tokenInPathName.length();
 					int endIndex = pathHeader.indexOf("/", startIndex);
 					if(endIndex != -1) {
-						pathHeader = pathHeader.substring(0, startIndex) + token.getValue() + pathHeader.substring(endIndex);
-						headers.set(0, pathHeader);
+						String value;
+						try {
+							value = URLEncoder.encode(token.getValue(), StandardCharsets.UTF_8.toString());
+						} catch (UnsupportedEncodingException e) {
+							value = token.getValue();
+						}
+						pathHeader = pathHeader.substring(0, startIndex) + value + pathHeader.substring(endIndex);
+						headers.set(0, pathHeader + appendix);
 					}
 				}
+				// Check for URL path parameters (semicolon syntax)
+				String urlPathParameter = ";" + token.getName() + "=";
+				int startIndex1 = pathHeader.indexOf(urlPathParameter);
+				if(startIndex1 != -1) {
+					startIndex1 = startIndex1 + urlPathParameter.length();
+					int endIndex1 = pathHeader.indexOf(";", startIndex1);
+					if(endIndex1 == -1) {
+						// Path Header was divided at '?' therefore endIndex is end of string of path header
+						endIndex1 = pathHeader.length();
+					}
+					if(endIndex1 != -1) {
+						String value;
+						try {
+							value = URLEncoder.encode(token.getValue(), StandardCharsets.UTF_8.toString());
+						} catch (UnsupportedEncodingException e) {
+							value = token.getValue();
+						}
+						pathHeader = pathHeader.substring(0, startIndex1) + value + pathHeader.substring(endIndex1);
+						headers.set(0, pathHeader + appendix);
+					}
+				}
+				
 			}
 		}
 		return headers;
@@ -143,7 +183,7 @@ public class RequestModifHelper {
 						paramLocation = "Body";
 					}
 				}
-				// Handle JSON as well (self implemented)
+				// Handle JSON as well (self implemented --> Burp API update parameter does not work for JSON)
 				if (parameter.getType() == IParameter.PARAM_JSON) {
 					if(token.doReplaceAtLocation(TokenLocation.JSON)) {
 						paramLocation = "Json";
@@ -165,7 +205,7 @@ public class RequestModifHelper {
 							modifiedRequest = BurpExtender.callbacks.getHelpers().removeParameter(modifiedRequest, parameter);
 						}
 					} else if (token.getValue() != null) {
-						tokenPriority.setPriority(tokenPriority.getPriority() + 1);;
+						tokenPriority.setPriority(tokenPriority.getPriority() + 1);
 						if (parameter.getType() == IParameter.PARAM_JSON) {
 							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
 						} else {

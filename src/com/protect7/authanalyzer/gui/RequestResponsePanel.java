@@ -16,6 +16,7 @@ public class RequestResponsePanel extends JTabbedPane {
 	private final HashMap<String, SessionTabbedPane> sessionTabbedPaneMap = new HashMap<String, SessionTabbedPane>();
 	private final CenterPanel centerPanel;
 	private final int paneId;
+	private int selectedIndex = 0;
 	
 	public RequestResponsePanel(int paneId, CenterPanel centerPanel) {
 		this.paneId = paneId;
@@ -23,8 +24,8 @@ public class RequestResponsePanel extends JTabbedPane {
 		init();
 		addChangeListener(e -> {
 			SessionTabbedPane sessionTabbedPane = getSelectedSessionTabbedPane();
-			if(sessionTabbedPane != null) {
-				centerPanel.updateOtherTabbedPane(paneId, getSelectedSessionTabbedPane().getSelectedIndex());
+			if(sessionTabbedPane != null && sessionTabbedPane.getTabCount() == 2) {
+				sessionTabbedPane.setSelectedIndex(selectedIndex);
 			}
 		});
 	}
@@ -105,6 +106,7 @@ public class RequestResponsePanel extends JTabbedPane {
 			add(TITLE_REQUEST, new JPanel());
 			add(TITLE_RESPONSE, new JPanel());
 			addChangeListener(e -> {
+				selectedIndex = getSelectedIndex();
 				centerPanel.updateOtherTabbedPane(paneId, getSelectedIndex());
 			});
 		}

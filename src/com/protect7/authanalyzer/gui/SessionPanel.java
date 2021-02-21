@@ -20,6 +20,8 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.UIManager;
+
+import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.util.GenericHelper;
 
 public class SessionPanel extends JPanel {
@@ -97,7 +99,7 @@ public class SessionPanel extends JPanel {
 		sessionPanel.add(restrictToScopeLabel, c);
 		c.gridy++;
 		c.insets = new Insets(0, 0, 0, 0);
-		restrictToScopeText.setPlaceholder("Enter Restrict to Scope URL / Path (e.g. https://example.com/path)...");
+		restrictToScopeText.setPlaceholder("https://restrict_to_this.domain/restrict/to/this/path");
 		restrictToScopeText.setVisible(false);
 		sessionPanel.add(restrictToScopeText, c);
 		restrictToScope.addActionListener(e -> updateGui());
@@ -192,6 +194,28 @@ public class SessionPanel extends JPanel {
 		tokenPanel.setTokenName(name);
 		//Set Token Extract Field Name as well
 		tokenPanel.setAutoExtractFieldName(name);
+		return tokenPanel;
+	}
+	
+	public TokenPanel addToken(Token token) {
+		TokenPanel tokenPanel = addToken(token.getName());
+		tokenPanel.setTokenLocationSet(token.getTokenLocationSet());
+		tokenPanel.setTokenLocationSet(token.getTokenLocationSet());
+		tokenPanel.setAutoExtractLocationSet(token.getAutoExtractLocationSet());
+		tokenPanel.setFromToExtractLocationSet(token.getFromToExtractLocationSet());
+		tokenPanel.setIsRemoveToken(token.isRemove());
+		if (token.isAutoExtract()) {
+			tokenPanel.setAutoExtractFieldName(token.getExtractName());
+		}
+		if (token.isStaticValue()) {
+			tokenPanel.setStaticTokenValue(token.getValue());
+		}
+		if (token.isFromToString()) {
+			tokenPanel.setFromToString(token.getGrepFromString(), token.getGrepToString());
+		}
+		if (token.isPromptForInput()) {
+			tokenPanel.setPromptForInput();
+		}
 		return tokenPanel;
 	}
 	

@@ -1,5 +1,7 @@
 package com.protect7.authanalyzer.entities;
 
+import java.util.EnumSet;
+
 public enum AutoExtractLocation {
 
 	COOKIE("Cookie"), 
@@ -16,4 +18,7 @@ public enum AutoExtractLocation {
 		this.name = name;
 	}
 	
+	public static EnumSet<AutoExtractLocation> getDefaultSet() {
+		return EnumSet.of(COOKIE, HTML, JSON);
+	}
 }

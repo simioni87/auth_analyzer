@@ -37,11 +37,16 @@ public class RequestController {
 		} else {
 			int mapId = CurrentConfig.getCurrentConfig().getNextMapId();
 			IRequestInfo originalRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(originalRequestResponse);
+			IResponseInfo originalResponseInfo = null;
+			if(originalRequestResponse.getResponse() != null) {
+				originalResponseInfo = BurpExtender.callbacks.getHelpers()
+				.analyzeResponse(originalRequestResponse.getResponse());
+			}
 			for (Session session : CurrentConfig.getCurrentConfig().getSessions()) {
 				boolean isFiltered = false;
 				if(!session.getStatusPanel().isRunning()) {
 					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-							null, BypassConstants.NA, "Filtered due to paused session.");
+							null, BypassConstants.NA, "Filtered due to paused session.", -1, -1);
 					session.putRequestResponse(mapId, analyzerRequestResponse);
 					session.getStatusPanel().incrementAmountOfFitleredRequests();
 					isFiltered = true;
@@ -49,14 +54,14 @@ public class RequestController {
 				else if (session.isFilterRequestsWithSameHeader()
 						&& isSameHeader(originalRequestInfo.getHeaders(), session)) {
 					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-							null, BypassConstants.NA, "Filtered due to same header.");
+							null, BypassConstants.NA, "Filtered due to same header.", -1, -1);
 					session.putRequestResponse(mapId, analyzerRequestResponse);
 					session.getStatusPanel().incrementAmountOfFitleredRequests();
 					isFiltered = true;
 				} 
 				else if(session.isRestrictToScope() && !scopeMatches(originalRequestInfo.getUrl(), session)) {
 					AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-							null, BypassConstants.NA, "Filtered due to scope restriction.");
+							null, BypassConstants.NA, "Filtered due to scope restriction.", -1, -1);
 					session.putRequestResponse(mapId, analyzerRequestResponse);
 					session.getStatusPanel().incrementAmountOfFitleredRequests();
 					isFiltered = true;
@@ -77,11 +82,11 @@ public class RequestController {
 					// Perform modified request
 					IHttpRequestResponse sessionRequestResponse = BurpExtender.callbacks
 							.makeHttpRequest(originalRequestResponse.getHttpService(), message);
-					
-					IResponseInfo sessionResponseInfo = BurpExtender.callbacks.getHelpers()
-							.analyzeResponse(sessionRequestResponse.getResponse());
+				
 					// Analyze Response of modified Request
 					if (sessionRequestResponse.getRequest() != null && sessionRequestResponse.getResponse() != null) {
+						IResponseInfo sessionResponseInfo = BurpExtender.callbacks.getHelpers()
+								.analyzeResponse(sessionRequestResponse.getResponse());
 						// Extract Token Values if applicable
 						for (Token token : session.getTokens()) {
 							boolean success = false;
@@ -101,22 +106,23 @@ public class RequestController {
 							}
 						}
 						if(originalRequestResponse.getResponse() != null) {
-							IResponseInfo originalResponseInfo = BurpExtender.callbacks.getHelpers()
-									.analyzeResponse(originalRequestResponse.getResponse());
 							BypassConstants bypassConstant = analyzeResponse(originalRequestResponse.getResponse(),
 									sessionRequestResponse.getResponse(), originalResponseInfo, sessionResponseInfo);
 							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-									sessionRequestResponse, bypassConstant, null);
+									sessionRequestResponse, bypassConstant, null, sessionResponseInfo.getStatusCode(),
+									sessionRequestResponse.getResponse().length - sessionResponseInfo.getBodyOffset());
 							session.putRequestResponse(mapId, analyzerRequestResponse);
 						}
 						else {
 							AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-									sessionRequestResponse, BypassConstants.NA, null);
+									sessionRequestResponse, BypassConstants.NA, null, sessionResponseInfo.getStatusCode(),
+									sessionRequestResponse.getResponse().length - sessionResponseInfo.getBodyOffset());
 							session.putRequestResponse(mapId, analyzerRequestResponse);
 						}
 					} else {
 						AnalyzerRequestResponse analyzerRequestResponse = new AnalyzerRequestResponse(
-								null, BypassConstants.NA, "Session Request / Response is null. Probably no response received from server.");
+								null, BypassConstants.NA, "Session Request / Response is null. Probably no response "
+										+ "received from server.", -1, -1);
 						session.putRequestResponse(mapId, analyzerRequestResponse);
 					}
 				}
@@ -132,9 +138,15 @@ public class RequestController {
 			if(originalRequestResponse.getResponse() == null) {
 				infoText = "Request Dropped. No Response to show.";
 			}
-			OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse, originalRequestInfo.getMethod(), url, infoText);
-			CurrentConfig.getCurrentConfig().getTableModel().addNewRequestResponse(requestResponse);
-			
+			int originalStatusCode = -1;
+			int originalResponseContentLength = -1;
+			if(originalResponseInfo != null) {
+				originalStatusCode = originalResponseInfo.getStatusCode();
+				originalResponseContentLength = originalRequestResponse.getResponse().length - originalResponseInfo.getBodyOffset();
+			}
+			OriginalRequestResponse requestResponse = new OriginalRequestResponse(mapId, originalRequestResponse, 
+					originalRequestInfo.getMethod(), url, infoText, originalStatusCode, originalResponseContentLength);
+			CurrentConfig.getCurrentConfig().getTableModel().addNewRequestResponse(requestResponse);		
 			GenericHelper.animateBurpExtensionTab();
 		}
 	}
@@ -180,16 +192,16 @@ public class RequestController {
 				sessionResponse.length);
 		if (Arrays.equals(originalResponseBody, sessionResponseBody)
 				&& (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode())) {
-			return BypassConstants.BYPASSED;
+			return BypassConstants.SAME;
 		}
 		if (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode()) {
 			int range = originalResponseBody.length / 20; // calc 5% of response length
 			int difference = originalResponseBody.length - sessionResponseBody.length;
 			// Check if difference is in range
 			if (difference <= range && difference >= -range) {
-				return BypassConstants.POTENTIAL_BYPASSED;
+				return BypassConstants.SIMILAR;
 			}
 		}
-		return BypassConstants.NOT_BYPASSED;
+		return BypassConstants.DIFFERENT;
 	}
 }
