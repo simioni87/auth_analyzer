@@ -189,10 +189,10 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Exclude Paths (specified Paths can be excluded)
 *	Exclude Queries / Params (specified Queries / Params can be excluded) 
 
-## Bypass Detection
-*	The Response will be declared as BYPASSED if "Both Responses have same Response Body" and "same Response Code"
-*	The Response will be declared as POTENTIAL_BYPASSED if "Both Responses have same Response Code" and "Both Responses have +-5% of response body length"
-*	The Response will be declared as NOT_BYPASSED in every other case
+## Automated Response Analysis
+*	The Response will be declared as SAME if "Both Responses have same Response Body" and "same Response Code"
+*	The Response will be declared as SIMILAR if "Both Responses have same Response Code" and "Both Responses have +-5% of response body length"
+*	The Response will be declared as DIFFERENT in every other case
 
 ## Features
 *	Session Creation for each user role
