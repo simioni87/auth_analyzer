@@ -2,21 +2,26 @@ package com.protect7.authanalyzer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -29,6 +34,7 @@ import javax.swing.event.ListSelectionListener;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
+import com.protect7.authanalyzer.gui.RequestTableModel.Column;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.Diff_match_patch;
@@ -43,9 +49,12 @@ import burp.IMessageEditorController;
 public class CenterPanel extends JPanel {
 
 	private static final long serialVersionUID = 8472627619821851125L;
+	private final String TABLE_SETTINGS = "TABLE_SETTINGS";
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
+	private final ImageIcon loaderImageIcon = new ImageIcon(this.getClass().getClassLoader().getResource("loader.gif"));
 	private final JTable table;
 	private final ListSelectionModel selectionModel;
+	private final HashSet<Column> columnSet = new HashSet<Column>();
 	private RequestTableModel tableModel;
 	private final JPanel messageViewPanel;
 	private CustomRowSorter sorter;
@@ -78,21 +87,26 @@ public class CenterPanel extends JPanel {
 		JPanel tablePanel = new JPanel(new BorderLayout());
 		tablePanel.setBorder(BorderFactory.createLineBorder(Color.gray));
 		
-		JPanel tableFilterPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 10));
+		JPanel tableFilterPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 5));
 		showOnlyMarked = new JCheckBox("Marked", false);
 		tableFilterPanel.add(showOnlyMarked);
 		showDuplicates = new JCheckBox("Duplicates", true);
 		tableFilterPanel.add(showDuplicates);
-		showBypassed = new JCheckBox(BypassConstants.BYPASSED.toString(), true);
+		showBypassed = new JCheckBox(BypassConstants.SAME.getName(), true);
 		tableFilterPanel.add(showBypassed);
-		showPotentialBypassed = new JCheckBox(BypassConstants.POTENTIAL_BYPASSED.toString(), true);
+		showPotentialBypassed = new JCheckBox(BypassConstants.SIMILAR.getName(), true);
 		tableFilterPanel.add(showPotentialBypassed);
-		showNotBypassed = new JCheckBox(BypassConstants.NOT_BYPASSED.toString(), true);
+		showNotBypassed = new JCheckBox(BypassConstants.DIFFERENT.getName(), true);
 		tableFilterPanel.add(showNotBypassed);
-		showNA = new JCheckBox(BypassConstants.NA.toString(), true);
+		showNA = new JCheckBox(BypassConstants.NA.getName(), true);
 		tableFilterPanel.add(showNA);
+		JButton settingsButton = new JButton();
+		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
+		settingsButton.addActionListener(e -> showTableSettingsDialog(tableFilterPanel));
+		tableFilterPanel.add(settingsButton);
 		tablePanel.add(new JScrollPane(tableFilterPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.NORTH);
 		
+		loadTableSettings();
 		initTableWithModel();		
 		table.setDefaultRenderer(Integer.class, new BypassCellRenderer());
 		table.setDefaultRenderer(String.class, new BypassCellRenderer());
@@ -104,13 +118,23 @@ public class CenterPanel extends JPanel {
 		clearTableButton.addActionListener(e -> clearTablePressed());
 		tableConfigPanel.add(clearTableButton);
 		JButton exportDataButton = new JButton("Export Table Data");
-		exportDataButton.addActionListener(e -> new DataExportPanel(this));
+		exportDataButton.addActionListener(e -> { 
+			exportDataButton.setIcon(loaderImageIcon);
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					new DataExportPanel(CenterPanel.this);
+					exportDataButton.setIcon(null);
+				}
+			}).start();			
+			});
 		tableConfigPanel.add(exportDataButton);
 		tablePanel.add(tableConfigPanel, BorderLayout.SOUTH);
 		
 		tabbedPanel1 = new RequestResponsePanel(0, this);
 		tabbedPanel2 = new RequestResponsePanel(1, this);
-		JPanel messageViewButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+		JPanel messageViewButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
 		messageViewButtons.add(changeMessageViewButton);
 		syncTabCheckBox.setEnabled(false);
 		messageViewButtons.add(syncTabCheckBox);
@@ -207,7 +231,7 @@ public class CenterPanel extends JPanel {
 		add(splitPane, BorderLayout.CENTER);
 
 		selectionModel = table.getSelectionModel();
-		selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		//selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
 
 			@Override
@@ -219,6 +243,25 @@ public class CenterPanel extends JPanel {
 		setupTableContextMenu();
 	}
 	
+	private void loadTableSettings() {
+		String savedSettings = BurpExtender.callbacks.loadExtensionSetting(TABLE_SETTINGS);
+		if(savedSettings != null) {
+			String[] split = savedSettings.split(",");
+			for(String columnAsString : split) {
+				for(Column column : Column.values()) {
+					if(columnAsString.equals(column.toString())) {
+						columnSet.add(column);
+					}
+				}
+			}
+		}
+		else {
+			for(Column column : Column.getDefaultSet()) {
+				columnSet.add(column);
+			}
+		}
+	}
+
 	public void updateOtherTabbedPane(int tabbedPaneId, int index) {
 		if(syncTabCheckBox.isSelected()) {
 			boolean pending = false;
@@ -321,38 +364,59 @@ public class CenterPanel extends JPanel {
 			@Override
 			public void mouseReleased(MouseEvent event) {	
 				if (event.getButton() == MouseEvent.BUTTON3) {
-					Point point = event.getPoint();
-				    int row = table.rowAtPoint(point);
-				    if(row != -1) {
+				    int[] rows = table.getSelectedRows();
+				    if(rows.length > 0) {
 				    	JPopupMenu contextMenu = new JPopupMenu();
-				    	final OriginalRequestResponse requestResponse = tableModel.getOriginalRequestResponse(table.convertRowIndexToModel(row));
-				    	JMenuItem markRowItem;
-				    	if(requestResponse.isMarked())  {
-				    		markRowItem = new JMenuItem("Unmark Row");
-				    		markRowItem.addActionListener(e -> {
-						    	requestResponse.setMarked(false);
-					    	});
+				    	final ArrayList<OriginalRequestResponse> requestResponseList = new ArrayList<OriginalRequestResponse>();
+				    	String appendix = "";
+				    	if(rows.length > 1) {
+				    		appendix = "s";
 				    	}
-				    	else {
-				    		markRowItem = new JMenuItem("Mark Row");
-				    		markRowItem.addActionListener(e -> {
-						    	requestResponse.setMarked(true);
-					    	});
+				    	for(int row : rows) {
+				    		requestResponseList.add(tableModel.getOriginalRequestResponse(table.convertRowIndexToModel(row)));
 				    	}
-				    	JMenuItem repeatRequestItem = new JMenuItem("Repeat Request");
+				    	JMenuItem unmarkRowItem = new JMenuItem("Unmark Row" + appendix);
+				    	unmarkRowItem.addActionListener(e -> {
+			    			for(OriginalRequestResponse requestResponse : requestResponseList) {
+			    				requestResponse.setMarked(false);
+			    			}
+				    	});
+				    	JMenuItem markRowItem = new JMenuItem("Mark Row" + appendix);
+			    		markRowItem.addActionListener(e -> {
+			    			for(OriginalRequestResponse requestResponse : requestResponseList) {
+			    				requestResponse.setMarked(true);
+			    			}
+				    	});
+			    		JMenuItem repeatRequestItem = new JMenuItem("Repeat Request" + appendix);
 				    	if(!CurrentConfig.getCurrentConfig().isRunning()) {
 				    		repeatRequestItem.setEnabled(false);
 				    	}
 				    	repeatRequestItem.addActionListener(e -> {
-				    		CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(requestResponse.getRequestResponse());
+				    		Collections.sort(requestResponseList);
+				    		for(OriginalRequestResponse requestResponse : requestResponseList) {
+				    			CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(requestResponse.getRequestResponse());
+				    		}
 				    	});
-				    	JMenuItem deleteRowItem = new JMenuItem("Delete Row");
+				    	JMenuItem deleteRowItem = new JMenuItem("Delete Row" + appendix);
 				    	deleteRowItem.addActionListener(e -> {
-				    		tableModel.deleteRequestResponse(table.convertRowIndexToModel(row));
+				    		for(OriginalRequestResponse requestResponse : requestResponseList) {
+				    			tableModel.deleteRequestResponse(requestResponse);
+				    		}
 				    	});
-				    	contextMenu.add(markRowItem);
+				    	if(rows.length == 1) {
+				    		if(requestResponseList.get(0).isMarked()) {
+				    			contextMenu.add(unmarkRowItem);
+				    		}
+				    		else {
+				    			contextMenu.add(markRowItem);
+				    		}
+				    	}
+				    	else {
+				    		contextMenu.add(markRowItem);
+					    	contextMenu.add(unmarkRowItem);
+				    	}
 				    	contextMenu.add(repeatRequestItem);
-				    	contextMenu.add(deleteRowItem);
+				    	contextMenu.add(deleteRowItem); 
 				    	contextMenu.show(event.getComponent(), event.getX(), event.getY());
 				    }
 				}				
@@ -371,18 +435,20 @@ public class CenterPanel extends JPanel {
 	}
 	
 	public void clearTablePressed() {
-		clearTableButton.setText("Wait for Clearing");
+		clearTableButton.setIcon(loaderImageIcon);
 		if(config.isRunning()) {
 			config.getAnalyzerThreadExecutor().execute(new Runnable() {
 				
 				@Override
 				public void run() {
 					clearTable();
+					clearTableButton.setIcon(null);
 				}
 			});
 		}
 		else {
 			clearTable();
+			clearTableButton.setIcon(null);
 		}
 	}
 	
@@ -391,7 +457,6 @@ public class CenterPanel extends JPanel {
 		tableModel.clearRequestMap();
 		selectedId = -1;
 		diffPane.setText(TEXT_DIFF_VIEW_DEFAULT);
-		clearTableButton.setText("Clear Table");
 	}
 	
 	public ArrayList<OriginalRequestResponse> getFilteredRequestResponseList() {
@@ -410,10 +475,7 @@ public class CenterPanel extends JPanel {
 		sorter = new CustomRowSorter(tableModel, showOnlyMarked, showDuplicates, showBypassed, 
 				showPotentialBypassed, showNotBypassed, showNA);
         table.setRowSorter(sorter);
-		table.getColumnModel().getColumn(0).setMaxWidth(40);
-		table.getColumnModel().getColumn(1).setMaxWidth(80);
-		table.getColumnModel().getColumn(2).setPreferredWidth(200);
-		table.getColumnModel().getColumn(3).setPreferredWidth(400);
+        updateColumnWidths();
 	}
 
 	private void changeRequestResponseView(boolean force) {
@@ -502,6 +564,64 @@ public class CenterPanel extends JPanel {
 			labelText = text;
 		}
 		return new JLabel(labelText, JLabel.CENTER);
+	}
+	
+	private void updateColumnWidths() {		
+		for(Column column : Column.values()) {
+			if(!columnSet.contains(column)) {
+				for(int i=0; i<tableModel.getColumnCount(); i++) {
+					if(tableModel.getColumnName(i).endsWith(column.toString())) {
+						table.getColumnModel().getColumn(i).setMinWidth(0);
+						table.getColumnModel().getColumn(i).setMaxWidth(0);
+					}
+				}
+			}
+			else {
+				if(column == Column.ID) {
+					table.getColumnModel().getColumn(0).setMaxWidth(40);
+					table.getColumnModel().getColumn(0).setPreferredWidth(40);
+				}
+				else if(column == Column.Host) {
+					table.getColumnModel().getColumn(2).setMaxWidth(10000);
+					table.getColumnModel().getColumn(2).setPreferredWidth(200);
+				}
+				else if(column == Column.Path) {
+					table.getColumnModel().getColumn(3).setMaxWidth(10000);
+					table.getColumnModel().getColumn(3).setPreferredWidth(400);
+				}
+				else {
+					for(int i=0; i<tableModel.getColumnCount(); i++) {
+						if(tableModel.getColumnName(i).endsWith(column.toString())) {
+							table.getColumnModel().getColumn(i).setMaxWidth(10000);
+							table.getColumnModel().getColumn(i).setPreferredWidth(80);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void showTableSettingsDialog(Component parent) {
+		JPanel inputPanel = new JPanel();
+		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
+		inputPanel.add(new JLabel("Show Columns"));
+		for(Column column : Column.values()) {
+			JCheckBox columnCheckBox = new JCheckBox(column.toString());
+			columnCheckBox.setSelected(columnSet.contains(column));
+			columnCheckBox.addActionListener(e -> {
+				if(columnCheckBox.isSelected()) {
+					columnSet.add(column);
+				}
+				else {
+					columnSet.remove(column);				
+				}
+				updateColumnWidths();
+			});
+			inputPanel.add(columnCheckBox);
+		}
+		JOptionPane.showConfirmDialog(parent, inputPanel, "Show / Hide Table Columns", JOptionPane.CLOSED_OPTION);
+		String saveString = columnSet.toString().replaceAll(" ", "").replace("[", "").replace("]", "");
+		BurpExtender.callbacks.saveExtensionSetting(TABLE_SETTINGS, saveString);
 	}
 
 	private class CustomIMessageEditorController implements IMessageEditorController {

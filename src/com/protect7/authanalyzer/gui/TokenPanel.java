@@ -49,7 +49,7 @@ public class TokenPanel extends JPanel {
 	private int currentValueComboBoxIndex = 0;
 	private String[] valueTempText = {"", "", "", ""};
 	private EnumSet<TokenLocation> tokenLocationSet = EnumSet.allOf(TokenLocation.class); 
-	private EnumSet<AutoExtractLocation> autoExtractLocationSet = EnumSet.allOf(AutoExtractLocation.class); 
+	private EnumSet<AutoExtractLocation> autoExtractLocationSet = AutoExtractLocation.getDefaultSet();
 	private EnumSet<FromToExtractLocation> fromToExtractLocationSet = FromToExtractLocation.getDefaultSet();
 
 	public TokenPanel() {

@@ -25,10 +25,9 @@ public class Session {
 	private URL scopeUrl;
 	private int tabbedPaneRequestIndex;
 	private int tabbedPaneResponseIndex;
-	private HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
+	private final HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
 	private ArrayList<Token> tokens = new ArrayList<Token>();
 	private final StatusPanel statusPanel;
-	//private int tokenPriority = 0;
 
 	public Session(String name, String headersToReplace, boolean removeHeaders, String headersToRemove, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
 		this.name = name;

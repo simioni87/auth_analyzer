@@ -20,7 +20,9 @@ public class MainPanel extends JPanel {
 		setBorder(new EmptyBorder(5, 5, 5, 5));
 		centerPanel = new CenterPanel();
 		configurationPanel = new ConfigurationPanel(this);
-		splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(configurationPanel), centerPanel);
+		JScrollPane scrollPane = new JScrollPane(configurationPanel);
+		scrollPane.getVerticalScrollBar().setUnitIncrement(20);
+		splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, centerPanel);
 		splitPane.setDividerSize(5);
 		add(splitPane, BorderLayout.CENTER);
 		BurpExtender.callbacks.registerContextMenuFactory(new ContextMenuController(configurationPanel));
@@ -41,5 +43,9 @@ public class MainPanel extends JPanel {
 	
 	public CenterPanel getCenterPanel() {
 		return centerPanel;
+	}
+	
+	public ConfigurationPanel getConfigurationPanel() {
+		return configurationPanel;
 	}
 }

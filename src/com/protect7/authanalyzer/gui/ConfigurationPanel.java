@@ -1,8 +1,10 @@
 package com.protect7.authanalyzer.gui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Scanner;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -27,7 +30,6 @@ import javax.swing.JToggleButton;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -47,30 +49,33 @@ import com.protect7.authanalyzer.filter.QueryFilter;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
 import com.protect7.authanalyzer.util.CurrentConfig;
+import com.protect7.authanalyzer.util.DataStorageProvider;
+import com.protect7.authanalyzer.util.GenericHelper;
+
 import burp.BurpExtender;
 
 public class ConfigurationPanel extends JPanel {
 
 	private static final long serialVersionUID = -4278008236240529083L;
-	private final String STORE_KEY_SETUP_NAMES = "ed17de8eed6f56e556310cddbe724270";
-	private final String STORE_LAST_USED = "Last Used";
-	private CurrentConfig config = CurrentConfig.getCurrentConfig();
+	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
+	private final ImageIcon loaderImageIcon = new ImageIcon(this.getClass().getClassLoader().getResource("loader.gif"));
 	private final String ANALYZER_STOPPED_TEXT = "<html><span style='color:red; font-weight: bold'>&#x26AB;</span> Analyzer Stopped</html>";
 	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running</html>";
 	private final String ANALYZER_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Analyzer Paused</html>";
 	private final String DROP_REQUEST_TEXT = "Drop Original Requests";
 	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
-	private JButton startStopButton = new JButton();
-	private JButton pauseButton = new JButton();
-	private JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
+	private final JButton startStopButton = new JButton();
+	private final JButton pauseButton = new JButton();
+	private final JLabel pendingRequestsLabel = new JLabel("");
+	private final JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
-	private LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
-	private JButton createSessionButton;
-	private JButton cloneSessionButton;
-	private JButton renameSessionButton;
-	private JButton removeSessionButton;
-	private JButton saveSetupButton;
-	private JButton loadSetupButton;
+	private final LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
+	private final JButton createSessionButton;
+	private final JButton cloneSessionButton;
+	private final JButton renameSessionButton;
+	private final JButton removeSessionButton;
+	private final JButton saveSetupButton;
+	private final JButton loadSetupButton;
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
 	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
@@ -79,8 +84,7 @@ public class ConfigurationPanel extends JPanel {
 
 	public ConfigurationPanel(MainPanel mainPanel) {
 		this.mainPanel = mainPanel;
-		JPanel sessionButtonPanel = new JPanel();
-		sessionButtonPanel.setLayout(new BoxLayout(sessionButtonPanel, BoxLayout.Y_AXIS));
+		JPanel sessionButtonPanel = new JPanel(new GridLayout(0, 1, 0, 5));
 		createSessionButton = new JButton("New Session");
 		cloneSessionButton = new JButton("Clone Session");
 		cloneSessionButton.setEnabled(false);
@@ -89,8 +93,8 @@ public class ConfigurationPanel extends JPanel {
 		removeSessionButton = new JButton("Remove Session");
 		removeSessionButton.setEnabled(false);
 		
-		saveSetupButton = new JButton("Save Setup");
-		loadSetupButton = new JButton("Load Setup");
+		saveSetupButton = new JButton("Export Setup");
+		loadSetupButton = new JButton("Import Setup");
 
 		createSessionButton.addActionListener(e -> {
 			String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session");
@@ -136,9 +140,29 @@ public class ConfigurationPanel extends JPanel {
 			}
 		});
 
-		saveSetupButton.addActionListener(e -> saveSetup());
+		saveSetupButton.addActionListener(e -> { 
+			saveSetupButton.setIcon(loaderImageIcon);
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					saveSetup();
+					saveSetupButton.setIcon(null);
+				}
+			}).start();			
+			});
 
-		loadSetupButton.addActionListener(e -> loadSetup());
+		loadSetupButton.addActionListener(e -> { 
+			loadSetupButton.setIcon(loaderImageIcon);
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					loadSetup();
+					loadSetupButton.setIcon(null);
+				}
+			}).start();			
+			});
 
 		sessionButtonPanel.add(createSessionButton);
 		sessionButtonPanel.add(cloneSessionButton);
@@ -227,7 +251,7 @@ public class ConfigurationPanel extends JPanel {
 		c.gridx = 0;
 		c.gridy = 0;
 		c.anchor = GridBagConstraints.PAGE_START;
-		c.insets = new Insets(20, 20, 20, 20);
+		c.insets = new Insets(10, 20, 20, 20);
 
 		add(sessionButtonPanel, c);
 		c.gridx = 1;
@@ -242,14 +266,19 @@ public class ConfigurationPanel extends JPanel {
 		JPanel startStopButtonPanel = new JPanel();
 		startStopButtonPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c1 = new GridBagConstraints();
-		c1.anchor = GridBagConstraints.WEST;
+		c1.fill = GridBagConstraints.BOTH;
 		c1.gridy = 0;
 		c1.gridx = 0;
+		c1.gridwidth = 2;
+		c1.insets = new Insets(10, 0, 0, 0);
+		startStopButtonPanel.add(pendingRequestsLabel, c1);
+		c1.gridy = 1;
+		c1.gridwidth = 1;
 		c.insets = new Insets(20, 20, 20, 40);
 		startStopButtonPanel.add(startStopButton, c1);
 		c1.gridx = 1;
 		startStopButtonPanel.add(pauseButton, c1);
-		c1.gridy = 1;
+		c1.gridy = 2;
 		c1.gridx = 0;
 		c1.gridwidth = 2;
 		c1.insets = new Insets(10, 0, 0, 0);
@@ -258,16 +287,15 @@ public class ConfigurationPanel extends JPanel {
 		c.gridx = 3;
 		add(startStopButtonPanel, c);
 		
-		sessionTabbedPane.addChangeListener(e -> {
-			mainPanel.updateDividerLocation();
-		});
 	}
 
 	public void loadAutoStoredData() {
 		try {
-			String storedData = BurpExtender.callbacks.loadExtensionSetting(STORE_LAST_USED);
-			loadSetup(storedData);
-			mainPanel.updateDividerLocation();
+			String storedData = DataStorageProvider.loadSetup();
+			if(storedData != null) {
+				loadSetup(storedData);
+				mainPanel.updateDividerLocation();
+			}
 		} catch (Exception e) {
 			BurpExtender.callbacks.printOutput("Can not restore saved Data. Error Message: " + e.getMessage());
 		}
@@ -293,7 +321,7 @@ public class ConfigurationPanel extends JPanel {
 			try {
 				FileWriter writer = new FileWriter(file);
 				createSessionObjects(false);
-				writer.write(getSetupAsJsonString());
+				writer.write(DataStorageProvider.getSetupAsJsonString());
 				writer.close();
 				JOptionPane.showMessageDialog(this, "Successfully saved to\n" + file.getAbsolutePath());
 			} catch (Exception e) {
@@ -465,6 +493,11 @@ public class ConfigurationPanel extends JPanel {
 		}
 		return sessionNames;
 	}
+	
+	public void updateAmountOfPendingRequests(int amountOfPendingRequests) {
+		pendingRequestsLabel.setText("Pending Requests Queue: " + amountOfPendingRequests);
+		GenericHelper.uiUpdateAnimation(pendingRequestsLabel, new Color(240, 110, 0));
+	}
 
 	private void addFilter(RequestFilter filter, JCheckBox onOffButton, String inputDialogText) {
 		config.addRequestFilter(filter);
@@ -532,7 +565,7 @@ public class ConfigurationPanel extends JPanel {
 					createSessionObjects(true);
 					// Auto Store
 					try {
-						storeSetup(STORE_LAST_USED);
+						DataStorageProvider.saveSetup();
 					} catch (Exception e) {
 						BurpExtender.callbacks.printOutput("Can not store setup. Error Message: " + e.getMessage());
 					}
@@ -619,60 +652,12 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 
-	private void storeSetup(String setupName) {
-		String storedSetupNames = BurpExtender.callbacks.loadExtensionSetting(STORE_KEY_SETUP_NAMES);
-		boolean alreadySaved = false;
-		JsonArray storedSetupNameArray;
-		if (storedSetupNames != null) {
-			storedSetupNameArray = JsonParser.parseString(storedSetupNames).getAsJsonArray();
-			for (JsonElement storedSetupName : storedSetupNameArray) {
-				if (storedSetupName.getAsString().equals(setupName)) {
-					alreadySaved = true;
-					break;
-				}
-			}
-		} else {
-			storedSetupNameArray = new JsonArray();
-		}
-		if (!alreadySaved) {
-			storedSetupNameArray.add(setupName);
-			BurpExtender.callbacks.saveExtensionSetting(STORE_KEY_SETUP_NAMES, storedSetupNameArray.toString());
-		}	
-		BurpExtender.callbacks.saveExtensionSetting(setupName, getSetupAsJsonString());
-	}
-	
-	private String getSetupAsJsonString() {
-		JsonArray sessionArray = new JsonArray();
-		for (Session session : config.getSessions()) {
-			// Save Current Session Setup. No way to save extension settings on project
-			// level
-			Gson gson = new GsonBuilder().setExclusionStrategies(session.getExclusionStrategy()).create();
-			String sessionJsonAsString = gson.toJson(session);
-			JsonObject sessionElement = JsonParser.parseString(sessionJsonAsString).getAsJsonObject();
-			sessionElement.addProperty("panelPosition",	sessionTabbedPane.indexOfTab(session.getName()));
-			sessionElement.addProperty("name", session.getName());
-			sessionArray.add(sessionElement);
-		}
-
-		JsonObject sessionsObject = new JsonObject();
-		sessionsObject.add("sessions", sessionArray);
-
-		JsonArray filterArray = new JsonArray();
-		for (RequestFilter filter : config.getRequestFilterList()) {
-			JsonObject filterElement = JsonParser.parseString(filter.toJson()).getAsJsonObject();
-			filterArray.add(filterElement);
-		}
-		sessionsObject.add("filters", filterArray);
-		return sessionsObject.toString();
-	}
-
 	private void loadSetup(String jsonString) {
 		sessionPanelMap.clear();
 		sessionTabbedPane.removeAll();
 		// Load Sessions
 		JsonArray storedSessionsArray = JsonParser.parseString(jsonString).getAsJsonObject().get("sessions")
 				.getAsJsonArray();
-		SessionPanel[] sessionPanels = new SessionPanel[storedSessionsArray.size()];
 		for (JsonElement sessionEl : storedSessionsArray) {
 			JsonObject sessionObject = sessionEl.getAsJsonObject();
 			String sessionName = sessionObject.get("name").getAsString();
@@ -725,20 +710,13 @@ public class ConfigurationPanel extends JPanel {
 					tokenPanel.setGenericTextFieldText(tokenObject.get("value").getAsString());
 				}
 			}
-			sessionPanels[sessionObject.get("panelPosition").getAsInt()] = sessionPanel;
-		}
-		for (SessionPanel sessionPanel : sessionPanels) {
 			sessionTabbedPane.add(sessionPanel.getSessionName(), sessionPanel);
-			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 1);
 			sessionPanelMap.put(sessionPanel.getSessionName(), sessionPanel);
 			cloneSessionButton.setEnabled(true);
 			renameSessionButton.setEnabled(true);
 			removeSessionButton.setEnabled(true);
 		}
-		if (sessionTabbedPane.getSelectedIndex() > 0) {
-			sessionTabbedPane.setSelectedIndex(0);
-		}
-
+	
 		// Load Filters
 		JsonArray storedFiltersArray = JsonParser.parseString(jsonString).getAsJsonObject().get("filters")
 				.getAsJsonArray();

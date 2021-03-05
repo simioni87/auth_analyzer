@@ -1,6 +1,7 @@
 package com.protect7.authanalyzer.gui;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
@@ -12,7 +13,7 @@ public class RequestTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
 	private final ArrayList<OriginalRequestResponse> originalRequestResponseList = new ArrayList<OriginalRequestResponse>();
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
-	private final int STATIC_COLUMN_COUNT = 4;
+	private final int STATIC_COLUMN_COUNT = 6;
 	
 	public ArrayList<OriginalRequestResponse> getOriginalRequestResponseList() {
 		return originalRequestResponseList;
@@ -31,7 +32,6 @@ public class RequestTableModel extends AbstractTableModel {
 	}
 	
 	public boolean isDuplicate(int id, String endpoint) {
-
 		for(OriginalRequestResponse requestResponse : originalRequestResponseList) {
 			if(requestResponse.getEndpoint().equals(endpoint) && requestResponse.getId() < id) {
 				return true;
@@ -40,13 +40,12 @@ public class RequestTableModel extends AbstractTableModel {
 		return false;
 	}
 	
-	public void deleteRequestResponse(final int listIndex) {
-		originalRequestResponseList.remove(listIndex);
-		SwingUtilities.invokeLater(new Runnable() {
-			
+	public void deleteRequestResponse(OriginalRequestResponse requestResponse) {
+		originalRequestResponseList.remove(requestResponse);
+		SwingUtilities.invokeLater(new Runnable() {			
 			@Override
 			public void run() {
-				fireTableRowsDeleted(listIndex, listIndex);
+				fireTableDataChanged();
 			}
 		});
 	}
@@ -74,9 +73,34 @@ public class RequestTableModel extends AbstractTableModel {
 		return null;
 	}
 	
+	/*public int getColumnId(String columnName) {
+		if(columnName.equals("ID")) {
+			return 0;
+		}
+		if(columnName.equals("Method")) {
+			return 1;
+		}
+		if(columnName.equals("Host")) {
+			return 2;
+		}
+		if(columnName.equals("Path")) {
+			return 3;
+		}
+		if(columnName.equals("Code")) {
+			return 4;
+		}
+		if(columnName.equals("Length")) {
+			return 5 + config.getSessions().size();
+		}
+		if(columnName.equals("Status")) {
+			return 5 + (config.getSessions().size()*2);
+		}
+		return -1;
+	}*/
+	
 	@Override
 	public int getColumnCount() {
-		return STATIC_COLUMN_COUNT + config.getSessions().size();
+		return STATIC_COLUMN_COUNT + (config.getSessions().size()*3);
 	}
 
 	@Override
@@ -90,6 +114,7 @@ public class RequestTableModel extends AbstractTableModel {
 			return null;
 		}
 		OriginalRequestResponse originalRequestResponse = originalRequestResponseList.get(row);
+		int tempColunmIndex = 4;
 		if(column == 0) {
 			return originalRequestResponse.getId();
 		}
@@ -102,8 +127,27 @@ public class RequestTableModel extends AbstractTableModel {
 		if(column == 3) {
 			return originalRequestResponse.getUrl();
 		}
+		if(column == 4) {
+			return originalRequestResponse.getStatusCode();
+		}
 		for(int i=0; i<config.getSessions().size(); i++) {
-			int tempColunmIndex = STATIC_COLUMN_COUNT+i;
+			tempColunmIndex++;
+			if(column == tempColunmIndex) {
+				return config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getStatusCode();
+			}
+		}
+		tempColunmIndex++;
+		if(column == tempColunmIndex) {
+			return originalRequestResponse.getResponseContentLength();
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(column == tempColunmIndex) {
+				return config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getResponseContentLength();
+			}
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
 			if(column == tempColunmIndex) {
 				return config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getStatus();
 			}
@@ -113,22 +157,42 @@ public class RequestTableModel extends AbstractTableModel {
 
 	@Override
 	public String getColumnName(int column) {
+		int tempColunmIndex = 4;
 		if(column == 0) {
-			return "ID";
+			return Column.ID.toString();
 		}
 		if(column == 1) {
-			return  "Method";
+			return  Column.Method.toString();
 		}
 		if(column == 2) {
-			return "Host";
+			return Column.Host.toString();
 		}
 		if(column == 3) {
-			return "Path";
+			return Column.Path.toString();
+		}
+		if(column == 4) {
+			return Column.Code.toString();
 		}
 		for(int i=0; i<config.getSessions().size(); i++) {
-			int tempColunmIndex = STATIC_COLUMN_COUNT+i;
+			tempColunmIndex++;
 			if(column == tempColunmIndex) {
-				return config.getSessions().get(i).getName();
+				return config.getSessions().get(i).getName() + " " + Column.Code;
+			}
+		}
+		tempColunmIndex++;
+		if(column == tempColunmIndex) {
+			return Column.Length.toString();
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(column == tempColunmIndex) {
+				return config.getSessions().get(i).getName() + " " + Column.Length;
+			}
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(column == tempColunmIndex) {
+				return config.getSessions().get(i).getName() + " " + Column.Status;
 			}
 		}
 		throw new IndexOutOfBoundsException("Column index out of bounds: " + column);
@@ -136,6 +200,7 @@ public class RequestTableModel extends AbstractTableModel {
 
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
+		int tempColunmIndex = 4;
 		if(columnIndex == 0) {
 			return Integer.class;
 		}
@@ -148,12 +213,40 @@ public class RequestTableModel extends AbstractTableModel {
 		if(columnIndex == 3) {
 			return String.class;
 		}
+		if(columnIndex == 4) {
+			return Integer.class;
+		}
 		for(int i=0; i<config.getSessions().size(); i++) {
-			int tempColunmIndex = STATIC_COLUMN_COUNT+i;
+			tempColunmIndex++;
+			if(columnIndex == tempColunmIndex) {
+				return Integer.class;
+			}
+		}
+		tempColunmIndex++;
+		if(columnIndex == tempColunmIndex) {
+			return Integer.class;
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(columnIndex == tempColunmIndex) {
+				return Integer.class;
+			}
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
 			if(columnIndex == tempColunmIndex) {
 				return BypassConstants.class;
 			}
 		}
 		throw new IndexOutOfBoundsException("Column index out of bounds: " + columnIndex);
+	}
+	
+	public enum Column {
+		ID, Method, Host, Path, Code, Length, Status;
+		
+		public static EnumSet<Column> getDefaultSet() {
+			return EnumSet.of(ID, Method, Host, Path, Status);
+		}
+		
 	}
 }

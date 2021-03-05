@@ -5,16 +5,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import com.protect7.authanalyzer.controller.RequestController;
 import com.protect7.authanalyzer.entities.Session;
+import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.gui.RequestTableModel;
 
+import burp.BurpExtender;
 import burp.IHttpRequestResponse;
 
 public class CurrentConfig {
 
 	private static CurrentConfig mInstance = new CurrentConfig();
+	private final String[] patterns = {"token", "code", "user", "pass", "key", "csrf", "xsrf"};
+	private final int POOL_SIZE_MIN = 1; 
+	private final int POOL_SIZE_MAX = 50; 
 	private final RequestController requestController = new RequestController();
-	private ThreadPoolExecutor analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
+	private ThreadPoolExecutor analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);
 	private ArrayList<RequestFilter> requestFilterList = new ArrayList<>();
 	private ArrayList<Session> sessions = new ArrayList<>();
 	private RequestTableModel tableModel = null;
@@ -30,8 +35,12 @@ public class CurrentConfig {
 			@Override
 			public void run() {
 				getRequestController().analyze(messageInfo);
+				BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(
+						analyzerThreadExecutor.getQueue().size());
 			}
 		});
+		BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(
+				analyzerThreadExecutor.getQueue().size());
 	}
 	
 	public static CurrentConfig getCurrentConfig(){
@@ -47,15 +56,33 @@ public class CurrentConfig {
 	}
 
 	public void setRunning(boolean running) {
-		if(running) {		
-			analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
+		if(running) {
+			if(hasPromptForInput()) {
+				//Set POOL Size to 1 --> if prompt for input dialog appears no further requests will be repeated until dialog is closed
+				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);
+			}
+			else {
+				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MAX);
+			}
 		}
 		else {
 			analyzerThreadExecutor.shutdownNow();
+			//while(analyzerThreadExecutor.is)
+			BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(0);
 		}
 		this.running = running;
 	}
 
+	private boolean hasPromptForInput() {
+		for(Session session : sessions) {
+			for(Token token : session.getTokens()) {
+				if(token.isPromptForInput()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 	public ArrayList<RequestFilter> getRequestFilterList() {
 		return requestFilterList;
@@ -120,5 +147,9 @@ public class CurrentConfig {
 
 	public RequestController getRequestController() {
 		return requestController;
+	}
+
+	public String[] getPatterns() {
+		return patterns;
 	}	
 }

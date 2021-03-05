@@ -43,28 +43,28 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 				}
 				if(showBypassed.isSelected()) {
 					for(int i = entry.getValueCount()-1; i>3; i--) {
-						if(entry.getValue(i).equals(BypassConstants.BYPASSED)) {
+						if(entry.getStringValue(i).equals(BypassConstants.SAME.toString())) {
 							return true;
 						}
 					}
 				}
 				if(showPotentialBypassed.isSelected()) {
 					for(int i = entry.getValueCount()-1; i>3; i--) {
-						if(entry.getValue(i).equals(BypassConstants.POTENTIAL_BYPASSED)) {
+						if(entry.getStringValue(i).equals(BypassConstants.SIMILAR.toString())) {
 							return true;
 						}
 					}
 				}
 				if(showNotBypassed.isSelected()) {
 					for(int i = entry.getValueCount()-1; i>3; i--) {
-						if(entry.getValue(i).equals(BypassConstants.NOT_BYPASSED)) {
+						if(entry.getStringValue(i).equals(BypassConstants.DIFFERENT.toString())) {
 							return true;
 						}
 					}
 				}
 				if(showNA.isSelected()) {
 					for(int i = entry.getValueCount()-1; i>3; i--) {
-						if(entry.getValue(i).equals(BypassConstants.NA)) {
+						if(entry.getStringValue(i).equals(BypassConstants.NA.toString())) {
 							return true;
 						}
 					}

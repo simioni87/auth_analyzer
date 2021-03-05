@@ -125,14 +125,25 @@ public class Token {
 	}
 	
 	public boolean doReplaceAtLocation(TokenLocation tokenLocation) {
-		return tokenLocationSet.contains(tokenLocation);
+		return getTokenLocationSet().contains(tokenLocation);
 	}
 
 	public boolean doAutoExtractAtLocation(AutoExtractLocation autoExtractLocation) {
-		return autoExtractLocationSet.contains(autoExtractLocation);
+		return getAutoExtractLocationSet().contains(autoExtractLocation);
 	}
 	
 	public boolean doFromToExtractAtLocation(FromToExtractLocation fromToExtractLocation) {
-		return fromToExtractLocationSet.contains(fromToExtractLocation);
+		return getFromToExtractLocationSet().contains(fromToExtractLocation);
+	}
+	public EnumSet<AutoExtractLocation> getAutoExtractLocationSet() {
+		return autoExtractLocationSet;
+	}
+
+	public EnumSet<TokenLocation> getTokenLocationSet() {
+		return tokenLocationSet;
+	}
+
+	public EnumSet<FromToExtractLocation> getFromToExtractLocationSet() {
+		return fromToExtractLocationSet;
 	}
 }

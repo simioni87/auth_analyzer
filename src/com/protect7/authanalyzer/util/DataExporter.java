@@ -152,13 +152,13 @@ public class DataExporter {
 								sessionRequestResponse.getStatus());
 						String endTag = "</div></td>";
 						if(column == SessionColumn.BYPASS_STATUS) {
-							if(cellValue.equals(BypassConstants.BYPASSED.toString())) {
+							if(cellValue.equals(BypassConstants.SAME.getName())) {
 								startTag = "<td style='background-color: rgba(255, 0, 0, 0.3)'><div class='message'>" ;
 							}
-							if(cellValue.equals(BypassConstants.POTENTIAL_BYPASSED.toString())) {
+							if(cellValue.equals(BypassConstants.SIMILAR.getName())) {
 								startTag = "<td style='background-color:rgba(255, 165, 0, 0.3)'><div class='message'>" ;
 							}
-							if(cellValue.equals(BypassConstants.NOT_BYPASSED.toString())) {
+							if(cellValue.equals(BypassConstants.DIFFERENT.getName())) {
 								startTag = "<td style='background-color:rgba(0, 255, 0, 0.3)'><div class='message'>" ;
 							}
 						}
@@ -212,7 +212,7 @@ public class DataExporter {
 
 		switch (column) {
 		case BYPASS_STATUS:
-			return bypassStatus.toString();
+			return bypassStatus.getName();
 		case REQUEST:
 			return new String(requestResponse.getRequest());
 		case RESPONSE:
