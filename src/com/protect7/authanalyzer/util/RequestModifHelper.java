@@ -1,17 +1,12 @@
 package com.protect7.authanalyzer.util;
 
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import javax.swing.JOptionPane;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -20,7 +15,6 @@ import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.entities.TokenLocation;
 import com.protect7.authanalyzer.entities.TokenPriority;
-
 import burp.BurpExtender;
 import burp.IParameter;
 import burp.IRequestInfo;
@@ -79,24 +73,30 @@ public class RequestModifHelper {
 		for(Token token : session.getTokens()) {
 			if(token.getValue() != null && !token.isRemove() && token.doReplaceAtLocation(TokenLocation.PATH)) {
 				String tokenInPathName = "/"+token.getName()+"/";
-				int startIndex = pathHeader.indexOf(tokenInPathName);
+				int startIndex;
+				if(token.isCaseSensitiveTokenName()) {
+					startIndex = pathHeader.indexOf(tokenInPathName);
+				}
+				else {
+					startIndex = pathHeader.toLowerCase().indexOf(tokenInPathName.toLowerCase());
+				}
 				if(startIndex != -1) {
 					startIndex = startIndex + tokenInPathName.length();
 					int endIndex = pathHeader.indexOf("/", startIndex);
 					if(endIndex != -1) {
-						String value;
-						try {
-							value = URLEncoder.encode(token.getValue(), StandardCharsets.UTF_8.toString());
-						} catch (UnsupportedEncodingException e) {
-							value = token.getValue();
-						}
-						pathHeader = pathHeader.substring(0, startIndex) + value + pathHeader.substring(endIndex);
+						pathHeader = pathHeader.substring(0, startIndex) + token.getUrlEncodedValue() + pathHeader.substring(endIndex);
 						headers.set(0, pathHeader + appendix);
 					}
 				}
 				// Check for URL path parameters (semicolon syntax)
 				String urlPathParameter = ";" + token.getName() + "=";
 				int startIndex1 = pathHeader.indexOf(urlPathParameter);
+				if(token.isCaseSensitiveTokenName()) {
+					startIndex1 = pathHeader.indexOf(urlPathParameter);
+				}
+				else {
+					startIndex1 = pathHeader.toLowerCase().indexOf(urlPathParameter.toLowerCase());
+				}
 				if(startIndex1 != -1) {
 					startIndex1 = startIndex1 + urlPathParameter.length();
 					int endIndex1 = pathHeader.indexOf(";", startIndex1);
@@ -105,13 +105,7 @@ public class RequestModifHelper {
 						endIndex1 = pathHeader.length();
 					}
 					if(endIndex1 != -1) {
-						String value;
-						try {
-							value = URLEncoder.encode(token.getValue(), StandardCharsets.UTF_8.toString());
-						} catch (UnsupportedEncodingException e) {
-							value = token.getValue();
-						}
-						pathHeader = pathHeader.substring(0, startIndex1) + value + pathHeader.substring(endIndex1);
+						pathHeader = pathHeader.substring(0, startIndex1) + token.getUrlEncodedValue() + pathHeader.substring(endIndex1);
 						headers.set(0, pathHeader + appendix);
 					}
 				}
@@ -134,7 +128,7 @@ public class RequestModifHelper {
 						if (startIndex != -1 && endIndex != -1) {
 							if (token.getValue() != null) {
 								headerToReplace = headerToReplace.substring(0, startIndex)
-										+ token.getValue() + headerToReplace.substring(endIndex);
+										+ token.getUrlEncodedValue() + headerToReplace.substring(endIndex);
 							} else {
 								String defaultValue = headerToReplace.substring(
 										startIndex + token.getHeaderInsertionPointNameStart().length() + 1,
@@ -165,7 +159,8 @@ public class RequestModifHelper {
 	private static byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token, TokenPriority tokenPriority) {
 		byte[] modifiedRequest = request;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
-			if (parameter.getName().equals(token.getName())) {
+			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
+					(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
 				String paramLocation = null;
 				// Helper can only handle URL, COOKIE and BODY Parameters
 				if (parameter.getType() == IParameter.PARAM_URL) {
@@ -192,7 +187,7 @@ public class RequestModifHelper {
 				if (paramLocation != null) {
 					if (token.isPromptForInput()) {
 						String paramValue = JOptionPane.showInputDialog(session.getStatusPanel(),
-								"<html><strong>Auth Analyzer</strong><br>" + "Enter Parameter Value<br>Session: "
+								"<html><strong>"+Globals.EXTENSION_NAME+"</strong><br>" + "Enter Parameter Value<br>Session: "
 										+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
 										+ "Parameter Location: " + paramLocation + "<br></html>");
 						token.setValue(paramValue);
@@ -209,8 +204,8 @@ public class RequestModifHelper {
 						if (parameter.getType() == IParameter.PARAM_JSON) {
 							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
 						} else {
-							IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getName(),
-									token.getValue(), parameter.getType());
+							IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(parameter.getName(),
+									token.getUrlEncodedValue(), parameter.getType());
 							modifiedRequest = BurpExtender.callbacks.getHelpers().updateParameter(modifiedRequest,
 									modifiedParameter);
 						}
@@ -258,11 +253,12 @@ public class RequestModifHelper {
 					modifyJsonTokenValue(entry.getValue(), token);
 				}
 				if (entry.getValue().isJsonPrimitive()) {
-					if (entry.getKey().equals(token.getName())) {
+					if (entry.getKey().equals(token.getName()) || 
+							(!token.isCaseSensitiveTokenName() && entry.getKey().toLowerCase().equals(token.getName().toLowerCase()))) {
 						if (token.isRemove()) {
 							jsonObject.remove(entry.getKey());
 						} else {
-							jsonObject.addProperty(entry.getKey(), token.getValue());
+							jsonObject.addProperty(entry.getKey(), token.getUrlEncodedValue());
 						}
 					}
 				}

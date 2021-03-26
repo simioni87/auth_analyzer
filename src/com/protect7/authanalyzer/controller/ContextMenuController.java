@@ -6,12 +6,14 @@ import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import com.protect7.authanalyzer.entities.Token;
-import com.protect7.authanalyzer.gui.ConfigurationPanel;
-import com.protect7.authanalyzer.gui.SessionPanel;
-import com.protect7.authanalyzer.gui.TokenPanel;
+import com.protect7.authanalyzer.gui.entity.SessionPanel;
+import com.protect7.authanalyzer.gui.entity.TokenPanel;
+import com.protect7.authanalyzer.gui.main.ConfigurationPanel;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.ExtractionHelper;
 import com.protect7.authanalyzer.util.GenericHelper;
+import com.protect7.authanalyzer.util.Globals;
+
 import burp.IContextMenuFactory;
 import burp.IContextMenuInvocation;
 import burp.IHttpRequestResponse;
@@ -31,7 +33,7 @@ public class ContextMenuController implements IContextMenuFactory {
 	@Override
 	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
 		List<JMenuItem> menuItems = new ArrayList<JMenuItem>();
-		JMenu authAnalyzerMenu = new JMenu("Auth Analyzer");
+		JMenu authAnalyzerMenu = new JMenu(Globals.EXTENSION_NAME);
 		int[] selection = invocation.getSelectionBounds();
 		byte iContext = invocation.getInvocationContext();
 		if(invocation.getSelectedMessages() != null && invocation.getSelectedMessages().length > 0) {
@@ -49,7 +51,6 @@ public class ContextMenuController implements IContextMenuFactory {
 				if (message.getRequest() == null) {
 					return menuItems;
 				}
-				//String selectedText = new String(message.getRequest()).substring(selection[0], selection[1]).trim();
 				String selectedText = new String(Arrays.copyOfRange(message.getRequest(), selection[0], selection[1]));
 				if (isHeader(selectedText)) {
 					// Set header menu
@@ -109,7 +110,7 @@ public class ContextMenuController implements IContextMenuFactory {
 		}
 		);
 		if(!CurrentConfig.getCurrentConfig().isRunning()) {
-			repeatRequests.setToolTipText("Start Auth Analyzer to Repeat Requests");
+			repeatRequests.setToolTipText("Start "+Globals.EXTENSION_NAME+" to Repeat Requests");
 			repeatRequests.setEnabled(false);
 		}
 		authAnalyzerMenu.add(repeatRequests);	
