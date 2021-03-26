@@ -26,6 +26,7 @@ public class RequestResponsePanel extends JTabbedPane {
 			SessionTabbedPane sessionTabbedPane = getSelectedSessionTabbedPane();
 			if(sessionTabbedPane != null && sessionTabbedPane.getTabCount() == 2) {
 				sessionTabbedPane.setSelectedIndex(selectedIndex);
+				centerPanel.updateDiffPane();
 			}
 		});
 	}
