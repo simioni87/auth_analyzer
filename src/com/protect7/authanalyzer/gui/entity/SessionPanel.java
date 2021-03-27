@@ -238,6 +238,7 @@ public class SessionPanel extends JPanel {
 				tokenPanel.setRedColorGenericTextField();
 				showValidationFailedDialog("\"From To String\" not correctly formatted\nAffected Session: "  + getSessionName() +
 						"\nAffected Parameter: " + tokenPanel.getTokenName());
+				tokenPanel.setGenericTextFieldText("from [] to []");
 				return false;
 			}
 			// Check for duplicated Names
