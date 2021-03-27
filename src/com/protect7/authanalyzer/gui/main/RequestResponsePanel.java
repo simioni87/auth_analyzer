@@ -25,8 +25,12 @@ public class RequestResponsePanel extends JTabbedPane {
 		addChangeListener(e -> {
 			SessionTabbedPane sessionTabbedPane = getSelectedSessionTabbedPane();
 			if(sessionTabbedPane != null && sessionTabbedPane.getTabCount() == 2) {
-				sessionTabbedPane.setSelectedIndex(selectedIndex);
-				centerPanel.updateDiffPane();
+				if(sessionTabbedPane.getSelectedIndex() != selectedIndex) {
+					sessionTabbedPane.setSelectedIndex(selectedIndex);
+				}
+				else {
+					centerPanel.updateDiffPane();
+				}
 			}
 		});
 	}
