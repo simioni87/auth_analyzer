@@ -23,16 +23,17 @@ public class InfoDialog extends JDialog {
 	public InfoDialog(Component parent) {
 		setTitle(Globals.EXTENSION_NAME + " - About");
 		JPanel dialogPanel = (JPanel) getContentPane();
-		dialogPanel.setBorder(new EmptyBorder(10, 50, 10, 50));
+		dialogPanel.setBorder(new EmptyBorder(10, 50, 30, 50));
 		dialogPanel.setLayout(new GridLayout(0, 1, 10, 10));
 		
 		add(new JLabel("<html><strong>Auth Analyzer</strong></html>"));
 		add(new JLabel("Version: " + Globals.VERSION));
 		add(new JLabel("Developed by: Simon Reinhart"));
-		add(new JLabel("Company: Protect7"));
-
 		ImageIcon p7logo = new ImageIcon(this.getClass().getClassLoader().getResource("p7_logo.png"));
-		add(new JLabel(p7logo));
+		JLabel companyLabel = new JLabel("Company: ");
+		companyLabel.setHorizontalTextPosition(JLabel.LEFT);
+		companyLabel.setIcon(p7logo);
+		add(companyLabel);
 		
 		JButton helpButton = new JButton("Help");
 		helpButton.addActionListener(e -> openWebsite(Globals.URL_GITHUB_README));
@@ -40,14 +41,7 @@ public class InfoDialog extends JDialog {
 		
 		JButton issueButton = new JButton("Report an Issue");
 		issueButton.addActionListener(e -> openWebsite(Globals.URL_GITHUB_ISSUE));
-		add(issueButton);
-		
-		JButton closeButton = new JButton("OK");
-		closeButton.addActionListener(e -> dispose());
-		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		buttonPanel.add(closeButton);
-		add(buttonPanel);
-		
+		add(issueButton);		
 		
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);	
 		setVisible(true);
