@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.dialog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -13,12 +13,13 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSeparator;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
+import com.protect7.authanalyzer.gui.main.CenterPanel;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.DataExporter;
 
-public class DataExportPanel {
+public class DataExportDialog {
 
-	public DataExportPanel(CenterPanel centerPanel) {
+	public DataExportDialog(CenterPanel centerPanel) {
 		JPanel inputPanel = new JPanel();
 		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
 		

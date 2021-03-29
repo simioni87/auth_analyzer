@@ -1,10 +1,13 @@
 package com.protect7.authanalyzer.entities;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.protect7.authanalyzer.gui.StatusPanel;
+import com.protect7.authanalyzer.gui.entity.StatusPanel;
 import com.protect7.authanalyzer.util.ExtractionHelper;
 import com.protect7.authanalyzer.util.RequestModifHelper;
 
@@ -28,10 +31,13 @@ public class Token {
 	private TokenRequest request = null;
 	private final EnumSet<TokenLocation> tokenLocationSet; 
 	private final EnumSet<AutoExtractLocation> autoExtractLocationSet;
-	private final EnumSet<FromToExtractLocation> fromToExtractLocationSet;	
+	private final EnumSet<FromToExtractLocation> fromToExtractLocationSet;
+	private final boolean caseSensitiveTokenName;
 	
-	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, 
-			String grepFromString, String grepToString, boolean remove,	boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput) {
+	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
+			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
+			String grepToString, boolean remove,	boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput,
+			boolean caseSensitiveTokenName) {
 		this.name = name;
 		this.value = value;
 		this.extractName = extractName;
@@ -45,12 +51,29 @@ public class Token {
 		this.tokenLocationSet = tokenLocationSet;
 		this.autoExtractLocationSet = autoExtractLocationSet;
 		this.fromToExtractLocationSet = fromToExtractLocationSet;
+		this.caseSensitiveTokenName = caseSensitiveTokenName;
 	}
 	
 	public String getName() {
 		return name;
 	}
+	public String getUrlEncodedName() {
+		try {
+			return URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		return name;
+	}
 	public String getValue() {
+		return value;
+	}
+	public String getUrlEncodedValue() {
+		try {
+			return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 		return value;
 	}
 	public void setValue(String value) {
@@ -145,5 +168,9 @@ public class Token {
 
 	public EnumSet<FromToExtractLocation> getFromToExtractLocationSet() {
 		return fromToExtractLocationSet;
+	}
+
+	public boolean isCaseSensitiveTokenName() {
+		return caseSensitiveTokenName;
 	}
 }

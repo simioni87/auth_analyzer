@@ -1,10 +1,10 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.main;
 
 import java.awt.Component;
 import java.util.HashMap;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
-import com.protect7.authanalyzer.gui.CenterPanel;
+
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import burp.IMessageEditor;
@@ -25,7 +25,12 @@ public class RequestResponsePanel extends JTabbedPane {
 		addChangeListener(e -> {
 			SessionTabbedPane sessionTabbedPane = getSelectedSessionTabbedPane();
 			if(sessionTabbedPane != null && sessionTabbedPane.getTabCount() == 2) {
-				sessionTabbedPane.setSelectedIndex(selectedIndex);
+				if(sessionTabbedPane.getSelectedIndex() != selectedIndex) {
+					sessionTabbedPane.setSelectedIndex(selectedIndex);
+				}
+				else {
+					centerPanel.updateDiffPane();
+				}
 			}
 		});
 	}

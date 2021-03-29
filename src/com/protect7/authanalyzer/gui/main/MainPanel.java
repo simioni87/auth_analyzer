@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.main;
 
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
@@ -6,6 +6,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.border.EmptyBorder;
 import com.protect7.authanalyzer.controller.ContextMenuController;
+
 import burp.BurpExtender;
 
 public class MainPanel extends JPanel {

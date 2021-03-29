@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.entity;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;

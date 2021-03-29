@@ -1,6 +1,9 @@
 package com.protect7.authanalyzer.util;
 
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -17,7 +20,6 @@ import com.protect7.authanalyzer.entities.AutoExtractLocation;
 import com.protect7.authanalyzer.entities.FromToExtractLocation;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.entities.TokenLocation;
-
 import burp.BurpExtender;
 import burp.ICookie;
 import burp.IHttpRequestResponse;
@@ -170,41 +172,63 @@ public class ExtractionHelper {
 	
 	public static ArrayList<Token> extractTokensFromMessages(IHttpRequestResponse[] messages) {
 		HashMap<String, Token> tokenMap = new HashMap<String, Token>();
+		String[] staticPatterns = Setting.getValueAsArray(Setting.Item.AUTOSET_PARAM_STATIC_PATTERNS);
+		String[] dynamicPatterns = Setting.getValueAsArray(Setting.Item.AUTOSET_PARAM_DYNAMIC_PATTERNS);
 		for(IHttpRequestResponse message : messages) {
 			if(message.getRequest() != null) {
 				IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(message.getRequest());
 				for(IParameter param : requestInfo.getParameters()) {
 					boolean process = false;
-					for(String pattern : CurrentConfig.getCurrentConfig().getPatterns()) {
+					boolean isDynamic = false;
+					for(String pattern : staticPatterns) {
 						if(param.getName().toLowerCase().contains(pattern)) {
 							process = true;
 							break;
 						}
 					}
+					for(String pattern : dynamicPatterns) {
+						if(param.getName().toLowerCase().contains(pattern)) {
+							process = true;
+							isDynamic = true;
+							break;
+						}
+					}
 					if(process) {
-						boolean autoExtract = false;
+						boolean autoExtract = isDynamic;
 						EnumSet<AutoExtractLocation> autoExtractLocationSet = AutoExtractLocation.getDefaultSet();
 						if(tokenMap.containsKey(param.getName())) {
 							autoExtract = tokenMap.get(param.getName()).isAutoExtract();
 							autoExtractLocationSet = tokenMap.get(param.getName()).getAutoExtractLocationSet();
 						}
 						Token token = null;
+						String urlDecodedName;
+						try {
+							urlDecodedName = URLDecoder.decode(param.getName(), StandardCharsets.UTF_8.toString());
+						} catch (UnsupportedEncodingException e) {
+							urlDecodedName = param.getName();
+						}
+						String urlDecodedValue;
+						try {
+							urlDecodedValue = URLDecoder.decode(param.getValue(), StandardCharsets.UTF_8.toString());
+						} catch (UnsupportedEncodingException e) {
+							urlDecodedValue = param.getValue();
+						}
 						if(param.getType() == IParameter.PARAM_URL) {
 							// Create Token with static value
-							token = new Token(param.getName()  , EnumSet.of(TokenLocation.URL), autoExtractLocationSet, 
-									FromToExtractLocation.getDefaultSet(), param.getValue(), param.getName(), null, null, false, autoExtract, 
-									!autoExtract, false, false);
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.URL), autoExtractLocationSet, 
+									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
+									!autoExtract, false, false, false);
 						}
 						if(param.getType() == IParameter.PARAM_BODY) {
 							// Create Token with static value
-							token = new Token(param.getName()  , EnumSet.of(TokenLocation.BODY), autoExtractLocationSet, 
-									FromToExtractLocation.getDefaultSet(), param.getValue(), param.getName(), null, null, false, autoExtract, 
-									!autoExtract, false, false);
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.BODY), autoExtractLocationSet, 
+									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
+									!autoExtract, false, false, false);
 						}
 						if(param.getType() == IParameter.PARAM_JSON) {
-							token = new Token(param.getName()  , EnumSet.of(TokenLocation.JSON), autoExtractLocationSet, 
-									FromToExtractLocation.getDefaultSet(), param.getValue(), param.getName(), null, null, false, autoExtract, 
-									!autoExtract, false, false);
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.JSON), autoExtractLocationSet, 
+									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
+									!autoExtract, false, false, false);
 						}
 						if(token != null) {
 							tokenMap.put(token.getName(), token);
@@ -216,7 +240,7 @@ public class ExtractionHelper {
 				IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(message.getResponse());
 				for(ICookie cookie : responseInfo.getCookies()) {
 					Token token = new Token(cookie.getName(), EnumSet.of(TokenLocation.COOKIE), EnumSet.of(AutoExtractLocation.COOKIE), 
-							FromToExtractLocation.getDefaultSet(), null, cookie.getName(), null, null, false, true, false, false, false);
+							FromToExtractLocation.getDefaultSet(), null, cookie.getName(), null, null, false, true, false, false, false, false);
 					tokenMap.put(token.getName(), token);
 				}
 				if(responseInfo.getStatedMimeType().equals("JSON")	|| responseInfo.getInferredMimeType().equals("JSON")) {
@@ -238,10 +262,11 @@ public class ExtractionHelper {
 					createTokensFromJson(jsonElement, tokenMap);
 				}
 				if (entry.getValue().isJsonPrimitive()) {
-					for(String pattern : CurrentConfig.getCurrentConfig().getPatterns()) {
+					String[] staticPatterns = Setting.getValueAsArray(Setting.Item.AUTOSET_PARAM_STATIC_PATTERNS);
+					for(String pattern : staticPatterns) {
 						if(entry.getKey().toLowerCase().contains(pattern)) {
 							Token token = new Token(entry.getKey(), EnumSet.of(TokenLocation.JSON), EnumSet.of(AutoExtractLocation.JSON), 
-									FromToExtractLocation.getDefaultSet(), null, entry.getKey(), null, null, false, true, false, false, false);
+									FromToExtractLocation.getDefaultSet(), null, entry.getKey(), null, null, false, true, false, false, false, false);
 							tokenMap.put(token.getName(), token);
 							break;
 						}

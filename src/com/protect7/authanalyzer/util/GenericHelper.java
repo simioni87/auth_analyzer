@@ -32,7 +32,7 @@ public class GenericHelper {
 		if(BurpExtender.mainPanel.getParent() != null && BurpExtender.mainPanel.getParent() instanceof JTabbedPane) {
 			JTabbedPane burpTabbedPane = (JTabbedPane) BurpExtender.mainPanel.getParent();
 			for(int i=0; i<burpTabbedPane.getTabCount(); i++) {
-				if(burpTabbedPane.getTitleAt(i).equals(BurpExtender.EXTENSION_NAME)) {
+				if(burpTabbedPane.getTitleAt(i).equals(Globals.EXTENSION_NAME)) {
 					Color animationColor = new Color(240, 110, 0);
 					Color currentColor = burpTabbedPane.getForegroundAt(i);
 					final int id = i;

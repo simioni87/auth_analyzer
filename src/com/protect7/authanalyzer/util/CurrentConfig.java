@@ -7,7 +7,7 @@ import com.protect7.authanalyzer.controller.RequestController;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.filter.RequestFilter;
-import com.protect7.authanalyzer.gui.RequestTableModel;
+import com.protect7.authanalyzer.gui.util.RequestTableModel;
 
 import burp.BurpExtender;
 import burp.IHttpRequestResponse;
@@ -15,9 +15,9 @@ import burp.IHttpRequestResponse;
 public class CurrentConfig {
 
 	private static CurrentConfig mInstance = new CurrentConfig();
-	private final String[] patterns = {"token", "code", "user", "pass", "key", "csrf", "xsrf"};
+	//private final String[] patternsStatic = {"token", "code", "user", "mail", "pass", "key", "csrf", "xsrf"};
+	//private final String[] patternsDynamic = {"viewstate", "eventvalidation"};
 	private final int POOL_SIZE_MIN = 1; 
-	private final int POOL_SIZE_MAX = 50; 
 	private final RequestController requestController = new RequestController();
 	private ThreadPoolExecutor analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);
 	private ArrayList<RequestFilter> requestFilterList = new ArrayList<>();
@@ -57,12 +57,13 @@ public class CurrentConfig {
 
 	public void setRunning(boolean running) {
 		if(running) {
-			if(hasPromptForInput()) {
+			if(hasPromptForInput() && Setting.getValueAsBoolean(Setting.Item.ONLY_ONE_THREAD_IF_PROMT_FOR_INPUT)) {
 				//Set POOL Size to 1 --> if prompt for input dialog appears no further requests will be repeated until dialog is closed
 				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);
 			}
 			else {
-				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MAX);
+				int numberOfThreads = Setting.getValueAsInteger(Setting.Item.NUMBER_OF_THREADS);
+				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numberOfThreads);
 			}
 		}
 		else {
@@ -147,9 +148,5 @@ public class CurrentConfig {
 
 	public RequestController getRequestController() {
 		return requestController;
-	}
-
-	public String[] getPatterns() {
-		return patterns;
 	}	
 }

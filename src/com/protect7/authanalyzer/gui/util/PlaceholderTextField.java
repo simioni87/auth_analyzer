@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.util;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;

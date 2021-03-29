@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.entity;
 
 import java.awt.Component;
 import java.awt.Desktop;
@@ -20,9 +20,12 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.UIManager;
-
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.gui.main.MainPanel;
+import com.protect7.authanalyzer.gui.util.PlaceholderTextArea;
+import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
 import com.protect7.authanalyzer.util.GenericHelper;
+import com.protect7.authanalyzer.util.Globals;
 
 public class SessionPanel extends JPanel {
 
@@ -40,7 +43,6 @@ public class SessionPanel extends JPanel {
 	private final JButton addTokenButton;
 	private final JPanel sessionPanel = new JPanel();
 	private final StatusPanel statusPanel = new StatusPanel();
-	private final JPanel tokenHeaderPanel = new JPanel();
 	private final GridBagConstraints c = new GridBagConstraints();
 	private final ArrayList<TokenPanel> tokenPanels = new ArrayList<TokenPanel>();
 	private final MainPanel mainPanel;
@@ -105,7 +107,7 @@ public class SessionPanel extends JPanel {
 		restrictToScope.addActionListener(e -> updateGui());
 		
 		c.gridy++;
-		c.insets = new Insets(10, 0, 0, 0);
+		c.insets = new Insets(5, 0, 0, 0);
 		sessionPanel.add(new JSeparator(), c);
 
 		JPanel buttonPanel = new JPanel();
@@ -116,7 +118,7 @@ public class SessionPanel extends JPanel {
 		infoButton.addActionListener(e -> {
 			
 			try {
-				Desktop.getDesktop().browse(new URI("https://github.com/simioni87/auth_analyzer/blob/main/README.md#parameter-extraction"));
+				Desktop.getDesktop().browse(new URI(Globals.URL_GITHUB_PARAMETER_HELP));
 			} catch (Exception e1) {
 				JOptionPane.showMessageDialog(this, "Browser can not be opened.", "Error", JOptionPane.WARNING_MESSAGE);
 			}
@@ -125,11 +127,7 @@ public class SessionPanel extends JPanel {
 		c.gridy++;
 		c.fill = GridBagConstraints.VERTICAL;
 		sessionPanel.add(buttonPanel, c);
-
-		c.gridy++;
 		c.insets = new Insets(0, 0, 0, 0);
-		tokenHeaderPanel.setVisible(false);
-		sessionPanel.add(tokenHeaderPanel, c);
 		add(sessionPanel);
 	}
 	
@@ -165,22 +163,20 @@ public class SessionPanel extends JPanel {
 	}
 
 	private TokenPanel addToken() {
-		tokenHeaderPanel.setVisible(true);
 		TokenPanel tokenPanel = new TokenPanel();
+		if(tokenPanels.size() > 0) {
+			tokenPanel.setHeaderVisible(false);
+		}
 		tokenPanels.add(tokenPanel);
 		c.gridy++;
 		sessionPanel.add(tokenPanel, c);
-		if(tokenPanels.size() == 1) {
-			setTokenHeaderPanelContent();
-		}
 		sessionPanel.revalidate();
 		
 		tokenPanel.getRemoveButton().addActionListener(e -> {
 			sessionPanel.remove(tokenPanel);
-			c.gridy--;
 			tokenPanels.remove(tokenPanel);
-			if (tokenPanels.size() == 0) {
-				tokenHeaderPanel.setVisible(false);
+			if(tokenPanels.size() > 0) {
+				tokenPanels.get(0).setHeaderVisible(true);
 			}
 			revalidate();
 			mainPanel.updateDividerLocation();
@@ -203,6 +199,7 @@ public class SessionPanel extends JPanel {
 		tokenPanel.setTokenLocationSet(token.getTokenLocationSet());
 		tokenPanel.setAutoExtractLocationSet(token.getAutoExtractLocationSet());
 		tokenPanel.setFromToExtractLocationSet(token.getFromToExtractLocationSet());
+		tokenPanel.setCaseSensitiveTokenName(token.isCaseSensitiveTokenName());
 		tokenPanel.setIsRemoveToken(token.isRemove());
 		if (token.isAutoExtract()) {
 			tokenPanel.setAutoExtractFieldName(token.getExtractName());
@@ -241,6 +238,7 @@ public class SessionPanel extends JPanel {
 				tokenPanel.setRedColorGenericTextField();
 				showValidationFailedDialog("\"From To String\" not correctly formatted\nAffected Session: "  + getSessionName() +
 						"\nAffected Parameter: " + tokenPanel.getTokenName());
+				tokenPanel.setGenericTextFieldText("from [] to []");
 				return false;
 			}
 			// Check for duplicated Names
@@ -409,32 +407,5 @@ public class SessionPanel extends JPanel {
 
 	public void setSessionName(String sessionName) {
 		this.sessionName = sessionName;
-	}
-	
-	private void setTokenHeaderPanelContent() {
-		if(tokenPanels.size()>0) {
-			tokenHeaderPanel.removeAll();
-			tokenHeaderPanel.setLayout(new GridBagLayout());
-			GridBagConstraints c = new GridBagConstraints();
-			c.gridx = 0;
-			c.gridy = 0;
-			c.fill = GridBagConstraints.NONE;
-			c.gridwidth = 1;
-			c.insets = new Insets(10, 70, 0, 0);
-			
-			tokenHeaderPanel.add(new JLabel("Parameter Name"), c);
-			
-			c.insets = new Insets(10, 65, 0, 0);
-			c.gridx = 1;
-			tokenHeaderPanel.add(new JLabel("Remove"), c);
-			
-			c.insets = new Insets(10, 15, 0, 0);
-			c.gridx = 2;
-			tokenHeaderPanel.add(new JLabel("Parameter Value"), c);
-			
-			c.insets = new Insets(10, 45, 0, 0);
-			c.gridx = 3;
-			tokenHeaderPanel.add(new JLabel("Extract Field Name / Static Value / From To String"), c);
-		}
 	}
 }

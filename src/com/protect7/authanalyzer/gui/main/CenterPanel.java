@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.main;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -34,7 +34,11 @@ import javax.swing.event.ListSelectionListener;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
-import com.protect7.authanalyzer.gui.RequestTableModel.Column;
+import com.protect7.authanalyzer.gui.dialog.DataExportDialog;
+import com.protect7.authanalyzer.gui.util.BypassCellRenderer;
+import com.protect7.authanalyzer.gui.util.CustomRowSorter;
+import com.protect7.authanalyzer.gui.util.RequestTableModel;
+import com.protect7.authanalyzer.gui.util.RequestTableModel.Column;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.Diff_match_patch;
@@ -124,7 +128,7 @@ public class CenterPanel extends JPanel {
 				
 				@Override
 				public void run() {
-					new DataExportPanel(CenterPanel.this);
+					new DataExportDialog(CenterPanel.this);
 					exportDataButton.setIcon(null);
 				}
 			}).start();			

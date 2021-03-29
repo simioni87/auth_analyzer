@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.protect7.authanalyzer</groupId>
 	<artifactId>AuthAnalyzer</artifactId>
-	<version>1.1.5</version>
+	<version>1.1.6</version>
 	<description>Burp Extension</description>
 	<build>
 		<sourceDirectory>src</sourceDirectory>

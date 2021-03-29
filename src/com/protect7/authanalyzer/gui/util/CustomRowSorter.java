@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.util;
 
 import java.util.Collections;
 import javax.swing.JCheckBox;

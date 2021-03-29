@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
-import com.protect7.authanalyzer.gui.StatusPanel;
+import com.protect7.authanalyzer.gui.entity.StatusPanel;
 
 public class Session {
 

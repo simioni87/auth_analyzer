@@ -1,4 +1,4 @@
-package com.protect7.authanalyzer.gui;
+package com.protect7.authanalyzer.gui.main;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -18,7 +18,6 @@ import java.util.LinkedHashMap;
 import java.util.Scanner;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -48,9 +47,12 @@ import com.protect7.authanalyzer.filter.PathFilter;
 import com.protect7.authanalyzer.filter.QueryFilter;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
+import com.protect7.authanalyzer.gui.entity.SessionPanel;
+import com.protect7.authanalyzer.gui.entity.TokenPanel;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.DataStorageProvider;
 import com.protect7.authanalyzer.util.GenericHelper;
+import com.protect7.authanalyzer.util.Setting;
 
 import burp.BurpExtender;
 
@@ -58,7 +60,6 @@ public class ConfigurationPanel extends JPanel {
 
 	private static final long serialVersionUID = -4278008236240529083L;
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
-	private final ImageIcon loaderImageIcon = new ImageIcon(this.getClass().getClassLoader().getResource("loader.gif"));
 	private final String ANALYZER_STOPPED_TEXT = "<html><span style='color:red; font-weight: bold'>&#x26AB;</span> Analyzer Stopped</html>";
 	private final String ANALYZER_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Analyzer Running</html>";
 	private final String ANALYZER_PAUSED_TEXT = "<html><span style='color:orange; font-weight: bold'>&#x26AB;</span> Analyzer Paused</html>";
@@ -66,7 +67,7 @@ public class ConfigurationPanel extends JPanel {
 	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
 	private final JButton startStopButton = new JButton();
 	private final JButton pauseButton = new JButton();
-	private final JLabel pendingRequestsLabel = new JLabel("");
+	private final JLabel pendingRequestsLabel = new JLabel("Pending Requests Queue: 0");
 	private final JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
 	private final LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
@@ -74,8 +75,6 @@ public class ConfigurationPanel extends JPanel {
 	private final JButton cloneSessionButton;
 	private final JButton renameSessionButton;
 	private final JButton removeSessionButton;
-	private final JButton saveSetupButton;
-	private final JButton loadSetupButton;
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
 	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
@@ -93,8 +92,7 @@ public class ConfigurationPanel extends JPanel {
 		removeSessionButton = new JButton("Remove Session");
 		removeSessionButton.setEnabled(false);
 		
-		saveSetupButton = new JButton("Export Setup");
-		loadSetupButton = new JButton("Import Setup");
+	
 
 		createSessionButton.addActionListener(e -> {
 			String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session");
@@ -140,37 +138,10 @@ public class ConfigurationPanel extends JPanel {
 			}
 		});
 
-		saveSetupButton.addActionListener(e -> { 
-			saveSetupButton.setIcon(loaderImageIcon);
-			new Thread(new Runnable() {
-				
-				@Override
-				public void run() {
-					saveSetup();
-					saveSetupButton.setIcon(null);
-				}
-			}).start();			
-			});
-
-		loadSetupButton.addActionListener(e -> { 
-			loadSetupButton.setIcon(loaderImageIcon);
-			new Thread(new Runnable() {
-				
-				@Override
-				public void run() {
-					loadSetup();
-					loadSetupButton.setIcon(null);
-				}
-			}).start();			
-			});
-
 		sessionButtonPanel.add(createSessionButton);
 		sessionButtonPanel.add(cloneSessionButton);
 		sessionButtonPanel.add(renameSessionButton);
 		sessionButtonPanel.add(removeSessionButton);
-		sessionButtonPanel.add(new JLabel(" "));
-		sessionButtonPanel.add(saveSetupButton);
-		sessionButtonPanel.add(loadSetupButton);
 
 		filterPanel = new JPanel();
 		filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
@@ -270,18 +241,17 @@ public class ConfigurationPanel extends JPanel {
 		c1.gridy = 0;
 		c1.gridx = 0;
 		c1.gridwidth = 2;
-		c1.insets = new Insets(10, 0, 0, 0);
+		c1.insets = new Insets(10, 0, 0, 5);
+		pendingRequestsLabel.setVisible(Setting.getValueAsBoolean(Setting.Item.SHOW_PENDING_REQUEST_INFO));
 		startStopButtonPanel.add(pendingRequestsLabel, c1);
 		c1.gridy = 1;
 		c1.gridwidth = 1;
-		c.insets = new Insets(20, 20, 20, 40);
 		startStopButtonPanel.add(startStopButton, c1);
 		c1.gridx = 1;
 		startStopButtonPanel.add(pauseButton, c1);
 		c1.gridy = 2;
 		c1.gridx = 0;
 		c1.gridwidth = 2;
-		c1.insets = new Insets(10, 0, 0, 0);
 		startStopButtonPanel.add(dropOriginalButton, c1);
 		
 		c.gridx = 3;
@@ -301,7 +271,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 	
-	private void saveSetup() {
+	public void saveSetup() {
 		JFileChooser chooser = new JFileChooser();
 		chooser.setSelectedFile(new File("Auth_Analyzer_Setup.json"));
 		int status = chooser.showSaveDialog(this);
@@ -331,7 +301,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 
-	private void loadSetup() {
+	public void loadSetup() {
 		if(doModify()) {
 			JFileChooser chooser = new JFileChooser();
 			int status = chooser.showOpenDialog(this);
@@ -420,6 +390,7 @@ public class ConfigurationPanel extends JPanel {
 				newTokenPanel.setAutoExtractLocationSet(tokenPanel.getAutoExtractLocationSet());
 				newTokenPanel.setFromToExtractLocationSet(tokenPanel.getFromToExtractLocationSet());
 				newTokenPanel.setIsRemoveToken(tokenPanel.isRemoveToken());
+				newTokenPanel.setCaseSensitiveTokenName(tokenPanel.isCaseSensitiveTokenName());
 				if (tokenPanel.isAutoExtract()) {
 					newTokenPanel.setAutoExtractFieldName(tokenPanel.getAutoExtractFieldName());
 				}
@@ -542,8 +513,6 @@ public class ConfigurationPanel extends JPanel {
 				renameSessionButton.setEnabled(true);
 				removeSessionButton.setEnabled(true);
 				cloneSessionButton.setEnabled(true);
-				saveSetupButton.setEnabled(true);
-				loadSetupButton.setEnabled(true);
 				pauseButton.setText(PAUSE_TEXT);
 				pauseButton.setEnabled(false);
 				dropOriginalButton.setEnabled(false);
@@ -581,8 +550,6 @@ public class ConfigurationPanel extends JPanel {
 					cloneSessionButton.setEnabled(false);
 					renameSessionButton.setEnabled(false);
 					removeSessionButton.setEnabled(false);
-					saveSetupButton.setEnabled(false);
-					loadSetupButton.setEnabled(false);
 					pauseButton.setEnabled(true);
 					dropOriginalButton.setEnabled(true);
 					config.setRunning(true);
@@ -594,7 +561,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 	
-	private void createSessionObjects(boolean setRunning) {
+	public void createSessionObjects(boolean setRunning) {
 		if(sessionPanelMap.size() != config.getSessions().size()) {
 			sessionListChanged = true;
 		}
@@ -615,7 +582,7 @@ public class ConfigurationPanel extends JPanel {
 						tokenPanel.getFromToExtractLocationSet(), tokenPanel.getStaticTokenValue(), tokenPanel.getAutoExtractFieldName(), 
 						tokenPanel.getGrepFromString(),	tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(),
 						tokenPanel.isAutoExtract(), tokenPanel.isStaticValue(), tokenPanel.isFromToString(),
-						tokenPanel.isPromptForInput());
+						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName());
 				tokenList.add(token);
 			}
 			Session newSession = null;
@@ -696,6 +663,9 @@ public class ConfigurationPanel extends JPanel {
 					Type type = new TypeToken<EnumSet<FromToExtractLocation>>(){}.getType();
 					EnumSet<FromToExtractLocation> fromToExtractLocationSet =  new Gson().fromJson(tokenObject.get("fromToExtractLocationSet"), type);
 					tokenPanel.setFromToExtractLocationSet(fromToExtractLocationSet);
+				}
+				if(tokenObject.get("caseSensitiveTokenName") != null) {
+					tokenPanel.setCaseSensitiveTokenName(tokenObject.get("caseSensitiveTokenName").getAsBoolean());
 				}
 				tokenPanel.setIsRemoveToken(tokenObject.get("remove").getAsBoolean());
 				tokenPanel.setTokenValueComboBox(tokenObject.get("autoExtract").getAsBoolean(),
