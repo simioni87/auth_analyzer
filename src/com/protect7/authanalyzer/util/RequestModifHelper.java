@@ -1,11 +1,8 @@
 package com.protect7.authanalyzer.util;
 
+import java.io.PrintWriter;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import javax.swing.JOptionPane;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -20,6 +17,7 @@ import burp.IParameter;
 import burp.IRequestInfo;
 
 public class RequestModifHelper {
+
 	
 	public static List<String> getModifiedHeaders(List<String> currentHeaders, Session session) {
 		List<String> headers = currentHeaders;
@@ -124,7 +122,7 @@ public class RequestModifHelper {
 				for (Token token : session.getTokens()) {
 					if (headerToReplace.contains(token.getHeaderInsertionPointNameStart())) {
 						int startIndex = headerToReplace.indexOf(token.getHeaderInsertionPointNameStart());
-						int endIndex = headerToReplace.indexOf("]§", startIndex) + 2;
+						int endIndex = headerToReplace.indexOf("]ï¿½", startIndex) + 2;
 						if (startIndex != -1 && endIndex != -1) {
 							if (token.getValue() != null) {
 								headerToReplace = headerToReplace.substring(0, startIndex)
@@ -155,12 +153,94 @@ public class RequestModifHelper {
 		}
 		return modifiedRequest;
 	}
-	
+
+	public static ArrayList<byte[]> getModifiedRequests(byte[] originalRequest, Session session, TokenPriority tokenPriority) {
+		IRequestInfo originalRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(originalRequest);
+		byte[] request=originalRequest;
+		byte[] modifiedRequest = originalRequest;
+		ArrayList<byte[]> requests=new ArrayList<>();
+		for (Token token : session.getTokens()) {
+			//check if current token is in request's parameter
+			boolean existed = false;
+			for (IParameter parameter : originalRequestInfo.getParameters()) {
+				if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
+						(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
+					existed = true;
+					break;
+				}
+
+			}
+			if(existed){
+				new PrintWriter(BurpExtender.callbacks.getStdout(),true).println("arrive: 174");
+				modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, token, tokenPriority);
+				requests.add(modifiedRequest);
+			}
+			else{
+				//build request according to the token location config set
+				new PrintWriter(BurpExtender.callbacks.getStdout(),true).println("arrive: 180");
+                String paramValueTemp="";
+				if (token.isPromptForInput()) {
+					paramValueTemp = JOptionPane.showInputDialog(session.getStatusPanel(),
+							"<html><strong>"+Globals.EXTENSION_NAME+"</strong><br>" + "Enter Parameter Value<br>Session: "
+									+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
+									+ "Parameter Location: " + "%s" + "<br></html>");
+				}
+
+				for (TokenLocation tokenLocation:token.getTokenLocationSet()
+					 ) {
+					new PrintWriter(BurpExtender.callbacks.getStdout(),true).println("arrive: 191");
+					String paramLocation="";
+					HashMap<String, Byte> paramlocationtypemap=new HashMap<String, Byte>(){
+						{
+							put("URL",IParameter.PARAM_URL);
+							put("Cookie",IParameter.PARAM_COOKIE);
+							put("Body",IParameter.PARAM_BODY);
+							put("Json",IParameter.PARAM_JSON);
+						}
+					};
+					switch (tokenLocation){
+						case URL:paramLocation="URL";break;
+						case COOKIE:paramLocation="Cookie";break;
+						case BODY:paramLocation="Body";break;
+						case JSON:paramLocation="Json";
+					}
+					if (token.isPromptForInput()) {
+						String paramValue = String.format(paramValueTemp, paramLocation);
+						token.setValue(paramValue);
+						session.getStatusPanel().updateTokenStatus(token);
+					}
+					if(paramLocation.equals("Json")){
+					    //add new key to json with token
+						//TODO
+//						modifiedRequest = getModifiedJsonRequestWithAdditionKey(request, originalRequestInfo, token);
+					}
+					else {
+						new PrintWriter(BurpExtender.callbacks.getStdout(),true).println("arrive: 216");
+						if (token.getValue() != null) {
+							new PrintWriter(BurpExtender.callbacks.getStdout(),true).println("arrive: 218");
+							new PrintWriter(BurpExtender.callbacks.getStdout(),true).println("token value:"+token.getValue());
+							tokenPriority.setPriority(tokenPriority.getPriority() + 1);
+							IParameter newParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getName(), token.getUrlEncodedValue(),paramlocationtypemap.get(paramLocation));
+							modifiedRequest=BurpExtender.callbacks.getHelpers().addParameter(request,newParameter);
+							modifiedRequest = BurpExtender.callbacks.getHelpers().updateParameter(modifiedRequest, newParameter);
+							requests.add(modifiedRequest);
+						}
+					}
+				}
+			}
+		}
+			return requests;
+	}
+
+
 	private static byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token, TokenPriority tokenPriority) {
 		byte[] modifiedRequest = request;
+		boolean existed=false;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
+
 			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
 					(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
+			    existed=true;
 				String paramLocation = null;
 				// Helper can only handle URL, COOKIE and BODY Parameters
 				if (parameter.getType() == IParameter.PARAM_URL) {
