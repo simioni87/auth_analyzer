@@ -390,6 +390,7 @@ public class ConfigurationPanel extends JPanel {
 				newTokenPanel.setAutoExtractLocationSet(tokenPanel.getAutoExtractLocationSet());
 				newTokenPanel.setFromToExtractLocationSet(tokenPanel.getFromToExtractLocationSet());
 				newTokenPanel.setIsRemoveToken(tokenPanel.isRemoveToken());
+				newTokenPanel.setAddTokenIfNotExists(tokenPanel.isAddTokenIfNotExists());
 				newTokenPanel.setCaseSensitiveTokenName(tokenPanel.isCaseSensitiveTokenName());
 				if (tokenPanel.isAutoExtract()) {
 					newTokenPanel.setAutoExtractFieldName(tokenPanel.getAutoExtractFieldName());
@@ -582,7 +583,7 @@ public class ConfigurationPanel extends JPanel {
 						tokenPanel.getFromToExtractLocationSet(), tokenPanel.getStaticTokenValue(), tokenPanel.getAutoExtractFieldName(), 
 						tokenPanel.getGrepFromString(),	tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(),
 						tokenPanel.isAutoExtract(), tokenPanel.isStaticValue(), tokenPanel.isFromToString(),
-						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName());
+						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName(), tokenPanel.isAddTokenIfNotExists());
 				tokenList.add(token);
 			}
 			Session newSession = null;
@@ -666,6 +667,9 @@ public class ConfigurationPanel extends JPanel {
 				}
 				if(tokenObject.get("caseSensitiveTokenName") != null) {
 					tokenPanel.setCaseSensitiveTokenName(tokenObject.get("caseSensitiveTokenName").getAsBoolean());
+				}
+				if(tokenObject.get("addIfNotExists") != null) {
+					tokenPanel.setAddTokenIfNotExists(tokenObject.get("addIfNotExists").getAsBoolean());
 				}
 				tokenPanel.setIsRemoveToken(tokenObject.get("remove").getAsBoolean());
 				tokenPanel.setTokenValueComboBox(tokenObject.get("autoExtract").getAsBoolean(),

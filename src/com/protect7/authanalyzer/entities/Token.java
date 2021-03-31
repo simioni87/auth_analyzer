@@ -33,11 +33,12 @@ public class Token {
 	private final EnumSet<AutoExtractLocation> autoExtractLocationSet;
 	private final EnumSet<FromToExtractLocation> fromToExtractLocationSet;
 	private final boolean caseSensitiveTokenName;
+	private final boolean addIfNotExists;
 	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
 			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
 			String grepToString, boolean remove,	boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput,
-			boolean caseSensitiveTokenName) {
+			boolean caseSensitiveTokenName, boolean addIfNotExists) {
 		this.name = name;
 		this.value = value;
 		this.extractName = extractName;
@@ -52,6 +53,7 @@ public class Token {
 		this.autoExtractLocationSet = autoExtractLocationSet;
 		this.fromToExtractLocationSet = fromToExtractLocationSet;
 		this.caseSensitiveTokenName = caseSensitiveTokenName;
+		this.addIfNotExists = addIfNotExists;
 	}
 	
 	public String getName() {
@@ -172,5 +174,9 @@ public class Token {
 
 	public boolean isCaseSensitiveTokenName() {
 		return caseSensitiveTokenName;
+	}
+
+	public boolean isAddIfNotExists() {
+		return addIfNotExists;
 	}
 }

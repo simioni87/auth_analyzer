@@ -52,6 +52,7 @@ public class TokenPanel extends JPanel {
 	private EnumSet<FromToExtractLocation> fromToExtractLocationSet = FromToExtractLocation.getDefaultSet();
 	private final ArrayList<JLabel> headerJLabelList = new ArrayList<JLabel>();
 	private boolean caseSensitiveTokenName = true;
+	private boolean addTokenIfNotExists = false;
 
 	public TokenPanel() {
 		setLayout(new GridBagLayout());
@@ -377,8 +378,19 @@ public class TokenPanel extends JPanel {
 	private void showSettingsDialog() {
 		JPanel inputPanel = new JPanel();
 		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
-		inputPanel.add(new JLabel("General Settings:"));
+		inputPanel.add(new JLabel("<html><strong>General Settings</strong></html>"));
 		inputPanel.add(removeTokenCheckBox);
+		JCheckBox addParameterCheckBox = new JCheckBox("Add Parameter if not exists");
+		addParameterCheckBox.setSelected(isAddTokenIfNotExists());
+		addParameterCheckBox.addActionListener(e -> {
+			if(addParameterCheckBox.isSelected()) {
+				addTokenIfNotExists = true;
+			}
+			else {
+				addTokenIfNotExists = false;
+			}
+		});
+		inputPanel.add(addParameterCheckBox);
 		JCheckBox caseSensitiveTokenNameCheckBox = new JCheckBox("Case Sensitive Parameter Name");
 		caseSensitiveTokenNameCheckBox.setSelected(isCaseSensitiveTokenName());
 		caseSensitiveTokenNameCheckBox.addActionListener(e -> {
@@ -395,20 +407,20 @@ public class TokenPanel extends JPanel {
     	inputPanel.add(new JLabel(" "));
 		JLabel infoLabel;
 		if(removeTokenCheckBox.isSelected()) {
-			infoLabel = new JLabel("Remove Parameter at:");
+			infoLabel = new JLabel("<html><strong>Remove Parameter at</strong></html>");
 		}
 		else {
-			infoLabel = new JLabel("Replace Parameter at:");
+			infoLabel = new JLabel("<html><strong>Replace Parameter at</strong></html>");
 		}
 		ActionListener removeChkBoxActionListener = new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if(removeTokenCheckBox.isSelected()) {
-					infoLabel.setText("Remove Parameter at:");
+					infoLabel.setText("<html><strong>Remove Parameter at</strong></html>");
 				}
 				else {
-					infoLabel.setText("Replace Parameter at:");
+					infoLabel.setText("<html><strong>Replace Parameter at</strong></html>");
 				}
 			}
 		};
@@ -431,7 +443,7 @@ public class TokenPanel extends JPanel {
 			inputPanel.add(new JLabel(" "));
 	    	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
 	    	inputPanel.add(new JLabel(" "));
-	    	inputPanel.add(new JLabel("Try to extract value from:"));
+	    	inputPanel.add(new JLabel("<html><strong>Try to extract value from</strong></html>"));
 	    	if(isAutoExtract()) {
 	    		for(AutoExtractLocation autoExtractLocation : AutoExtractLocation.values()) {
 	    			JCheckBox locationCheckBox = new JCheckBox(autoExtractLocation.getName());
@@ -496,5 +508,13 @@ public class TokenPanel extends JPanel {
 
 	public void setCaseSensitiveTokenName(boolean caseSensitiveTokenName) {
 		this.caseSensitiveTokenName = caseSensitiveTokenName;
+	}
+
+	public boolean isAddTokenIfNotExists() {
+		return addTokenIfNotExists;
+	}
+
+	public void setAddTokenIfNotExists(boolean addTokenIfNotExists) {
+		this.addTokenIfNotExists = addTokenIfNotExists;
 	}
 }

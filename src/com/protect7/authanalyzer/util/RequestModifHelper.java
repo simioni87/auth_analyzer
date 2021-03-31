@@ -158,9 +158,11 @@ public class RequestModifHelper {
 	
 	private static byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token, TokenPriority tokenPriority) {
 		byte[] modifiedRequest = request;
+		boolean tokenExists = false;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
 			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
 					(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
+				tokenExists = true;
 				String paramLocation = null;
 				// Helper can only handle URL, COOKIE and BODY Parameters
 				if (parameter.getType() == IParameter.PARAM_URL) {
@@ -213,6 +215,25 @@ public class RequestModifHelper {
 				}
 			}
 		}
+		if(!tokenExists && token.isAddIfNotExists()) {
+			//Check type
+			byte requestType = originalRequestInfo.getContentType();
+			Byte parameterType = (Byte) null;
+			if(requestType == IRequestInfo.CONTENT_TYPE_NONE || requestType == IRequestInfo.CONTENT_TYPE_UNKNOWN) {
+				parameterType = IParameter.PARAM_URL;
+			}
+			else if(requestType == IRequestInfo.CONTENT_TYPE_MULTIPART || requestType == IRequestInfo.CONTENT_TYPE_URL_ENCODED) {
+				parameterType = IParameter.PARAM_BODY;
+			}
+			else if(requestType == IRequestInfo.CONTENT_TYPE_JSON) {
+				modifiedRequest = getModifiedJsonRequest(modifiedRequest, originalRequestInfo, token);
+			}
+			if(parameterType != null) {
+				IParameter newParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getUrlEncodedName(),
+						token.getUrlEncodedValue(), parameterType);
+				modifiedRequest = BurpExtender.callbacks.getHelpers().addParameter(modifiedRequest, newParameter);
+			}
+		}
 		return modifiedRequest;
 	}
 	
@@ -231,7 +252,10 @@ public class RequestModifHelper {
 			BurpExtender.callbacks.printError("Can not parse JSON Request Body. Error Message: " + e.getMessage());
 			return request;
 		}
-		modifyJsonTokenValue(jsonElement, token);
+		boolean modified = modifyJsonTokenValue(jsonElement, token);
+		if(!modified && token.isAddIfNotExists()) {
+			addJsonToken(jsonElement, token);
+		}
 		String jsonBody = jsonElement.toString();
 		List<String> headers = originalRequestInfo.getHeaders();
 		for (int i = 0; i < headers.size(); i++) {
@@ -243,7 +267,7 @@ public class RequestModifHelper {
 		return modifiedRequest;
 	}
 	
-	private static void modifyJsonTokenValue(JsonElement jsonElement, Token token) {
+	private static boolean modifyJsonTokenValue(JsonElement jsonElement, Token token) {
 		if (jsonElement.isJsonObject()) {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Iterator<Map.Entry<String, JsonElement>> it = jsonObject.entrySet().iterator();
@@ -260,6 +284,7 @@ public class RequestModifHelper {
 						} else {
 							jsonObject.addProperty(entry.getKey(), token.getUrlEncodedValue());
 						}
+						return true;
 					}
 				}
 			}
@@ -270,6 +295,14 @@ public class RequestModifHelper {
 					modifyJsonTokenValue(arrayJsonEl.getAsJsonObject(), token);
 				}
 			}
+		}
+		return false;
+	}
+	
+	private static void addJsonToken(JsonElement jsonElement, Token token) {
+		if (jsonElement.isJsonObject()) {
+			JsonObject jsonObject = jsonElement.getAsJsonObject();
+			jsonObject.addProperty(token.getUrlEncodedName(), token.getUrlEncodedValue());
 		}
 	}
 }
