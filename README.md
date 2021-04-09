@@ -91,7 +91,7 @@ The parameter will be replaced if it is present at one of the following location
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_replace_locations.png)
 
-* **In Path** (e.g. /api/user/99/profile --> if a parameter named "user" is presenet, the value "99" will be replaced)
+* **In Path** (e.g. /api/user/99/profile --> if a parameter named "user" is present, the value "99" will be replaced)
 
 * **URL Parameter** (e.g. email=hans.wurst[a]gmail.com)
 
