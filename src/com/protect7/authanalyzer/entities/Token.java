@@ -3,18 +3,8 @@ package com.protect7.authanalyzer.entities;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
-
-import com.protect7.authanalyzer.gui.entity.StatusPanel;
-import com.protect7.authanalyzer.util.ExtractionHelper;
-import com.protect7.authanalyzer.util.RequestModifHelper;
-
-import burp.BurpExtender;
 import burp.IHttpRequestResponse;
-import burp.IRequestInfo;
-import burp.IResponseInfo;
 
 public class Token {
 	
@@ -28,7 +18,8 @@ public class Token {
 	private final boolean staticValue;
 	private final boolean fromToString;
 	private final boolean promptForInput;
-	private TokenRequest request = null;
+	private IHttpRequestResponse requestResponse = null;
+	private int priority = 0;
 	private final EnumSet<TokenLocation> tokenLocationSet; 
 	private final EnumSet<AutoExtractLocation> autoExtractLocationSet;
 	private final EnumSet<FromToExtractLocation> fromToExtractLocationSet;
@@ -108,47 +99,6 @@ public class Token {
 	public String getHeaderInsertionPointNameStart() {
 		return "§" + name;
 	}
-	public TokenRequest getRequest() {
-		return request;
-	}
-	public void setRequest(TokenRequest request) {
-		this.request = request;
-	}
-	public boolean renewTokenValue(StatusPanel statusPanel, Session session) {
-		if(request != null) {
-			// Update oldRequestResponse with current parameter values
-			byte[] modifiedRequest = RequestModifHelper.getModifiedRequest(request.getRequest(), session, new TokenPriority());
-			IRequestInfo modifiedRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(modifiedRequest);
-			byte[] modifiedMessageBody = Arrays.copyOfRange(modifiedRequest, modifiedRequestInfo.getBodyOffset(), modifiedRequest.length);
-			List<String> modifiedHeaders = RequestModifHelper.getModifiedHeaders(modifiedRequestInfo.getHeaders(), session);
-			byte[] message = BurpExtender.callbacks.getHelpers().buildHttpMessage(modifiedHeaders, modifiedMessageBody);
-
-			IHttpRequestResponse newRequestResponse = BurpExtender.callbacks.makeHttpRequest(request.getHttpService(), message);
-			boolean success = extractValue(newRequestResponse);
-			if(!success) {
-				//Try without modified Request
-				newRequestResponse = BurpExtender.callbacks.makeHttpRequest(request.getHttpService(), request.getRequest());
-				success = extractValue(newRequestResponse);
-			}
-			if(success) {
-				statusPanel.updateTokenStatus(this);
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	private boolean extractValue(IHttpRequestResponse requestResponse) {
-		IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(requestResponse.getResponse());
-		if (isAutoExtract()) {
-			return ExtractionHelper.extractCurrentTokenValue(requestResponse.getResponse(), responseInfo, this);
-		}
-		if (isFromToString()) {
-			return ExtractionHelper.extractTokenWithFromToString(requestResponse.getResponse(), responseInfo, this);
-		}
-		return false;
-	}
-	
 	public boolean doReplaceAtLocation(TokenLocation tokenLocation) {
 		return getTokenLocationSet().contains(tokenLocation);
 	}
@@ -178,5 +128,21 @@ public class Token {
 
 	public boolean isAddIfNotExists() {
 		return addIfNotExists;
+	}
+
+	public IHttpRequestResponse getRequestResponse() {
+		return requestResponse;
+	}
+
+	public void setRequestResponse(IHttpRequestResponse requestResponse) {
+		this.requestResponse = requestResponse;
+	}
+
+	public int getPriority() {
+		return priority;
+	}
+
+	public void setPriority(int priority) {
+		this.priority = priority;
 	}
 }

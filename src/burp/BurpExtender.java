@@ -70,7 +70,12 @@ public class BurpExtender implements IBurpExtender, ITab, IExtensionStateListene
 		if(authAnalyzerMenu != null && authAnalyzerMenu.getParent() != null) {
 			authAnalyzerMenu.getParent().remove(authAnalyzerMenu);
 		}
-		mainPanel.getConfigurationPanel().createSessionObjects(false);
-		DataStorageProvider.saveSetup();
+		try {
+			mainPanel.getConfigurationPanel().createSessionObjects(false);
+			DataStorageProvider.saveSetup();
+		}
+		catch (Exception e) {
+			callbacks.printOutput("INFO: Session Setup not stored due to invalid data.");
+		}
 	}
 }

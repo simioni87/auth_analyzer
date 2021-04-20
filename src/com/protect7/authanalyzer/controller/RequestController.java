@@ -16,7 +16,6 @@ import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.entities.TokenPriority;
-import com.protect7.authanalyzer.entities.TokenRequest;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.ExtractionHelper;
@@ -99,9 +98,9 @@ public class RequestController {
 							if(success) {
 								session.getStatusPanel().updateTokenStatus(token);
 								// Token value successfully extracted. Set TokenRequestResponse for renew feature.
-								if(token.getRequest() == null || token.getRequest().getPriority() <= tokenPriority.getPriority()) {
-									token.setRequest(new TokenRequest(mapId, sessionRequestResponse.getRequest(), 
-											sessionRequestResponse.getHttpService(), tokenPriority.getPriority()));
+								if(token.getRequestResponse() == null || token.getPriority() <= tokenPriority.getPriority()) {
+									token.setRequestResponse(sessionRequestResponse);
+									token.setPriority(tokenPriority.getPriority());
 								}
 							}
 						}

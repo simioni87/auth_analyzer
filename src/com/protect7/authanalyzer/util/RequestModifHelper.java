@@ -26,6 +26,10 @@ public class RequestModifHelper {
 		// Check for Parameter Replacement in Path
 		replaceParamInPath(headers, session);
 		
+		if(session.isTestCors()) {
+			setOptionsMethod(headers);
+		}
+			
 		if(session.isRemoveHeaders()) {
 			String[] headersToRemoveSplit = session.getHeadersToRemove().replace("\r", "").split("\n");
 			Iterator<String> iterator = headers.iterator();
@@ -59,7 +63,7 @@ public class RequestModifHelper {
 		return headers;
 	}
 	
-	private static List<String> replaceParamInPath(List<String> headers, Session session) {
+	private static void replaceParamInPath(List<String> headers, Session session) {
 		int paramIndex = headers.get(0).indexOf("?");
 		String pathHeader;
 		String appendix = "";
@@ -82,8 +86,18 @@ public class RequestModifHelper {
 				}
 				if(startIndex != -1) {
 					startIndex = startIndex + tokenInPathName.length();
-					int endIndex = pathHeader.indexOf("/", startIndex);
-					if(endIndex != -1) {
+					int endIndex = 99999;
+					String[] delims = {"/", " ", ";"};
+					for(String delim : delims) {
+						int delimIndex = pathHeader.indexOf(delim, startIndex);
+						if(delimIndex != -1 && (delimIndex < endIndex)) {
+							endIndex = delimIndex;
+						}
+					}
+					if(endIndex == 99999 && !appendix.equals("")) {
+						endIndex = pathHeader.length();
+					}
+					if(endIndex != 99999) {
 						pathHeader = pathHeader.substring(0, startIndex) + token.getUrlEncodedValue() + pathHeader.substring(endIndex);
 						headers.set(0, pathHeader + appendix);
 					}
@@ -112,7 +126,14 @@ public class RequestModifHelper {
 				
 			}
 		}
-		return headers;
+	}
+	
+	private static void setOptionsMethod(List<String> headers) {
+		int methodIndex = headers.get(0).indexOf(" ");
+		if(methodIndex != -1) {
+			String header = "OPTIONS" + headers.get(0).substring(methodIndex);
+			headers.set(0, header);
+		}
 	}
 	
 	private static ArrayList<String> getHeaderToReplaceList(Session session) {
@@ -218,7 +239,7 @@ public class RequestModifHelper {
 		if(!tokenExists && token.isAddIfNotExists()) {
 			//Check type
 			byte requestType = originalRequestInfo.getContentType();
-			Byte parameterType = (Byte) null;
+			Byte parameterType = IParameter.PARAM_URL;
 			if(requestType == IRequestInfo.CONTENT_TYPE_NONE || requestType == IRequestInfo.CONTENT_TYPE_UNKNOWN) {
 				parameterType = IParameter.PARAM_URL;
 			}
@@ -226,13 +247,11 @@ public class RequestModifHelper {
 				parameterType = IParameter.PARAM_BODY;
 			}
 			else if(requestType == IRequestInfo.CONTENT_TYPE_JSON) {
-				modifiedRequest = getModifiedJsonRequest(modifiedRequest, originalRequestInfo, token);
+				return getModifiedJsonRequest(modifiedRequest, originalRequestInfo, token);
 			}
-			if(parameterType != null) {
-				IParameter newParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getUrlEncodedName(),
-						token.getUrlEncodedValue(), parameterType);
-				modifiedRequest = BurpExtender.callbacks.getHelpers().addParameter(modifiedRequest, newParameter);
-			}
+			IParameter newParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getUrlEncodedName(),
+					token.getUrlEncodedValue(), parameterType);
+			modifiedRequest = BurpExtender.callbacks.getHelpers().addParameter(modifiedRequest, newParameter);
 		}
 		return modifiedRequest;
 	}

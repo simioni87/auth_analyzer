@@ -2,8 +2,9 @@ package com.protect7.authanalyzer.gui.dialog;
 
 import java.awt.Component;
 import java.awt.Desktop;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.net.URI;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -11,9 +12,9 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
-
 import com.protect7.authanalyzer.util.Globals;
 
 public class InfoDialog extends JDialog {
@@ -33,7 +34,15 @@ public class InfoDialog extends JDialog {
 		JLabel companyLabel = new JLabel("Company: ");
 		companyLabel.setHorizontalTextPosition(JLabel.LEFT);
 		companyLabel.setIcon(p7logo);
+		companyLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				openWebsite("https://www.protect7.com");
+			}
+		});
 		add(companyLabel);
+		
+		add(new JSeparator());
 		
 		JButton helpButton = new JButton("Help");
 		helpButton.addActionListener(e -> openWebsite(Globals.URL_GITHUB_README));
