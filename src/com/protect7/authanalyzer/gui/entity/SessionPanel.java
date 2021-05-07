@@ -80,7 +80,7 @@ public class SessionPanel extends JPanel {
 		
 		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)", false);
 		c.gridx = 1;
-		sessionPanel.add(filterRequestsWithSameHeader, c);
+		//sessionPanel.add(filterRequestsWithSameHeader, c);
 		restrictToScope = new JCheckBox("Restrict to Scope", false);
 		c.gridx = 2;
 		sessionPanel.add(restrictToScope, c);
