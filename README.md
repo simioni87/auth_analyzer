@@ -61,18 +61,18 @@ The Auth Analyzer has the possibility to define parameters which are replaced be
 ### Auto Extract
 The parameter value will be extracted if it occurs in a response with one of the following constraints:
 
-* A response with a **Set-Cookie Header** with a Cookie name set to the defined **Extract Field Name**
+* A response with a `Set-Cookie Header` with a Cookie name set to the defined `Extract Field Name`
 
-* An **HTML Document Response** contains an input field with the name attribute set to the defined **Extract Field Name**
+* An `HTML Document Response` contains an input field with the name attribute set to the defined `Extract Field Name`
 
-* A **JSON Response** contains a key set to the **Extract Field Name**
+* A `JSON Response` contains a key set to the `Extract Field Name`
 
 Per default the Auth Analyzer tries to auto extract the parameter value from all locations. However, clicking on the parameter settings icon lets you restrict the auto extract location according to your needs.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_auto_extract_location.png)
 
 ### From To String
-The parameter will be extracted if the response contains the specified **From String** and **To String** in a line. The From-To String can be set either manually or directly by the corresponding context menu. Just mark the word you want to extract in any response and set as "From-To Extract" for the parameter you like.
+The parameter will be extracted if the response contains the specified `From String` and `To String` in a line. The From-To String can be set either manually or directly by the corresponding context menu. Just mark the word you want to extract in any response and set as `From-To Extract` for the parameter you like.
 
 Per default the Auth Analyzer tries to extract the value from header and body at most textual responses. However, clicking on the parameter settings icon lets you restrict the From-To extract location according to your needs.
 
@@ -91,15 +91,15 @@ The parameter will be replaced if it is present at one of the following location
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/param_replace_locations.png)
 
-* **In Path** (e.g. /api/user/99/profile --> if a parameter named "user" is present, the value "99" will be replaced)
+* `In Path` (e.g. `/api/user/99/profile` --> if a parameter named `user` is present, the value `99` will be replaced)
 
-* **URL Parameter** (e.g. email=hans.wurst[a]gmail.com)
+* `URL Parameter` (e.g. `email=hans.wurst[a]gmail.com`)
 
-* **Cookie Parameter** (e.g. PHPSESSID=mb8rkrcdg8765dt91vpum4u21v)
+* `Cookie Parameter` (e.g. `PHPSESSID=mb8rkrcdg8765dt91vpum4u21v`)
 
-* **Body Parameter** either URL-Encoded or Multipart Form Data
+* `Body Parameter` either `URL-Encoded` or `Multipart Form Data`
 
-* **JSON Parameter** (e.g. {"email":"hans.wurst[a]gmail.com"})
+* `JSON Parameter` (e.g. `{"email":"hans.wurst[a]gmail.com"}`)
 
 Per default the parameter value will be replaced at each location. However, clicking on the parameter settings icon lets you restrict the location according to your needs.
 
@@ -112,7 +112,7 @@ The defined parameter can be removed completely for instance to test CSRF check 
 ## Sample Usage
 
 ### Auto extract session Cookie
-Define the username and password as a static value. The session cookie name must be defined as auto extract. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the Set-Cookie header. This Cookie will be used for further requests of the given session. The defined Cookie will be treated as a parameter and therefore no Cookie Header must be defined.
+Define the username and password as a `static value`. The session cookie name must be defined as `auto extract`. Verify that you start navigating through the application with no session cookie set. Login to the web app. The Auth Analyzer will repeat the login request with the static parameters and automatically gets the session by the `Set-Cookie` header. This Cookie will be used for further requests of the given session. The defined Cookie will be treated as a parameter and therefore no Cookie Header must be defined.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_session_id_1.png)
 
@@ -121,17 +121,17 @@ Hint: You can restrict the extract and replace conditions for a parameter to avo
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/parameter_settings_session_cookie.png)
 
 ### Session Header and CSRF Token Parameter
-Define a Cookie header and a CSRF token (with auto value extract). The CSRF token value will be extracted if it is present in an HTML Input Tag, a Set-Cookie Header or a JSON Response of the given session.
+Define a Cookie header and a CSRF token (with `auto value extract`). The CSRF token value will be extracted if it is present in an `HTML Input Tag`, a `Set-Cookie Header` or a `JSON Response` of the given session.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/session_header_with_csrf_token.png)
 
 ### Auto extract from JavaScript variable
-Since the "Auto Extract" method only works on "HTML Input Fields", "JSON Objects" or "Set-Cookie Headers" we must use the generic extraction method called "From To String". With this extraction method we can extract any value from a response if it is located between a unique starting and ending string. The Auth Analyzer provides a context menu method to set the "From String" and "To String" automatically. Just mark the String you want to extract and set as "From-To Extract" by the context menu.
+Since the `Auto Extract` method only works on `HTML Input Fields`, `JSON Objects` or `Set-Cookie Headers` we must use the generic extraction method called `From To String`. With this extraction method we can extract any value from a response if it is located between a unique starting and ending string. The Auth Analyzer provides a context menu method to set the `From String` and `To String` automatically. Just mark the String you want to extract and set as `From-To Extract` by the context menu.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_csrftoken_from_js_var.png)
 
 ### Auto extract and insert a Bearer Token
-Since the Authorization Header is not treated as a parameter (as it is done with the Cookie Header), we can use a header insertion point to achieve what we want. Just mark and right click the value you want to replace in the specified header. The "defaultvalue" will be used if no parameter value is extracted yet.
+Since the Authorization Header is not treated as a parameter (as it is done with the Cookie Header), we can use a header insertion point to achieve what we want. Just mark and right click the value you want to replace in the specified header. The `defaultvalue` will be used if no parameter value is extracted yet.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/auto_extract_and_insert_bearer_token.png)
 
@@ -141,12 +141,12 @@ Just create as many sessions as you want to test several roles at a time.
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/several_sessions_1.png)
 
 ### Refresh Auto Exracted Parameter Value
-Just press "Renew" on the session status panel or repeat the affected request by the context menu (mouse right click in the table entry). Hint: The login request(s) can be marked and filtered afterwards.
+Just press `Renew` on the session status panel or repeat the affected request by the context menu (mouse right click in the table entry). Hint: The login request(s) can be marked and filtered afterwards.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/renew_session.png)
 
 ### Test idempotent Operations
-Original Requests can be dropped for testing idempotent operations (e.g. a DELETE function).
+Original Requests can be dropped for testing idempotent operations (e.g. a `DELETE` function).
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/idempotent_operations.png)
 
@@ -156,17 +156,17 @@ If an anonymous user needs a valid characteristic (e.g., a valid cookie value) y
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/test_anonymous.png)
 
 ### Test CORS configuration
-You can easily test a large number of endpoints on its individual CORS settings by adding an Origin header at "Header(s) to replace" and set an "HTTP Method" Filter for all methods expect the OPTIONS method.
+You can easily test a large number of endpoints on its individual CORS settings by adding an Origin header at `Header(s) to replace` and select `Test CORS` on the Session Panel. By selecting `Test CORS` the Auth Analyzer will change the HTTP method to `OPTIONS` before the request is repeated
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/test_cors.png)
 
 ### Test CSRF Check mechanism
-A specified parameter can be removed by selecting the "Remove Checkbox". This can be used for instance to test the CSRF check mechanism.
+A specified parameter can be removed by selecting the `Remove Checkbox`. This can be used for instance to test the CSRF check mechanism.
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/remove_csrf.png)
 
 ### Verify the Bypass Status
-The Auth Analyzer provides a build in comparison view to verify the differences between two responses. Just mark the message you want to analyze and change the message view (1). You are now able to compare the two requests (2) (3). The built in "Diff" Feature will calculate and show the differences between the two requests in real time (4)
+The Auth Analyzer provides a build in comparison view to verify the differences between two responses. Just mark the message you want to analyze and change the message view `(1)`. You are now able to compare the two requests `(2) (3)`. The built in `Diff` Feature will calculate and show the differences between the two requests in real time `(4)`
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/compare_view.png)
 
 Expanded Diff view:
@@ -190,8 +190,8 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Exclude Queries / Params (specified Queries / Params can be excluded) 
 
 ## Automated Response Analysis
-*	The Response will be declared as SAME if "Both Responses have same Response Body" and "same Response Code"
-*	The Response will be declared as SIMILAR if "Both Responses have same Response Code" and "Both Responses have +-5% of response body length"
+*	The Response will be declared as SAME if `Both Responses have same Response Body` and `same Response Code`
+*	The Response will be declared as SIMILAR if `Both Responses have same Response Code` and `Both Responses have +-5% of response body length`
 *	The Response will be declared as DIFFERENT in every other case
 
 ## Features
