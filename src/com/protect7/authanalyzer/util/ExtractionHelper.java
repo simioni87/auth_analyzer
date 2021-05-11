@@ -6,6 +6,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -195,10 +196,8 @@ public class ExtractionHelper {
 					}
 					if(process) {
 						boolean autoExtract = isDynamic;
-						EnumSet<AutoExtractLocation> autoExtractLocationSet = AutoExtractLocation.getDefaultSet();
 						if(tokenMap.containsKey(param.getName())) {
 							autoExtract = tokenMap.get(param.getName()).isAutoExtract();
-							autoExtractLocationSet = tokenMap.get(param.getName()).getAutoExtractLocationSet();
 						}
 						Token token = null;
 						String urlDecodedName;
@@ -213,20 +212,26 @@ public class ExtractionHelper {
 						} catch (UnsupportedEncodingException e) {
 							urlDecodedValue = param.getValue();
 						}
+						if(param.getType() == IParameter.PARAM_COOKIE) {
+							// Create Token with dynamic value
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.COOKIE), EnumSet.of(AutoExtractLocation.COOKIE), 
+									FromToExtractLocation.getDefaultSet(), param.getValue(), param.getName(), null, null, false, true, 
+									false, false, false, false, false);
+						}
 						if(param.getType() == IParameter.PARAM_URL) {
 							// Create Token with static value
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.URL), autoExtractLocationSet, 
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.URL), EnumSet.of(AutoExtractLocation.HTML), 
 									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
 									!autoExtract, false, false, false, false);
 						}
 						if(param.getType() == IParameter.PARAM_BODY) {
 							// Create Token with static value
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.BODY), autoExtractLocationSet, 
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.BODY), EnumSet.of(AutoExtractLocation.HTML), 
 									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
 									!autoExtract, false, false, false, false);
 						}
 						if(param.getType() == IParameter.PARAM_JSON) {
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.JSON), autoExtractLocationSet, 
+							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.JSON), EnumSet.of(AutoExtractLocation.JSON), 
 									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
 									!autoExtract, false, false, false, false);
 						}
@@ -251,7 +256,9 @@ public class ExtractionHelper {
 				}
 			}
 		}
-		return new ArrayList<Token>(tokenMap.values());
+		ArrayList<Token> tokenList = new ArrayList<Token>(tokenMap.values());
+		tokenList.sort(Comparator.comparing(Token::sortString));
+		return tokenList;
 	}
 	
 	private static void createTokensFromJson(JsonElement jsonElement, HashMap<String, Token> tokenMap) {

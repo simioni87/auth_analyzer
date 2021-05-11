@@ -28,7 +28,7 @@ public class Token {
 	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
 			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
-			String grepToString, boolean remove,	boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput,
+			String grepToString, boolean remove, boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput,
 			boolean caseSensitiveTokenName, boolean addIfNotExists) {
 		this.name = name;
 		this.value = value;
@@ -144,5 +144,8 @@ public class Token {
 
 	public void setPriority(int priority) {
 		this.priority = priority;
+	}	
+	public String sortString() {
+		return "" + autoExtract + staticValue + fromToString + promptForInput + name;
 	}
 }

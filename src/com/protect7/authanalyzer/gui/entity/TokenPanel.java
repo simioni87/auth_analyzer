@@ -28,12 +28,11 @@ public class TokenPanel extends JPanel {
 	public final String OPTION_STATIC_VALUE = "Static Value";
 	public final String OPTION_FROM_TO_STRING = "From To String";
 	public final String OPTION_PROMPT_FOR_INPUT = "Prompt for Input";
-	private final String PLACEHOLDER_EXTRACT_FIELD_NAME = "Enter Extract Field Name...";
 	private final String PLACEHOLDER_STATIC_VALUE = "Enter Static Value...";
 	private final String PLACEHOLDER_FROM_TO_STRING = "from [] to []";
 	private final String TOOLTIP_EXTRACT_TOKEN_NAME = "<html>Name of the Parameter for which the static / extracted value will be replaced.<br>Respected Parameter locations: <strong>Path, URL, Body, Cookie</strong>.</html>";
 	private final String TOOLTIP_VALUE_EXTRACTION = "<html>Defines how the Parameter value will be discovered</html>";
-	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Name of:<br>- Cookie (Set-Cookie Header)<br>- HTML Input Field (Name Attribute) or <br>- JSON Data (Key)</strong>.</html>";
+	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Parameter Name will be used as Extract Field Name.</html>";
 	private final String TOOLTIP_STATIC_VALUE = "<html>The defined value will be used</html>";
 	private final String TOOLTIP_FROM_TO_STRING = "<html>The value between the \"From\" and \"To\" String will be extracted.<br>The desired value can be marked in message editor and directly<br>set as From-To String by the context menu.</html>";
 	private final String TOOLTIP_PROMPT_FOR_INPUT = "<html>Value can be entered manually if request has a Parameter with corresponding name</html>";
@@ -74,10 +73,11 @@ public class TokenPanel extends JPanel {
 		
 		
 		c.gridx++;
-		addHeader("Extract Field Name / Static Value / From To String", c);
+		addHeader("Static Value / From To String", c);
 		genericTextField = new PlaceholderTextArea(1, 27);
 		genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
-		genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
+		genericTextField.setPlaceholder("");
+		genericTextField.setEnabled(false);
 		add(genericTextField, c);
 		
 		c.gridx++;
@@ -117,7 +117,8 @@ public class TokenPanel extends JPanel {
 	private void valueComboBoxChanged(String newOption) {	
 		genericTextField.setEnabled(true);	
 		if(newOption.equals(OPTION_AUTO_EXTRACT)) {
-			genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
+			genericTextField.setEnabled(false);
+			genericTextField.setPlaceholder("");
 			genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
 		}
 		if(newOption.equals(OPTION_STATIC_VALUE)) {
@@ -235,7 +236,9 @@ public class TokenPanel extends JPanel {
 
 	public String getAutoExtractFieldName() {
 		if (isAutoExtract()) {
-			return genericTextField.getText();
+			// Always choose token Name as Extract Field Name
+			//return genericTextField.getText();
+			return nameTextField.getText();
 		} else {
 			return null;
 		}
@@ -280,7 +283,6 @@ public class TokenPanel extends JPanel {
 	public void setAutoExtractFieldName(String extractFieldName) {
 		tokenValueComboBox.setSelectedItem(OPTION_AUTO_EXTRACT);
 		valueComboBoxChanged(OPTION_AUTO_EXTRACT);
-		genericTextField.setText(extractFieldName);
 	}
 
 	public void setStaticTokenValue(String tokenValue) {

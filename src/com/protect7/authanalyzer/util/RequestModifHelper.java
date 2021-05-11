@@ -227,8 +227,16 @@ public class RequestModifHelper {
 						if (parameter.getType() == IParameter.PARAM_JSON) {
 							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
 						} else {
+							// Do not URL encode Parameter Value if the Parameter is a Cookie
+							String parameterValue;
+							if(parameter.getType() == IParameter.PARAM_COOKIE) {
+								parameterValue = token.getValue();
+							}
+							else {
+								parameterValue = token.getUrlEncodedValue();
+							}
 							IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(parameter.getName(),
-									token.getUrlEncodedValue(), parameter.getType());
+									parameterValue, parameter.getType());
 							modifiedRequest = BurpExtender.callbacks.getHelpers().updateParameter(modifiedRequest,
 									modifiedParameter);
 						}
