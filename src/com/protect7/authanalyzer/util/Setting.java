@@ -63,7 +63,7 @@ public class Setting {
 	public enum Item {
 		AUTOSET_PARAM_STATIC_PATTERNS("token,code,user,mail,pass,key,csrf,xsrf", 
 				Type.ARRAY, "Static Patterns (for Automatically Set Parameters)"),
-		AUTOSET_PARAM_DYNAMIC_PATTERNS("viewstate,eventvalidation", Type.ARRAY,
+		AUTOSET_PARAM_DYNAMIC_PATTERNS("viewstate,eventvalidation,requestverificationtoken", Type.ARRAY,
 				"Dynamic Patterns (for Automatically Set Parameters)"),
 		NUMBER_OF_THREADS("20", Type.INTEGER, "Number of Threads (for Request Processing)"),
 		ONLY_ONE_THREAD_IF_PROMT_FOR_INPUT("true", Type.BOOLEAN, 

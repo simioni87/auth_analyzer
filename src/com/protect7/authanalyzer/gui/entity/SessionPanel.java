@@ -36,6 +36,7 @@ public class SessionPanel extends JPanel {
 	private final JCheckBox removeHeaders;
 	private final JCheckBox filterRequestsWithSameHeader;
 	private final JCheckBox restrictToScope;
+	private final JCheckBox testCors;
 	private final JLabel headerToRemoveLabel = new JLabel("Header(s) to Remove");
 	private final PlaceholderTextArea headersToRemoveText = new PlaceholderTextArea(3, textFieldWidth);
 	private final JLabel restrictToScopeLabel = new JLabel("Restrict to Scope");
@@ -54,7 +55,7 @@ public class SessionPanel extends JPanel {
 		c.gridx = 0;
 		c.anchor = GridBagConstraints.WEST;
 		c.fill = GridBagConstraints.HORIZONTAL;
-		c.gridwidth = 3;
+		c.gridwidth = 4;
 		c.weighty = 1;
 		
 		statusPanel.setVisible(false);
@@ -76,14 +77,20 @@ public class SessionPanel extends JPanel {
 		c.insets = new Insets(5, 0, 0, 20);
 		c.gridy++;
 		sessionPanel.add(removeHeaders, c);
+		
 		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)", false);
 		c.gridx = 1;
-		sessionPanel.add(filterRequestsWithSameHeader, c);
+		//sessionPanel.add(filterRequestsWithSameHeader, c);
 		restrictToScope = new JCheckBox("Restrict to Scope", false);
 		c.gridx = 2;
 		sessionPanel.add(restrictToScope, c);
 		
-		c.gridwidth = 3;
+		testCors = new JCheckBox("Test CORS", false);
+		testCors.setToolTipText("HTTP Method will be set to OPTIONS");
+		c.gridx = 3;
+		sessionPanel.add(testCors, c);
+		
+		c.gridwidth = 4;
 		c.gridx = 0;
 		c.gridy++;
 		headerToRemoveLabel.setVisible(false);
@@ -201,6 +208,7 @@ public class SessionPanel extends JPanel {
 		tokenPanel.setFromToExtractLocationSet(token.getFromToExtractLocationSet());
 		tokenPanel.setCaseSensitiveTokenName(token.isCaseSensitiveTokenName());
 		tokenPanel.setIsRemoveToken(token.isRemove());
+		tokenPanel.setAddTokenIfNotExists(token.isAddIfNotExists());
 		if (token.isAutoExtract()) {
 			tokenPanel.setAutoExtractFieldName(token.getExtractName());
 		}
@@ -383,6 +391,14 @@ public class SessionPanel extends JPanel {
 	
 	public boolean isRestrictToScope() {
 		return restrictToScope.isSelected();
+	}
+	
+	public void setTestCors(boolean testCors) {
+		this.testCors.setSelected(testCors);
+	}
+	
+	public boolean isTestCors() {
+		return testCors.isSelected();
 	}
 	
 	public void setRestrictToScope(boolean restrictToScope) {

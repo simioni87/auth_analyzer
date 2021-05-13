@@ -8,42 +8,36 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.UIManager;
 import com.protect7.authanalyzer.entities.AutoExtractLocation;
 import com.protect7.authanalyzer.entities.FromToExtractLocation;
 import com.protect7.authanalyzer.entities.TokenLocation;
+import com.protect7.authanalyzer.gui.dialog.TokenSettingsDialog;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextArea;
 import com.protect7.authanalyzer.util.GenericHelper;
 
 public class TokenPanel extends JPanel {
 
 	private static final long serialVersionUID = 7682542523017826799L;
-	private final String OPTION_AUTO_EXTRACT = "Auto Extract";
-	private final String OPTION_STATIC_VALUE = "Static Value";
-	private final String OPTION_FROM_TO_STRING = "From To String";
-	private final String OPTION_PROMPT_FOR_INPUT = "Prompt for Input";
-	private final String PLACEHOLDER_EXTRACT_FIELD_NAME = "Enter Extract Field Name...";
+	public final String OPTION_AUTO_EXTRACT = "Auto Extract";
+	public final String OPTION_STATIC_VALUE = "Static Value";
+	public final String OPTION_FROM_TO_STRING = "From To String";
+	public final String OPTION_PROMPT_FOR_INPUT = "Prompt for Input";
 	private final String PLACEHOLDER_STATIC_VALUE = "Enter Static Value...";
 	private final String PLACEHOLDER_FROM_TO_STRING = "from [] to []";
 	private final String TOOLTIP_EXTRACT_TOKEN_NAME = "<html>Name of the Parameter for which the static / extracted value will be replaced.<br>Respected Parameter locations: <strong>Path, URL, Body, Cookie</strong>.</html>";
-	private final String TOOLTIP_REMOVE = "<html><strong>Remove Parameter</strong><br>Removes all parameters with the given name.</html>";
 	private final String TOOLTIP_VALUE_EXTRACTION = "<html>Defines how the Parameter value will be discovered</html>";
-	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Name of:<br>- Cookie (Set-Cookie Header)<br>- HTML Input Field (Name Attribute) or <br>- JSON Data (Key)</strong>.</html>";
+	private final String TOOLTIP_EXTRACT_FIELD_NAME = "<html>Parameter Name will be used as Extract Field Name.</html>";
 	private final String TOOLTIP_STATIC_VALUE = "<html>The defined value will be used</html>";
 	private final String TOOLTIP_FROM_TO_STRING = "<html>The value between the \"From\" and \"To\" String will be extracted.<br>The desired value can be marked in message editor and directly<br>set as From-To String by the context menu.</html>";
 	private final String TOOLTIP_PROMPT_FOR_INPUT = "<html>Value can be entered manually if request has a Parameter with corresponding name</html>";
 	private final PlaceholderTextArea nameTextField;
 	private final JButton removeButton;
-	private final JCheckBox removeTokenCheckBox;
 	private final JComboBox<String> tokenValueComboBox;
 	private final PlaceholderTextArea genericTextField;
 	private String placeholderCache = "";
@@ -52,6 +46,8 @@ public class TokenPanel extends JPanel {
 	private EnumSet<FromToExtractLocation> fromToExtractLocationSet = FromToExtractLocation.getDefaultSet();
 	private final ArrayList<JLabel> headerJLabelList = new ArrayList<JLabel>();
 	private boolean caseSensitiveTokenName = true;
+	private boolean addTokenIfNotExists = false;
+	private boolean removeToken = false;
 
 	public TokenPanel() {
 		setLayout(new GridBagLayout());
@@ -77,32 +73,23 @@ public class TokenPanel extends JPanel {
 		
 		
 		c.gridx++;
-		addHeader("Extract Field Name / Static Value / From To String", c);
+		addHeader("Static Value / From To String", c);
 		genericTextField = new PlaceholderTextArea(1, 27);
 		genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
-		genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
+		genericTextField.setPlaceholder("");
+		genericTextField.setEnabled(false);
 		add(genericTextField, c);
 		
 		c.gridx++;
 		JButton settingsButton = new JButton();
 		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
-		settingsButton.addActionListener(e -> showSettingsDialog());
+		settingsButton.addActionListener(e -> new TokenSettingsDialog(this));
 		add(settingsButton, c);
 		
 		c.gridx++;
 		removeButton = new JButton();
 		removeButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("delete.png")));
 		add(removeButton, c);
-		
-		removeTokenCheckBox = new JCheckBox("Remove Parameter");
-		removeTokenCheckBox.setToolTipText(TOOLTIP_REMOVE);
-		removeTokenCheckBox.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setFieldsEnabledDisabled();
-			}
-		});
 		
 		tokenValueComboBox.addActionListener(new ActionListener() {
 			
@@ -130,7 +117,8 @@ public class TokenPanel extends JPanel {
 	private void valueComboBoxChanged(String newOption) {	
 		genericTextField.setEnabled(true);	
 		if(newOption.equals(OPTION_AUTO_EXTRACT)) {
-			genericTextField.setPlaceholder(PLACEHOLDER_EXTRACT_FIELD_NAME);
+			genericTextField.setEnabled(false);
+			genericTextField.setPlaceholder("");
 			genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
 		}
 		if(newOption.equals(OPTION_STATIC_VALUE)) {
@@ -153,8 +141,8 @@ public class TokenPanel extends JPanel {
 		genericTextField.repaint();
 	}
 
-	private void setFieldsEnabledDisabled() {
-		if (removeTokenCheckBox.isSelected()) {
+	public void setFieldsEnabledDisabled() {
+		if (removeToken) {
 			tokenValueComboBox.setEnabled(false);
 			genericTextField.setEnabled(false);
 			placeholderCache = genericTextField.getPlaceholder();
@@ -179,11 +167,11 @@ public class TokenPanel extends JPanel {
 	}
 
 	public boolean isRemoveToken() {
-		return removeTokenCheckBox.isSelected();
+		return removeToken;
 	}
 
 	public void setIsRemoveToken(boolean isRemoveToken) {
-		removeTokenCheckBox.setSelected(isRemoveToken);
+		removeToken = isRemoveToken;
 		setFieldsEnabledDisabled();
 	}
 
@@ -244,10 +232,13 @@ public class TokenPanel extends JPanel {
 			tokenValueComboBox.setSelectedItem(OPTION_PROMPT_FOR_INPUT);
 		}
 	}
+	
 
 	public String getAutoExtractFieldName() {
 		if (isAutoExtract()) {
-			return genericTextField.getText();
+			// Always choose token Name as Extract Field Name
+			//return genericTextField.getText();
+			return nameTextField.getText();
 		} else {
 			return null;
 		}
@@ -285,10 +276,13 @@ public class TokenPanel extends JPanel {
 		}
 	}
 
+	public boolean isSelectedItem(String item) {
+		return tokenValueComboBox.getSelectedItem().equals(item);
+	}
+	
 	public void setAutoExtractFieldName(String extractFieldName) {
 		tokenValueComboBox.setSelectedItem(OPTION_AUTO_EXTRACT);
 		valueComboBoxChanged(OPTION_AUTO_EXTRACT);
-		genericTextField.setText(extractFieldName);
 	}
 
 	public void setStaticTokenValue(String tokenValue) {
@@ -373,122 +367,6 @@ public class TokenPanel extends JPanel {
 	public void setFromToExtractLocationSet(EnumSet<FromToExtractLocation> fromToExtractLocationSet) {
 		this.fromToExtractLocationSet = fromToExtractLocationSet;
 	}
-	
-	private void showSettingsDialog() {
-		JPanel inputPanel = new JPanel();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
-		inputPanel.add(new JLabel("General Settings:"));
-		inputPanel.add(removeTokenCheckBox);
-		JCheckBox caseSensitiveTokenNameCheckBox = new JCheckBox("Case Sensitive Parameter Name");
-		caseSensitiveTokenNameCheckBox.setSelected(isCaseSensitiveTokenName());
-		caseSensitiveTokenNameCheckBox.addActionListener(e -> {
-			if(caseSensitiveTokenNameCheckBox.isSelected()) {
-				caseSensitiveTokenName = true;
-			}
-			else {
-				caseSensitiveTokenName = false;
-			}
-		});
-		inputPanel.add(caseSensitiveTokenNameCheckBox);
-		inputPanel.add(new JLabel(" "));
-    	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
-    	inputPanel.add(new JLabel(" "));
-		JLabel infoLabel;
-		if(removeTokenCheckBox.isSelected()) {
-			infoLabel = new JLabel("Remove Parameter at:");
-		}
-		else {
-			infoLabel = new JLabel("Replace Parameter at:");
-		}
-		ActionListener removeChkBoxActionListener = new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(removeTokenCheckBox.isSelected()) {
-					infoLabel.setText("Remove Parameter at:");
-				}
-				else {
-					infoLabel.setText("Replace Parameter at:");
-				}
-			}
-		};
-		removeTokenCheckBox.addActionListener(removeChkBoxActionListener);
-		inputPanel.add(infoLabel);
-		for(TokenLocation tokenLocation : TokenLocation.values()) {
-			JCheckBox locationCheckBox = new JCheckBox(tokenLocation.getName());
-			locationCheckBox.setSelected(tokenLocationSet.contains(tokenLocation));
-			locationCheckBox.addActionListener(e -> {
-				if(locationCheckBox.isSelected()) {
-					tokenLocationSet.add(tokenLocation);
-				}
-				else {
-					tokenLocationSet.remove(tokenLocation);
-				}
-			});
-			inputPanel.add(locationCheckBox);
-		}
-		if(!removeTokenCheckBox.isSelected() && isAutoExtract() || isFromToString()) {
-			inputPanel.add(new JLabel(" "));
-	    	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
-	    	inputPanel.add(new JLabel(" "));
-	    	inputPanel.add(new JLabel("Try to extract value from:"));
-	    	if(isAutoExtract()) {
-	    		for(AutoExtractLocation autoExtractLocation : AutoExtractLocation.values()) {
-	    			JCheckBox locationCheckBox = new JCheckBox(autoExtractLocation.getName());
-	    			locationCheckBox.setSelected(autoExtractLocationSet.contains(autoExtractLocation));
-	    			locationCheckBox.addActionListener(e -> {
-	    				if(locationCheckBox.isSelected()) {
-	    					autoExtractLocationSet.add(autoExtractLocation);
-	    				}
-	    				else {
-	    					autoExtractLocationSet.remove(autoExtractLocation);
-	    				}
-	    			});
-	    			inputPanel.add(locationCheckBox);
-	    		}
-			}
-	    	if(isFromToString()) {
-	    		final ArrayList<JCheckBox> locationCheckBoxList = new ArrayList<JCheckBox>();
-		    	for(FromToExtractLocation fromToExtractLocation : FromToExtractLocation.values()) {
-		    		JCheckBox locationCheckBox = new JCheckBox(fromToExtractLocation.getName());
-		    		locationCheckBox.setSelected(fromToExtractLocationSet.contains(fromToExtractLocation));
-		    		if(fromToExtractLocation == FromToExtractLocation.ALL) {
-		    			locationCheckBox.addActionListener(e -> {
-		    				if(locationCheckBox.isSelected()) {
-		    					fromToExtractLocationSet.add(fromToExtractLocation);
-			    				for(JCheckBox checkBox :locationCheckBoxList) {
-			    					checkBox.setEnabled(false);
-			    				}
-			    			}
-			    			else {
-			    				fromToExtractLocationSet.remove(fromToExtractLocation);
-			    				for(JCheckBox checkBox :locationCheckBoxList) {
-			    					checkBox.setEnabled(true);
-			    				}
-			    			}
-		    			});
-		    		}
-		    		else {
-		    			if(fromToExtractLocation != FromToExtractLocation.HEADER && fromToExtractLocation != FromToExtractLocation.BODY)  {
-		    				locationCheckBoxList.add(locationCheckBox);
-			    			locationCheckBox.setEnabled(!fromToExtractLocationSet.contains(FromToExtractLocation.ALL));
-		    			}
-		    			locationCheckBox.addActionListener(e -> {
-		    				if(locationCheckBox.isSelected()) {
-		    					fromToExtractLocationSet.add(fromToExtractLocation);
-			    			}
-			    			else {
-			    				fromToExtractLocationSet.remove(fromToExtractLocation);
-			    			}
-		    			});
-		    		}
-		    		inputPanel.add(locationCheckBox);
-		    	}
-	    	}
-		}
-		JOptionPane.showConfirmDialog(this, inputPanel, "Parameter Settings for " + getTokenName(), JOptionPane.CLOSED_OPTION);
-		removeTokenCheckBox.removeActionListener(removeChkBoxActionListener);
-	}
 
 	public boolean isCaseSensitiveTokenName() {
 		return caseSensitiveTokenName;
@@ -496,5 +374,13 @@ public class TokenPanel extends JPanel {
 
 	public void setCaseSensitiveTokenName(boolean caseSensitiveTokenName) {
 		this.caseSensitiveTokenName = caseSensitiveTokenName;
+	}
+
+	public boolean isAddTokenIfNotExists() {
+		return addTokenIfNotExists;
+	}
+
+	public void setAddTokenIfNotExists(boolean addTokenIfNotExists) {
+		this.addTokenIfNotExists = addTokenIfNotExists;
 	}
 }

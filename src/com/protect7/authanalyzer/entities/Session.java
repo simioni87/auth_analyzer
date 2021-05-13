@@ -22,6 +22,7 @@ public class Session {
 	private boolean removeHeaders;
 	private boolean filterRequestsWithSameHeader;
 	private boolean restrictToScope = false;
+	private boolean testCors = false;
 	private URL scopeUrl;
 	private int tabbedPaneRequestIndex;
 	private int tabbedPaneResponseIndex;
@@ -29,12 +30,14 @@ public class Session {
 	private ArrayList<Token> tokens = new ArrayList<Token>();
 	private final StatusPanel statusPanel;
 
-	public Session(String name, String headersToReplace, boolean removeHeaders, String headersToRemove, boolean filterRequestsWithSameHeader, boolean restrictToScope, URL scopeUrl, ArrayList<Token> tokens, StatusPanel statusPanel) {
+	public Session(String name, String headersToReplace, boolean removeHeaders, String headersToRemove, boolean filterRequestsWithSameHeader, boolean restrictToScope, 
+			URL scopeUrl, boolean testCors, ArrayList<Token> tokens, StatusPanel statusPanel) {
 		this.name = name;
 		this.removeHeaders = removeHeaders;
 		this.headersToReplace = headersToReplace;
 		this.filterRequestsWithSameHeader = filterRequestsWithSameHeader;
 		this.setRestrictToScope(restrictToScope);
+		this.setTestCors(testCors);
 		this.headersToRemove = headersToRemove;
 		this.setScopeUrl(scopeUrl);
 		this.setTokens(tokens);
@@ -171,5 +174,13 @@ public class Session {
 
 	public void setHeadersToRemove(String headersToRemove) {
 		this.headersToRemove = headersToRemove;
+	}
+
+	public boolean isTestCors() {
+		return testCors;
+	}
+
+	public void setTestCors(boolean testCors) {
+		this.testCors = testCors;
 	}
 }

@@ -26,6 +26,10 @@ public class RequestModifHelper {
 		// Check for Parameter Replacement in Path
 		replaceParamInPath(headers, session);
 		
+		if(session.isTestCors()) {
+			setOptionsMethod(headers);
+		}
+			
 		if(session.isRemoveHeaders()) {
 			String[] headersToRemoveSplit = session.getHeadersToRemove().replace("\r", "").split("\n");
 			Iterator<String> iterator = headers.iterator();
@@ -59,7 +63,7 @@ public class RequestModifHelper {
 		return headers;
 	}
 	
-	private static List<String> replaceParamInPath(List<String> headers, Session session) {
+	private static void replaceParamInPath(List<String> headers, Session session) {
 		int paramIndex = headers.get(0).indexOf("?");
 		String pathHeader;
 		String appendix = "";
@@ -82,8 +86,18 @@ public class RequestModifHelper {
 				}
 				if(startIndex != -1) {
 					startIndex = startIndex + tokenInPathName.length();
-					int endIndex = pathHeader.indexOf("/", startIndex);
-					if(endIndex != -1) {
+					int endIndex = 99999;
+					String[] delims = {"/", " ", ";"};
+					for(String delim : delims) {
+						int delimIndex = pathHeader.indexOf(delim, startIndex);
+						if(delimIndex != -1 && (delimIndex < endIndex)) {
+							endIndex = delimIndex;
+						}
+					}
+					if(endIndex == 99999 && !appendix.equals("")) {
+						endIndex = pathHeader.length();
+					}
+					if(endIndex != 99999) {
 						pathHeader = pathHeader.substring(0, startIndex) + token.getUrlEncodedValue() + pathHeader.substring(endIndex);
 						headers.set(0, pathHeader + appendix);
 					}
@@ -112,7 +126,14 @@ public class RequestModifHelper {
 				
 			}
 		}
-		return headers;
+	}
+	
+	private static void setOptionsMethod(List<String> headers) {
+		int methodIndex = headers.get(0).indexOf(" ");
+		if(methodIndex != -1) {
+			String header = "OPTIONS" + headers.get(0).substring(methodIndex);
+			headers.set(0, header);
+		}
 	}
 	
 	private static ArrayList<String> getHeaderToReplaceList(Session session) {
@@ -158,9 +179,11 @@ public class RequestModifHelper {
 	
 	private static byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token, TokenPriority tokenPriority) {
 		byte[] modifiedRequest = request;
+		boolean tokenExists = false;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
 			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
 					(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
+				tokenExists = true;
 				String paramLocation = null;
 				// Helper can only handle URL, COOKIE and BODY Parameters
 				if (parameter.getType() == IParameter.PARAM_URL) {
@@ -204,14 +227,39 @@ public class RequestModifHelper {
 						if (parameter.getType() == IParameter.PARAM_JSON) {
 							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
 						} else {
+							// Do not URL encode Parameter Value if the Parameter is a Cookie
+							String parameterValue;
+							if(parameter.getType() == IParameter.PARAM_COOKIE) {
+								parameterValue = token.getValue();
+							}
+							else {
+								parameterValue = token.getUrlEncodedValue();
+							}
 							IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(parameter.getName(),
-									token.getUrlEncodedValue(), parameter.getType());
+									parameterValue, parameter.getType());
 							modifiedRequest = BurpExtender.callbacks.getHelpers().updateParameter(modifiedRequest,
 									modifiedParameter);
 						}
 					}
 				}
 			}
+		}
+		if(!tokenExists && token.isAddIfNotExists()) {
+			//Check type
+			byte requestType = originalRequestInfo.getContentType();
+			Byte parameterType = IParameter.PARAM_URL;
+			if(requestType == IRequestInfo.CONTENT_TYPE_NONE || requestType == IRequestInfo.CONTENT_TYPE_UNKNOWN) {
+				parameterType = IParameter.PARAM_URL;
+			}
+			else if(requestType == IRequestInfo.CONTENT_TYPE_MULTIPART || requestType == IRequestInfo.CONTENT_TYPE_URL_ENCODED) {
+				parameterType = IParameter.PARAM_BODY;
+			}
+			else if(requestType == IRequestInfo.CONTENT_TYPE_JSON) {
+				return getModifiedJsonRequest(modifiedRequest, originalRequestInfo, token);
+			}
+			IParameter newParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getUrlEncodedName(),
+					token.getUrlEncodedValue(), parameterType);
+			modifiedRequest = BurpExtender.callbacks.getHelpers().addParameter(modifiedRequest, newParameter);
 		}
 		return modifiedRequest;
 	}
@@ -231,7 +279,10 @@ public class RequestModifHelper {
 			BurpExtender.callbacks.printError("Can not parse JSON Request Body. Error Message: " + e.getMessage());
 			return request;
 		}
-		modifyJsonTokenValue(jsonElement, token);
+		boolean modified = modifyJsonTokenValue(jsonElement, token);
+		if(!modified && token.isAddIfNotExists()) {
+			addJsonToken(jsonElement, token);
+		}
 		String jsonBody = jsonElement.toString();
 		List<String> headers = originalRequestInfo.getHeaders();
 		for (int i = 0; i < headers.size(); i++) {
@@ -243,7 +294,7 @@ public class RequestModifHelper {
 		return modifiedRequest;
 	}
 	
-	private static void modifyJsonTokenValue(JsonElement jsonElement, Token token) {
+	private static boolean modifyJsonTokenValue(JsonElement jsonElement, Token token) {
 		if (jsonElement.isJsonObject()) {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Iterator<Map.Entry<String, JsonElement>> it = jsonObject.entrySet().iterator();
@@ -260,6 +311,7 @@ public class RequestModifHelper {
 						} else {
 							jsonObject.addProperty(entry.getKey(), token.getUrlEncodedValue());
 						}
+						return true;
 					}
 				}
 			}
@@ -270,6 +322,14 @@ public class RequestModifHelper {
 					modifyJsonTokenValue(arrayJsonEl.getAsJsonObject(), token);
 				}
 			}
+		}
+		return false;
+	}
+	
+	private static void addJsonToken(JsonElement jsonElement, Token token) {
+		if (jsonElement.isJsonObject()) {
+			JsonObject jsonObject = jsonElement.getAsJsonObject();
+			jsonObject.addProperty(token.getUrlEncodedName(), token.getUrlEncodedValue());
 		}
 	}
 }

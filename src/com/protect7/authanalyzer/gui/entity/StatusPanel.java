@@ -13,6 +13,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.GenericHelper;
 
 public class StatusPanel extends JPanel{
@@ -29,7 +30,6 @@ public class StatusPanel extends JPanel{
 	private final HashMap<String, JButton> refreshButtonMap = new HashMap<String, JButton>();
 	private final HashMap<String, JButton> eraseButtonMap = new HashMap<String, JButton>();
 	private int amountOfFilteredRequests = 0;
-	private final ImageIcon loaderImageIcon = new ImageIcon(this.getClass().getClassLoader().getResource("loader.gif"));
 	private final ImageIcon refreshIcon = new ImageIcon(this.getClass().getClassLoader().getResource("refresh.png"));
 	private final ImageIcon eraseIcon = new ImageIcon(this.getClass().getClassLoader().getResource("erase.png"));
 	
@@ -121,20 +121,13 @@ public class StatusPanel extends JPanel{
 				JButton renewButton = new JButton(refreshIcon);
 				renewButton.setToolTipText("Refresh Value");
 				refreshButtonMap.put(token.getName(), renewButton);
-				if(token.getRequest() == null) {
+				if(token.getRequestResponse() == null) {
 					renewButton.setEnabled(false);
 				}
-				final StatusPanel statusPanel = this;
 				renewButton.addActionListener(e -> {
-					renewButton.setIcon(loaderImageIcon);
-					new Thread(new Runnable() {
-						
-						@Override
-						public void run() {
-							token.renewTokenValue(statusPanel, session);
-							renewButton.setIcon(refreshIcon);
-						}
-					}).start();
+					if(token.getRequestResponse() != null) {
+						CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(token.getRequestResponse());
+					}
 				});
 				add(renewButton, c);
 				JButton eraseButton = new JButton(eraseIcon);

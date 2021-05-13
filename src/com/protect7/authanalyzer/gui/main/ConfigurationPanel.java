@@ -384,12 +384,14 @@ public class ConfigurationPanel extends JPanel {
 			sessionPanel.setFilterRequestsWithSameHeader(sessionPanelToClone.isFilterRequestsWithSameHeader());
 			sessionPanel.setRestrictToScope(sessionPanelToClone.isRestrictToScope());
 			sessionPanel.setRestrictToScopeText(sessionPanelToClone.getRestrictToScopeText());
+			sessionPanel.setTestCors(sessionPanelToClone.isTestCors());
 			for (TokenPanel tokenPanel : sessionPanelToClone.getTokenPanelList()) {
 				TokenPanel newTokenPanel = sessionPanel.addToken(tokenPanel.getTokenName());
 				newTokenPanel.setTokenLocationSet(tokenPanel.getTokenLocationSet());
 				newTokenPanel.setAutoExtractLocationSet(tokenPanel.getAutoExtractLocationSet());
 				newTokenPanel.setFromToExtractLocationSet(tokenPanel.getFromToExtractLocationSet());
 				newTokenPanel.setIsRemoveToken(tokenPanel.isRemoveToken());
+				newTokenPanel.setAddTokenIfNotExists(tokenPanel.isAddTokenIfNotExists());
 				newTokenPanel.setCaseSensitiveTokenName(tokenPanel.isCaseSensitiveTokenName());
 				if (tokenPanel.isAutoExtract()) {
 					newTokenPanel.setAutoExtractFieldName(tokenPanel.getAutoExtractFieldName());
@@ -501,7 +503,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 
-	private void startStopButtonPressed() {
+	public void startStopButtonPressed() {
 		if (sessionPanelMap.size() == 0) {
 			JOptionPane.showMessageDialog(this, "No Session Created");
 		} else {
@@ -582,14 +584,14 @@ public class ConfigurationPanel extends JPanel {
 						tokenPanel.getFromToExtractLocationSet(), tokenPanel.getStaticTokenValue(), tokenPanel.getAutoExtractFieldName(), 
 						tokenPanel.getGrepFromString(),	tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(),
 						tokenPanel.isAutoExtract(), tokenPanel.isStaticValue(), tokenPanel.isFromToString(),
-						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName());
+						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName(), tokenPanel.isAddTokenIfNotExists());
 				tokenList.add(token);
 			}
 			Session newSession = null;
 			if (sessionListChanged) {
 				newSession = new Session(session, sessionPanel.getHeadersToReplaceText(), sessionPanel.isRemoveHeaders(),
 						sessionPanel.getHeadersToRemoveText(), sessionPanel.isFilterRequestsWithSameHeader(), sessionPanel.isRestrictToScope(),
-						sessionPanel.getScopeUrl(), tokenList, sessionPanel.getStatusPanel());
+						sessionPanel.getScopeUrl(), sessionPanel.isTestCors(), tokenList, sessionPanel.getStatusPanel());
 				config.addSession(newSession);
 			} else {
 				newSession = config.getSessionByName(session);
@@ -599,13 +601,14 @@ public class ConfigurationPanel extends JPanel {
 				newSession.setFilterRequestsWithSameHeader(sessionPanel.isFilterRequestsWithSameHeader());
 				newSession.setRestrictToScope(sessionPanel.isRestrictToScope());
 				newSession.setScopeUrl(sessionPanel.getScopeUrl());
+				newSession.setTestCors(sessionPanel.isTestCors());
 				for (Token newToken : tokenList) {
 					for (Token oldToken : newSession.getTokens()) {
 						if (newToken.getName().equals(oldToken.getName())) {
 							if(newToken.isAutoExtract() && oldToken.isAutoExtract() ||
 								newToken.isFromToString() && oldToken.isFromToString()) {
 									newToken.setValue(oldToken.getValue());
-									newToken.setRequest(oldToken.getRequest());
+									newToken.setRequestResponse(oldToken.getRequestResponse());
 								}
 						}
 					}
@@ -644,6 +647,9 @@ public class ConfigurationPanel extends JPanel {
 			if (sessionObject.get("scopeUrl") != null) {
 				sessionPanel.setRestrictToScopeText(sessionObject.get("scopeUrl").getAsString());
 			}
+			if (sessionObject.get("testCors") != null) {
+				sessionPanel.setTestCors(sessionObject.get("testCors").getAsBoolean());
+			}
 			JsonArray tokenArray = sessionObject.get("tokens").getAsJsonArray();
 			for (JsonElement tokenElement : tokenArray) {
 				JsonObject tokenObject = tokenElement.getAsJsonObject();
@@ -666,6 +672,9 @@ public class ConfigurationPanel extends JPanel {
 				}
 				if(tokenObject.get("caseSensitiveTokenName") != null) {
 					tokenPanel.setCaseSensitiveTokenName(tokenObject.get("caseSensitiveTokenName").getAsBoolean());
+				}
+				if(tokenObject.get("addIfNotExists") != null) {
+					tokenPanel.setAddTokenIfNotExists(tokenObject.get("addIfNotExists").getAsBoolean());
 				}
 				tokenPanel.setIsRemoveToken(tokenObject.get("remove").getAsBoolean());
 				tokenPanel.setTokenValueComboBox(tokenObject.get("autoExtract").getAsBoolean(),

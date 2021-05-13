@@ -13,7 +13,6 @@ import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.ExtractionHelper;
 import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.Globals;
-
 import burp.IContextMenuFactory;
 import burp.IContextMenuInvocation;
 import burp.IHttpRequestResponse;
@@ -106,13 +105,13 @@ public class ContextMenuController implements IContextMenuFactory {
 				if(CurrentConfig.getCurrentConfig().isRunning()) {
 					CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
 				}
+				else {
+					configurationPanel.startStopButtonPressed();
+					CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
+					configurationPanel.startStopButtonPressed();
+				}
 			}
-		}
-		);
-		if(!CurrentConfig.getCurrentConfig().isRunning()) {
-			repeatRequests.setToolTipText("Start "+Globals.EXTENSION_NAME+" to Repeat Requests");
-			repeatRequests.setEnabled(false);
-		}
+		});
 		authAnalyzerMenu.add(repeatRequests);	
 	}
 	
