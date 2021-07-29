@@ -25,11 +25,12 @@ public class Token {
 	private final EnumSet<FromToExtractLocation> fromToExtractLocationSet;
 	private final boolean caseSensitiveTokenName;
 	private final boolean addIfNotExists;
+	private final boolean urlEncoded;
 	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
 			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
 			String grepToString, boolean remove, boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput,
-			boolean caseSensitiveTokenName, boolean addIfNotExists) {
+			boolean caseSensitiveTokenName, boolean addIfNotExists, boolean urlEncoded) {
 		this.name = name;
 		this.value = value;
 		this.extractName = extractName;
@@ -45,6 +46,7 @@ public class Token {
 		this.fromToExtractLocationSet = fromToExtractLocationSet;
 		this.caseSensitiveTokenName = caseSensitiveTokenName;
 		this.addIfNotExists = addIfNotExists;
+		this.urlEncoded = urlEncoded;
 	}
 	
 	public String getName() {
@@ -59,13 +61,12 @@ public class Token {
 		return name;
 	}
 	public String getValue() {
-		return value;
-	}
-	public String getUrlEncodedValue() {
-		try {
-			return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
+		if(urlEncoded) {
+			try {
+				return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
 		}
 		return value;
 	}
@@ -96,8 +97,8 @@ public class Token {
 	public boolean isPromptForInput() {
 		return this.promptForInput;
 	}	
-	public String getHeaderInsertionPointNameStart() {
-		return "§" + name;
+	public String getHeaderInsertionPointName() {
+		return "§" + name + "§";
 	}
 	public boolean doReplaceAtLocation(TokenLocation tokenLocation) {
 		return getTokenLocationSet().contains(tokenLocation);

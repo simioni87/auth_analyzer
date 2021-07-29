@@ -20,7 +20,10 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.UIManager;
+
+import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.gui.dialog.MatchAndReplaceDialog;
 import com.protect7.authanalyzer.gui.main.MainPanel;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextArea;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
@@ -42,10 +45,12 @@ public class SessionPanel extends JPanel {
 	private final JLabel restrictToScopeLabel = new JLabel("Restrict to Scope");
 	private final PlaceholderTextField restrictToScopeText = new PlaceholderTextField();
 	private final JButton addTokenButton;
+	private final JButton matchAndReplaceButton;
 	private final JPanel sessionPanel = new JPanel();
 	private final StatusPanel statusPanel = new StatusPanel();
 	private final GridBagConstraints c = new GridBagConstraints();
 	private final ArrayList<TokenPanel> tokenPanels = new ArrayList<TokenPanel>();
+	private ArrayList<MatchAndReplace> matchAndReplaceList = new ArrayList<MatchAndReplace>();
 	private final MainPanel mainPanel;
 
 	public SessionPanel(String sessionName, MainPanel mainPanel) {
@@ -121,6 +126,11 @@ public class SessionPanel extends JPanel {
 		addTokenButton = new JButton("Add Parameter");
 		addTokenButton.addActionListener(e -> addToken());
 		buttonPanel.add(addTokenButton);
+		matchAndReplaceButton = new JButton("Match and Replace");
+		matchAndReplaceButton.addActionListener(e -> {
+			new MatchAndReplaceDialog(this);
+		});
+		buttonPanel.add(matchAndReplaceButton);
 		JButton infoButton = new JButton("?");
 		infoButton.addActionListener(e -> {
 			
@@ -157,6 +167,15 @@ public class SessionPanel extends JPanel {
 		}
 		revalidate();
 		mainPanel.updateDividerLocation();
+	}
+	
+	public void updateMatchAndReplaceButtonText() {
+		if(matchAndReplaceList.size() > 0) {
+			matchAndReplaceButton.setText("Match and Replace (" + matchAndReplaceList.size() + ")");
+		}
+		else {
+			matchAndReplaceButton.setText("Match and Replace");
+		}
 	}
 
 	public void setRunning() {
@@ -303,6 +322,15 @@ public class SessionPanel extends JPanel {
 		return true;
 	}
 	
+	public void setMatchAndReplaceList(ArrayList<MatchAndReplace> matchAndReplaceList) {
+		this.matchAndReplaceList = matchAndReplaceList;
+		updateMatchAndReplaceButtonText();
+	}
+	
+	public ArrayList<MatchAndReplace> getMatchAndReplaceList() {
+		return matchAndReplaceList;
+	}
+	
 	public URL getScopeUrl() {
 		if(restrictToScope.isSelected()) {
 			try {
@@ -328,10 +356,8 @@ public class SessionPanel extends JPanel {
 					JPopupMenu contextMenu = new JPopupMenu();
 					for (TokenPanel tokenPanel : tokenPanels) {
 						JMenuItem item = new JMenuItem("Set Insertion Point for " + tokenPanel.getTokenName());
-						String selectedText = headersToReplaceText.getText().substring(headersToReplaceText.getSelectionStart(), 
-								headersToReplaceText.getSelectionEnd());
 						String textWithReplacement = headersToReplaceText.getText().substring(0,
-								headersToReplaceText.getSelectionStart()) + "§" + tokenPanel.getTokenName() + "["+selectedText+"]§"
+								headersToReplaceText.getSelectionStart()) + "§" + tokenPanel.getTokenName() + "§"
 								+ headersToReplaceText.getText().substring(headersToReplaceText.getSelectionEnd());
 						item.addActionListener(e -> headersToReplaceText.setText(textWithReplacement));
 						contextMenu.add(item);

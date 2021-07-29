@@ -100,7 +100,7 @@ public class RequestTableModel extends AbstractTableModel {
 	
 	@Override
 	public int getColumnCount() {
-		return STATIC_COLUMN_COUNT + (config.getSessions().size()*3);
+		return STATIC_COLUMN_COUNT + (config.getSessions().size()*4);
 	}
 
 	@Override
@@ -149,6 +149,14 @@ public class RequestTableModel extends AbstractTableModel {
 		for(int i=0; i<config.getSessions().size(); i++) {
 			tempColunmIndex++;
 			if(column == tempColunmIndex) {
+				int lengthDiff = originalRequestResponse.getResponseContentLength() - 
+				config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getResponseContentLength();
+				return lengthDiff;
+			}
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(column == tempColunmIndex) {
 				return config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getStatus();
 			}
 		}
@@ -187,6 +195,12 @@ public class RequestTableModel extends AbstractTableModel {
 			tempColunmIndex++;
 			if(column == tempColunmIndex) {
 				return config.getSessions().get(i).getName() + " " + Column.Length;
+			}
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(column == tempColunmIndex) {
+				return config.getSessions().get(i).getName() + " " + Column.Diff;
 			}
 		}
 		for(int i=0; i<config.getSessions().size(); i++) {
@@ -235,6 +249,12 @@ public class RequestTableModel extends AbstractTableModel {
 		for(int i=0; i<config.getSessions().size(); i++) {
 			tempColunmIndex++;
 			if(columnIndex == tempColunmIndex) {
+				return Integer.class;
+			}
+		}
+		for(int i=0; i<config.getSessions().size(); i++) {
+			tempColunmIndex++;
+			if(columnIndex == tempColunmIndex) {
 				return BypassConstants.class;
 			}
 		}
@@ -242,7 +262,7 @@ public class RequestTableModel extends AbstractTableModel {
 	}
 	
 	public enum Column {
-		ID, Method, Host, Path, Code, Length, Status;
+		ID, Method, Host, Path, Code, Length, Diff, Status;
 		
 		public static EnumSet<Column> getDefaultSet() {
 			return EnumSet.of(ID, Method, Host, Path, Status);

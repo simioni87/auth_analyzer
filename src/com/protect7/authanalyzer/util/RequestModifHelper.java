@@ -3,6 +3,7 @@ package com.protect7.authanalyzer.util;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,9 @@ import javax.swing.JOptionPane;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
+import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.entities.TokenLocation;
@@ -98,7 +101,7 @@ public class RequestModifHelper {
 						endIndex = pathHeader.length();
 					}
 					if(endIndex != 99999) {
-						pathHeader = pathHeader.substring(0, startIndex) + token.getUrlEncodedValue() + pathHeader.substring(endIndex);
+						pathHeader = pathHeader.substring(0, startIndex) + token.getValue() + pathHeader.substring(endIndex);
 						headers.set(0, pathHeader + appendix);
 					}
 				}
@@ -119,7 +122,7 @@ public class RequestModifHelper {
 						endIndex1 = pathHeader.length();
 					}
 					if(endIndex1 != -1) {
-						pathHeader = pathHeader.substring(0, startIndex1) + token.getUrlEncodedValue() + pathHeader.substring(endIndex1);
+						pathHeader = pathHeader.substring(0, startIndex1) + token.getValue() + pathHeader.substring(endIndex1);
 						headers.set(0, pathHeader + appendix);
 					}
 				}
@@ -137,44 +140,73 @@ public class RequestModifHelper {
 	}
 	
 	private static ArrayList<String> getHeaderToReplaceList(Session session) {
-		ArrayList<String> headerToReplaceList = new ArrayList<String>();
+		HashMap<String, String> headerToReplaceMap = new HashMap<String, String>();
 		String[] headersToReplace = session.getHeadersToReplace().replace("\r", "").split("\n");
 		for (String headerToReplace : headersToReplace) {
 			String[] headerKeyValuePair = headerToReplace.split(":");
 			if (headerKeyValuePair.length > 1) {
+				headerToReplaceMap.put(headerKeyValuePair[0], headerToReplace);
+			}
+		}
+		
+		for (String headerToReplace : headersToReplace) {
+			String[] headerKeyValuePair = headerToReplace.split(":");
+			if (headerKeyValuePair.length > 1) {
+				String headerKey = headerKeyValuePair[0];
 				for (Token token : session.getTokens()) {
-					if (headerToReplace.contains(token.getHeaderInsertionPointNameStart())) {
-						int startIndex = headerToReplace.indexOf(token.getHeaderInsertionPointNameStart());
-						int endIndex = headerToReplace.indexOf("]§", startIndex) + 2;
+					if (headerToReplace.contains(token.getHeaderInsertionPointName())) {
+						int startIndex = headerToReplace.indexOf(token.getHeaderInsertionPointName());
+						int endIndex = headerToReplace.indexOf("§", startIndex + 1) + 1;
 						if (startIndex != -1 && endIndex != -1) {
 							if (token.getValue() != null) {
 								headerToReplace = headerToReplace.substring(0, startIndex)
-										+ token.getUrlEncodedValue() + headerToReplace.substring(endIndex);
-							} else {
-								String defaultValue = headerToReplace.substring(
-										startIndex + token.getHeaderInsertionPointNameStart().length() + 1,
-										endIndex - 2);
-								headerToReplace = headerToReplace.substring(0, startIndex) + defaultValue
-										+ headerToReplace.substring(endIndex);
+										+ token.getValue() + headerToReplace.substring(endIndex);
+								headerToReplaceMap.put(headerKey, headerToReplace);
 							}
 						}
 					}
 				}
-				headerToReplaceList.add(headerToReplace);
+				if(!headerToReplaceMap.containsKey(headerKey)) {
+					headerToReplaceMap.put(headerKey, headerToReplace);
+				}
 			}
+		}
+		ArrayList<String> headerToReplaceList = new ArrayList<String>();
+		for(String headerKey : headerToReplaceMap.keySet()) {
+			headerToReplaceList.add(headerToReplaceMap.get(headerKey));
 		}
 		return headerToReplaceList;
 	}
 	
 	public static byte[] getModifiedRequest(byte[] originalRequest, Session session, TokenPriority tokenPriority) {
 		IRequestInfo originalRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(originalRequest);
-		byte[] modifiedRequest = originalRequest;
+		byte[] modifiedRequest = applyMatchesAndReplaces(session, originalRequest);
 		for (Token token : session.getTokens()) {
 			if (token.getValue() != null || token.isRemove() || token.isPromptForInput()) {
 				modifiedRequest = getModifiedRequest(modifiedRequest, originalRequestInfo, session, token, tokenPriority);
 			}
 		}
 		return modifiedRequest;
+	}
+	
+	private static byte[] applyMatchesAndReplaces(Session session, byte[] request) {
+		if(session.getMatchAndReplaceList().size() > 0) {
+			try {
+				String requestAsString = new String(request);
+				for(MatchAndReplace matchAndReplace : session.getMatchAndReplaceList()) {
+					int index = requestAsString.indexOf(matchAndReplace.getMatch());
+					if(index != -1) {
+						requestAsString = requestAsString.substring(0, index) + matchAndReplace.getReplace() 
+						+ requestAsString.substring(index + matchAndReplace.getMatch().length(), requestAsString.length()); 
+					}
+				}
+				return requestAsString.getBytes();
+			}
+			catch (Exception e) {
+				BurpExtender.callbacks.printError("Cannot apply match and replaces");
+			}
+		}	
+		return request; 
 	}
 	
 	private static byte[] getModifiedRequest(byte[] request, IRequestInfo originalRequestInfo, Session session, Token token, TokenPriority tokenPriority) {
@@ -233,7 +265,7 @@ public class RequestModifHelper {
 								parameterValue = token.getValue();
 							}
 							else {
-								parameterValue = token.getUrlEncodedValue();
+								parameterValue = token.getValue();
 							}
 							IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(parameter.getName(),
 									parameterValue, parameter.getType());
@@ -258,7 +290,7 @@ public class RequestModifHelper {
 				return getModifiedJsonRequest(modifiedRequest, originalRequestInfo, token);
 			}
 			IParameter newParameter = BurpExtender.callbacks.getHelpers().buildParameter(token.getUrlEncodedName(),
-					token.getUrlEncodedValue(), parameterType);
+					token.getValue(), parameterType);
 			modifiedRequest = BurpExtender.callbacks.getHelpers().addParameter(modifiedRequest, newParameter);
 		}
 		return modifiedRequest;
@@ -309,7 +341,28 @@ public class RequestModifHelper {
 						if (token.isRemove()) {
 							jsonObject.remove(entry.getKey());
 						} else {
-							jsonObject.addProperty(entry.getKey(), token.getUrlEncodedValue());
+							//Check the type
+							JsonPrimitive primitiveValue = entry.getValue().getAsJsonPrimitive();
+							if(primitiveValue.isBoolean() && (token.getValue().toLowerCase().equals("true") || 
+									token.getValue().toLowerCase().equals("false"))) {
+								try {
+									jsonObject.addProperty(entry.getKey(), Boolean.parseBoolean(token.getValue()));
+								}
+								catch (Exception e) {
+									jsonObject.addProperty(entry.getKey(), token.getValue());
+								}
+							}
+							else if(primitiveValue.isNumber()) {
+								try {
+									jsonObject.addProperty(entry.getKey(), Integer.parseInt(token.getValue()));
+								}
+								catch (Exception e) {
+									jsonObject.addProperty(entry.getKey(), token.getValue());
+								}
+							}
+							else {
+								jsonObject.addProperty(entry.getKey(), token.getValue());
+							}
 						}
 						return true;
 					}
@@ -329,7 +382,7 @@ public class RequestModifHelper {
 	private static void addJsonToken(JsonElement jsonElement, Token token) {
 		if (jsonElement.isJsonObject()) {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			jsonObject.addProperty(token.getUrlEncodedName(), token.getUrlEncodedValue());
+			jsonObject.addProperty(token.getName(), token.getValue());
 		}
 	}
 }

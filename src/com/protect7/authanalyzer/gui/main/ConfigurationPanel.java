@@ -36,6 +36,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.protect7.authanalyzer.entities.AutoExtractLocation;
 import com.protect7.authanalyzer.entities.FromToExtractLocation;
+import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.entities.TokenLocation;
@@ -385,6 +386,7 @@ public class ConfigurationPanel extends JPanel {
 			sessionPanel.setRestrictToScope(sessionPanelToClone.isRestrictToScope());
 			sessionPanel.setRestrictToScopeText(sessionPanelToClone.getRestrictToScopeText());
 			sessionPanel.setTestCors(sessionPanelToClone.isTestCors());
+			sessionPanel.setMatchAndReplaceList(sessionPanelToClone.getMatchAndReplaceList());
 			for (TokenPanel tokenPanel : sessionPanelToClone.getTokenPanelList()) {
 				TokenPanel newTokenPanel = sessionPanel.addToken(tokenPanel.getTokenName());
 				newTokenPanel.setTokenLocationSet(tokenPanel.getTokenLocationSet());
@@ -584,14 +586,14 @@ public class ConfigurationPanel extends JPanel {
 						tokenPanel.getFromToExtractLocationSet(), tokenPanel.getStaticTokenValue(), tokenPanel.getAutoExtractFieldName(), 
 						tokenPanel.getGrepFromString(),	tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(),
 						tokenPanel.isAutoExtract(), tokenPanel.isStaticValue(), tokenPanel.isFromToString(),
-						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName(), tokenPanel.isAddTokenIfNotExists());
+						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName(), tokenPanel.isAddTokenIfNotExists(), tokenPanel.isUrlEncoded());
 				tokenList.add(token);
 			}
 			Session newSession = null;
 			if (sessionListChanged) {
 				newSession = new Session(session, sessionPanel.getHeadersToReplaceText(), sessionPanel.isRemoveHeaders(),
 						sessionPanel.getHeadersToRemoveText(), sessionPanel.isFilterRequestsWithSameHeader(), sessionPanel.isRestrictToScope(),
-						sessionPanel.getScopeUrl(), sessionPanel.isTestCors(), tokenList, sessionPanel.getStatusPanel());
+						sessionPanel.getScopeUrl(), sessionPanel.isTestCors(), tokenList, sessionPanel.getMatchAndReplaceList(), sessionPanel.getStatusPanel());
 				config.addSession(newSession);
 			} else {
 				newSession = config.getSessionByName(session);
@@ -602,6 +604,7 @@ public class ConfigurationPanel extends JPanel {
 				newSession.setRestrictToScope(sessionPanel.isRestrictToScope());
 				newSession.setScopeUrl(sessionPanel.getScopeUrl());
 				newSession.setTestCors(sessionPanel.isTestCors());
+				newSession.setMatchAndReplaceList(sessionPanel.getMatchAndReplaceList());
 				for (Token newToken : tokenList) {
 					for (Token oldToken : newSession.getTokens()) {
 						if (newToken.getName().equals(oldToken.getName())) {
@@ -649,6 +652,18 @@ public class ConfigurationPanel extends JPanel {
 			}
 			if (sessionObject.get("testCors") != null) {
 				sessionPanel.setTestCors(sessionObject.get("testCors").getAsBoolean());
+			}
+			if(sessionObject.get("matchAndReplaceList") != null) {
+				JsonArray matchAndReplaceArray = sessionObject.get("matchAndReplaceList").getAsJsonArray();
+				ArrayList<MatchAndReplace> matchAndReplaceList = new ArrayList<MatchAndReplace>();
+				for (JsonElement matchAndReplaceElement : matchAndReplaceArray) {
+					JsonObject matchAndReplaceObject = matchAndReplaceElement.getAsJsonObject();
+					if(matchAndReplaceObject.get("match") != null && matchAndReplaceObject.get("replace") != null) {
+						matchAndReplaceList.add(new MatchAndReplace(matchAndReplaceObject.get("match").getAsString(), 
+								matchAndReplaceObject.get("replace").getAsString()));
+					}
+				}
+				sessionPanel.setMatchAndReplaceList(matchAndReplaceList);
 			}
 			JsonArray tokenArray = sessionObject.get("tokens").getAsJsonArray();
 			for (JsonElement tokenElement : tokenArray) {
