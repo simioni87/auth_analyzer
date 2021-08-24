@@ -8,15 +8,14 @@ public class PathFilter extends RequestFilter {
 
 	public PathFilter(int filterIndex, String description) {
 		super(filterIndex, description);
+		setFilterStringLiterals(new String[]{});
 	}
-
-	private String[] filterStringLiterals = {};
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(isSelected && requestInfo.getUrl().getPath() != null) {		
+		if(onOffButton.isSelected() && requestInfo.getUrl().getPath() != null) {		
 			String url = requestInfo.getUrl().getPath().toString().toLowerCase();	
-			for(String stringLiteral : filterStringLiterals) {
+			for(String stringLiteral : stringLiterals) {
 				if(url.contains(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
 					incrementFiltered();
 					return true;
@@ -25,17 +24,7 @@ public class PathFilter extends RequestFilter {
 		}
 		return false;
 	}
-
-	@Override
-	public String[] getFilterStringLiterals() {
-		return filterStringLiterals;
-	}
-
-	@Override
-	public void setFilterStringLiterals(String[] filterStringLiterals) {
-		this.filterStringLiterals = filterStringLiterals;
-	}
-
+	
 	@Override
 	public boolean hasStringLiterals() {
 		return true;

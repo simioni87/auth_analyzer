@@ -8,15 +8,14 @@ public class StatusCodeFilter extends RequestFilter {
 	
 	public StatusCodeFilter(int filterIndex, String description) {
 		super(filterIndex, description);
+		setFilterStringLiterals(new String[]{"304"});
 	}
-
-	private String[] filterStringLiterals = { "304" };
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if (isSelected && responseInfo != null) {
+		if (onOffButton.isSelected() && responseInfo != null) {
 			String statusCode = String.valueOf(responseInfo.getStatusCode());
-			for (String stringLiteral : filterStringLiterals) {
+			for (String stringLiteral : stringLiterals) {
 				if (statusCode.equals(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
 					incrementFiltered();
 					return true;
@@ -25,20 +24,9 @@ public class StatusCodeFilter extends RequestFilter {
 		}
 		return false;
 	}
-
-	@Override
-	public String[] getFilterStringLiterals() {
-		return filterStringLiterals;
-	}
-
-	@Override
-	public void setFilterStringLiterals(String[] filterStringLiterals) {
-		this.filterStringLiterals = filterStringLiterals;
-	}
-
+	
 	@Override
 	public boolean hasStringLiterals() {
 		return true;
 	}
-
 }

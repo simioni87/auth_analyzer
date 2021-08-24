@@ -19,7 +19,6 @@ import java.util.Scanner;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -50,11 +49,11 @@ import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
 import com.protect7.authanalyzer.gui.entity.SessionPanel;
 import com.protect7.authanalyzer.gui.entity.TokenPanel;
+import com.protect7.authanalyzer.gui.util.HintCheckBox;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.DataStorageProvider;
 import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.Setting;
-
 import burp.BurpExtender;
 
 public class ConfigurationPanel extends JPanel {
@@ -147,52 +146,52 @@ public class ConfigurationPanel extends JPanel {
 		filterPanel = new JPanel();
 		filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
 
-		JCheckBox onlyInScopeButton = new JCheckBox("Only In Scope");
+		HintCheckBox onlyInScopeButton = new HintCheckBox("Only In Scope");
 		onlyInScopeButton.setSelected(true);
 		addFilter(new InScopeFilter(filterPanel.getComponentCount(), "Only In Scope requests are analyzed"),
 				onlyInScopeButton, "");
 		filterPanel.add(onlyInScopeButton);
 
-		JCheckBox onlyProxyButton = new JCheckBox("Only Proxy Traffic");
+		HintCheckBox onlyProxyButton = new HintCheckBox("Only Proxy Traffic");
 		onlyProxyButton.setSelected(true);
 		addFilter(
 				new OnlyProxyFilter(filterPanel.getComponentCount(),
-						"Analyze only proxy traffic. Unselect to analyze repeater and proxy traffic."),
+						"Analyze only proxy traffic. Unselect to analyze repeater and proxy traffic"),
 				onlyProxyButton, "");
 		filterPanel.add(onlyProxyButton);
 
-		JCheckBox fileTypeFilterButton = new JCheckBox("Exclude Filetypes");
+		HintCheckBox fileTypeFilterButton = new HintCheckBox("Exclude Filetypes");
 		fileTypeFilterButton.setSelected(true);
-		addFilter(new FileTypeFilter(filterPanel.getComponentCount(), "Excludes every specified filetype."),
+		addFilter(new FileTypeFilter(filterPanel.getComponentCount(), "Excludes every specified filetype"),
 				fileTypeFilterButton, "Enter filetypes to filter. Comma separated.\r\neg: jpg, png, js");
 		filterPanel.add(fileTypeFilterButton);
 
-		JCheckBox methodFilterButton = new JCheckBox("Exclude HTTP Methods");
+		HintCheckBox methodFilterButton = new HintCheckBox("Exclude HTTP Methods");
 		methodFilterButton.setSelected(true);
-		addFilter(new MethodFilter(filterPanel.getComponentCount(), "Excludes every specified http method."),
+		addFilter(new MethodFilter(filterPanel.getComponentCount(), "Excludes every specified http method"),
 				methodFilterButton, "Enter HTTP methods to filter. Comma separated.\r\neg: OPTIONS, TRACE");
 		filterPanel.add(methodFilterButton);
 
-		JCheckBox statusCodeFilterButton = new JCheckBox("Exclude Status Codes");
+		HintCheckBox statusCodeFilterButton = new HintCheckBox("Exclude Status Codes");
 		statusCodeFilterButton.setSelected(true);
-		addFilter(new StatusCodeFilter(filterPanel.getComponentCount(), "Excludes every specified status code."),
+		addFilter(new StatusCodeFilter(filterPanel.getComponentCount(), "Excludes every specified status code"),
 				statusCodeFilterButton, "Enter status codes to filter. Comma separated.\r\neg: 204, 304");
 		filterPanel.add(statusCodeFilterButton);
 
-		JCheckBox pathFilterButton = new JCheckBox("Exclude Paths");
+		HintCheckBox pathFilterButton = new HintCheckBox("Exclude Paths");
 		pathFilterButton.setSelected(false);
 		addFilter(
 				new PathFilter(filterPanel.getComponentCount(),
-						"Excludes every path that contains one of the specified string literals."),
+						"Excludes every path that contains one of the specified string literals"),
 				pathFilterButton,
 				"Enter String literals for paths to be excluded. Comma separated.\r\neg: log, libraries");
 		filterPanel.add(pathFilterButton);
 
-		JCheckBox queryFilterButton = new JCheckBox("Exclude Queries / Params");
+		HintCheckBox queryFilterButton = new HintCheckBox("Exclude Queries / Params");
 		queryFilterButton.setSelected(false);
 		addFilter(
 				new QueryFilter(filterPanel.getComponentCount(),
-						"Excludes every GET query that contains one of the specified string literals."),
+						"Excludes every GET query that contains one of the specified string literals"),
 				queryFilterButton,
 				"Enter string literals for queries to be excluded. Comma separated.\r\neg: log, core");
 		filterPanel.add(queryFilterButton);
@@ -474,35 +473,21 @@ public class ConfigurationPanel extends JPanel {
 		GenericHelper.uiUpdateAnimation(pendingRequestsLabel, new Color(240, 110, 0));
 	}
 
-	private void addFilter(RequestFilter filter, JCheckBox onOffButton, String inputDialogText) {
+	private void addFilter(RequestFilter filter, HintCheckBox onOffButton, String inputDialogText) {
 		config.addRequestFilter(filter);
 		filter.registerOnOffButton(onOffButton);
-		setFilterToolTipText(filter);
 		onOffButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (onOffButton.isSelected() && filter.hasStringLiterals()) {
 					String[] inputArray = getInputArray(onOffButton, inputDialogText,
-							getArrayAsString(filter.getFilterStringLiterals()));
+							GenericHelper.getArrayAsString(filter.getFilterStringLiterals()));
 					if (inputArray != null) {
 						filter.setFilterStringLiterals(inputArray);
-						setFilterToolTipText(filter);
 					}
 				}
 			}
 		});
-	}
-
-	private void setFilterToolTipText(RequestFilter filter) {
-		JCheckBox filterCheckBox = filter.getOnOffButton();
-		if (filterCheckBox != null) {
-			if (filter.hasStringLiterals()) {
-				filterCheckBox.setToolTipText("<html>" + filter.getDescription() + "<br>String literals: <em>"
-						+ getArrayAsString(filter.getFilterStringLiterals()) + "</em></html>");
-			} else {
-				filterCheckBox.setToolTipText(filter.getDescription());
-			}
-		}
 	}
 
 	public void startStopButtonPressed() {
@@ -725,7 +710,6 @@ public class ConfigurationPanel extends JPanel {
 					stringLiterals[i] = tokenArray.get(i).getAsString();
 				}
 				requestFilter.setFilterStringLiterals(stringLiterals);
-				setFilterToolTipText(requestFilter);
 			}
 		}
 	}
@@ -755,19 +739,5 @@ public class ConfigurationPanel extends JPanel {
 			inputs[i] = userInputParts[i].trim();
 		}
 		return inputs;
-	}
-
-	private String getArrayAsString(String[] array) {
-		String arrayAsString = "";
-		if (array != null) {
-			for (String arrayPart : array) {
-				if (arrayAsString.equals("")) {
-					arrayAsString = arrayPart;
-				} else {
-					arrayAsString += ", " + arrayPart;
-				}
-			}
-		}
-		return arrayAsString;
 	}
 }

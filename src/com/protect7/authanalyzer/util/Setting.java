@@ -77,7 +77,7 @@ public class Setting {
 		STATUS_SIMILAR_RESPONSE_CODE("true", Type.BOOLEAN, 
 				"(Condition 1) Respect Response Code to flag with Status SIMILAR", null),
 		STATUS_SIMILAR_RESPONSE_LENGTH("5", Type.INTEGER, 
-				"(Condition 2) Deviation of Content-Length in percent to flag with status SIMILAR", new Range(1,100));
+				"(Condition 2) Deviation of Content-Length in percent to flag with Status SIMILAR", new Range(1,100));
 		
 		private final String defaultValue;
 		private final Type type;

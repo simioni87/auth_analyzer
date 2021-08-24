@@ -10,6 +10,7 @@ public class OriginalRequestResponse implements Comparable<OriginalRequestRespon
 	private final String host;
 	private final String url;
 	private final String infoText;
+	private String comment = "";
 	private final int statusCode;
 	private final int responseContentLength;
 	private boolean marked = false;
@@ -62,5 +63,11 @@ public class OriginalRequestResponse implements Comparable<OriginalRequestRespon
 	}
 	public int getResponseContentLength() {
 		return responseContentLength;
+	}
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
+	public String getComment() {
+		return comment;
 	}		
 }

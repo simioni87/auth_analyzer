@@ -25,7 +25,7 @@ public class HttpListener implements IHttpListener, IProxyListener {
 
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-		if(config.isRunning() && (!messageIsRequest || messageIsRequest && config.isDropOriginal())) {		
+		if(config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {		
 			boolean isFiltered = false;
 			IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(messageInfo);
 			IResponseInfo responseInfo = null;

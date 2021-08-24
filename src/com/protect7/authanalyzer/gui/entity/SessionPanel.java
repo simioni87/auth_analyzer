@@ -20,11 +20,11 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.UIManager;
-
 import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.gui.dialog.MatchAndReplaceDialog;
 import com.protect7.authanalyzer.gui.main.MainPanel;
+import com.protect7.authanalyzer.gui.util.HintCheckBox;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextArea;
 import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
 import com.protect7.authanalyzer.util.GenericHelper;
@@ -36,10 +36,10 @@ public class SessionPanel extends JPanel {
 	private final int textFieldWidth = 70;
 	private String sessionName = "";
 	private final PlaceholderTextArea headersToReplaceText = new PlaceholderTextArea(3, textFieldWidth);
-	private final JCheckBox removeHeaders;
+	private final HintCheckBox removeHeaders;
 	private final JCheckBox filterRequestsWithSameHeader;
-	private final JCheckBox restrictToScope;
-	private final JCheckBox testCors;
+	private final HintCheckBox restrictToScope;
+	private final HintCheckBox testCors;
 	private final JLabel headerToRemoveLabel = new JLabel("Header(s) to Remove");
 	private final PlaceholderTextArea headersToRemoveText = new PlaceholderTextArea(3, textFieldWidth);
 	private final JLabel restrictToScopeLabel = new JLabel("Restrict to Scope");
@@ -77,7 +77,7 @@ public class SessionPanel extends JPanel {
 		headersToReplaceText.setToolTipText(
 				"<html>eg:<br>Cookie: session=06q7c9fj33rhb72f6qb60f52s6<br>AnyHeader: key=value</html>");
 		
-		removeHeaders = new JCheckBox("Remove Header(s)", false);
+		removeHeaders = new HintCheckBox("Remove Header(s)", false, "The defined Headers will be removed");
 		c.gridwidth = 1;
 		c.insets = new Insets(5, 0, 0, 20);
 		c.gridy++;
@@ -86,12 +86,12 @@ public class SessionPanel extends JPanel {
 		filterRequestsWithSameHeader = new JCheckBox("Filter requests with same header(s)", false);
 		c.gridx = 1;
 		//sessionPanel.add(filterRequestsWithSameHeader, c);
-		restrictToScope = new JCheckBox("Restrict to Scope", false);
+		restrictToScope = new HintCheckBox("Restrict to Scope", false, "Session will only be repeated for defined Scope / Path");
 		c.gridx = 2;
 		sessionPanel.add(restrictToScope, c);
 		
-		testCors = new JCheckBox("Test CORS", false);
-		testCors.setToolTipText("HTTP Method will be set to OPTIONS");
+		//testCors = new JCheckBox("Test CORS", false);
+		testCors = new HintCheckBox("Test CORS", false, "HTTP Method will be set to OPTIONS");
 		c.gridx = 3;
 		sessionPanel.add(testCors, c);
 		

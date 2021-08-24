@@ -12,7 +12,7 @@ public class OnlyProxyFilter extends RequestFilter {
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(isSelected) {
+		if(onOffButton.isSelected()) {
 			if(toolFlag == IBurpExtenderCallbacks.TOOL_PROXY) {
 				return false;
 			}
@@ -33,14 +33,4 @@ public class OnlyProxyFilter extends RequestFilter {
 	public boolean hasStringLiterals() {
 		return false;
 	}
-
-	@Override
-	public String[] getFilterStringLiterals() {
-		return null;
-	}
-
-	@Override
-	public void setFilterStringLiterals(String[] stringLiterals) {		
-	}
-
 }
