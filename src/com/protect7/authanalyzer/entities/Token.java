@@ -61,7 +61,7 @@ public class Token {
 		return name;
 	}
 	public String getValue() {
-		if(urlEncoded) {
+		if(urlEncoded && value != null) {
 			try {
 				return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
 			} catch (UnsupportedEncodingException e) {
