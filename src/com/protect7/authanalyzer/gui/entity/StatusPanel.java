@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -11,10 +12,14 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+
+import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.GenericHelper;
+
+import burp.BurpExtender;
 
 public class StatusPanel extends JPanel{
 	
@@ -77,10 +82,13 @@ public class StatusPanel extends JPanel{
 		c.insets = new Insets(5, 0, 0, 0);
 		add(headerToReplaceValue, c);
 		if(session.getHeadersToReplace().equals("")) {
-			headerToReplaceValue.setText("No Headers specified");
+			headerLabel.setText("                                  ");//Set ugly placeholder to keep match and replace distance
+			headerToReplaceValue.setVisible(false);
 		}
 		else {
 			headerToReplaceValue.setText(format(session.getHeadersToReplace(), session));
+			headerLabel.setText("<html><p><strong>Header(s) to Replace</strong></html>");
+			headerToReplaceValue.setVisible(true);
 		}
 	
 		if(session.isRemoveHeaders()) {
@@ -146,7 +154,23 @@ public class StatusPanel extends JPanel{
 				c.insets = new Insets(10, 0, 0, 0);
 			}
 			c.gridy++;
-		}		
+		}
+		if(session.getMatchAndReplaceList().size() > 0) {
+			c.gridwidth = 2;
+			c.gridx = 0;
+			add(new JLabel("<html><strong>Match:</strong></html>"), c);
+			c.gridx = 1;
+			add(new JLabel("<html><strong>Replace:</strong></html>"), c);
+			c.gridy++;
+			c.insets = new Insets(5, 0, 0, 0);
+		}
+		for(MatchAndReplace matchAndReplace : session.getMatchAndReplaceList()) {
+			c.gridx = 0;
+			add(new JLabel(formatMatchAndReplaceText(matchAndReplace.getMatch())), c);
+			c.gridx = 1;
+			add(new JLabel(formatMatchAndReplaceText(matchAndReplace.getReplace())), c);
+			c.gridy++;
+		}
 	}
 	
 	private String getTokenText(Token token) {
@@ -200,6 +224,13 @@ public class StatusPanel extends JPanel{
 	private String format(String text, Session session) {
 		String htmlString = "<html><p style='width:600px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
 		return htmlString;
+	}
+	
+	private String formatMatchAndReplaceText(String text) {
+		if(text.length() > 18) {
+			return text.substring(0, 15) + "...";
+		}
+		return text;
 	}
 	
 	public boolean isRunning() {

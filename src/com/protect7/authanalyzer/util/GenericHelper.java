@@ -53,4 +53,18 @@ public class GenericHelper {
 	public static Color getErrorBgColor() {
 		return new Color(255, 102, 102);
 	}
+	
+	public static String getArrayAsString(String[] array) {
+		String arrayAsString = "";
+		if (array != null) {
+			for (String arrayPart : array) {
+				if (arrayAsString.equals("")) {
+					arrayAsString = arrayPart;
+				} else {
+					arrayAsString += ", " + arrayPart;
+				}
+			}
+		}
+		return arrayAsString;
+	}
 }

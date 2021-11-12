@@ -13,6 +13,8 @@ import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.ExtractionHelper;
 import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.Globals;
+
+import burp.BurpExtender;
 import burp.IContextMenuFactory;
 import burp.IContextMenuInvocation;
 import burp.IHttpRequestResponse;
@@ -51,6 +53,7 @@ public class ContextMenuController implements IContextMenuFactory {
 					return menuItems;
 				}
 				String selectedText = new String(Arrays.copyOfRange(message.getRequest(), selection[0], selection[1]));
+				BurpExtender.callbacks.printOutput(selectedText);
 				if (isHeader(selectedText)) {
 					// Set header menu
 					addHeaderMenu(authAnalyzerMenu, selectedText);

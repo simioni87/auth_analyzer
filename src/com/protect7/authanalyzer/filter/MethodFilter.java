@@ -8,16 +8,15 @@ public class MethodFilter extends RequestFilter {
 	
 	public MethodFilter(int filterIndex, String description) {
 		super(filterIndex, description);
+		setFilterStringLiterals(new String[]{"OPTIONS"});
 	}
-
-	private String[] filterMethods = {"OPTIONS"};
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
 		
-		if(isSelected) {		
+		if(onOffButton.isSelected()) {		
 			String requestMethod = requestInfo.getMethod();
-			for(String method : filterMethods) {
+			for(String method : stringLiterals) {
 				if(requestMethod.toLowerCase().equals(method.toLowerCase()) && !method.trim().equals("")) {
 					incrementFiltered();
 					return true;
@@ -31,15 +30,4 @@ public class MethodFilter extends RequestFilter {
 	public boolean hasStringLiterals() {
 		return true;
 	}
-
-	@Override
-	public String[] getFilterStringLiterals() {
-		return filterMethods;
-	}
-
-	@Override
-	public void setFilterStringLiterals(String[] stringLiterals) {
-		this.filterMethods = stringLiterals;
-	}
-
 }

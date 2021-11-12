@@ -26,6 +26,9 @@ public class CurrentConfig {
 	private boolean running = false;
 	private boolean dropOriginal = false;
 	private volatile int mapId = 0;
+	private boolean respectResponseCodeForSameStatus = true;
+	private boolean respectResponseCodeForSimilarStatus = true; 
+	private int deviationForSimilarStatus = 5;
 
 	private CurrentConfig() {
 	}
@@ -57,6 +60,9 @@ public class CurrentConfig {
 
 	public void setRunning(boolean running) {
 		if(running) {
+			respectResponseCodeForSameStatus = Setting.getValueAsBoolean(Setting.Item.STATUS_SAME_RESPONSE_CODE);
+			respectResponseCodeForSimilarStatus = Setting.getValueAsBoolean(Setting.Item.STATUS_SIMILAR_RESPONSE_CODE);
+			deviationForSimilarStatus = Setting.getValueAsInteger(Setting.Item.STATUS_SIMILAR_RESPONSE_LENGTH);
 			if(hasPromptForInput() && Setting.getValueAsBoolean(Setting.Item.ONLY_ONE_THREAD_IF_PROMT_FOR_INPUT)) {
 				//Set POOL Size to 1 --> if prompt for input dialog appears no further requests will be repeated until dialog is closed
 				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);
@@ -68,7 +74,6 @@ public class CurrentConfig {
 		}
 		else {
 			analyzerThreadExecutor.shutdownNow();
-			//while(analyzerThreadExecutor.is)
 			BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(0);
 		}
 		this.running = running;
@@ -148,5 +153,29 @@ public class CurrentConfig {
 
 	public RequestController getRequestController() {
 		return requestController;
+	}
+
+	public boolean isRespectResponseCodeForSameStatus() {
+		return respectResponseCodeForSameStatus;
+	}
+
+	public void setRespectResponseCodeForSameStatus(boolean respectResponseCodeForSameStatus) {
+		this.respectResponseCodeForSameStatus = respectResponseCodeForSameStatus;
+	}
+
+	public boolean isRespectResponseCodeForSimilarStatus() {
+		return respectResponseCodeForSimilarStatus;
+	}
+
+	public void setRespectResponseCodeForSimilarFlag(boolean respectResponseCodeForSimilarStatus) {
+		this.respectResponseCodeForSimilarStatus = respectResponseCodeForSimilarStatus;
+	}
+
+	public int getDerivationForSimilarStatus() {
+		return deviationForSimilarStatus;
+	}
+
+	public void setDerivationForSimilarStatus(int derivationForSimilarStatus) {
+		this.deviationForSimilarStatus = derivationForSimilarStatus;
 	}	
 }

@@ -9,15 +9,14 @@ public class FileTypeFilter extends RequestFilter {
 
 	public FileTypeFilter(int filterIndex, String description) {
 		super(filterIndex, description);
+		setFilterStringLiterals(new String[]{"js", "script", "css", "png", "jpg", "jpeg", "gif", "svg", "bmp", "woff", "ico"});
 	}
-
-	private String[] filterFileTypes = {"js", "script", "css", "png", "jpg", "jpeg", "gif", "svg", "bmp", "woff", "ico"};
-
+	
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(isSelected && responseInfo != null) {
+		if(onOffButton.isSelected() && responseInfo != null) {
 			String url = requestInfo.getUrl().toString().toLowerCase();
-			for(String fileType : filterFileTypes) {
+			for(String fileType : stringLiterals) {
 				if(url.endsWith(fileType.toLowerCase()) && !fileType.equals("") || 
 						(fileType.toLowerCase().equals(responseInfo.getInferredMimeType().toLowerCase()) && !fileType.trim().equals(""))) {
 					incrementFiltered();
@@ -32,16 +31,4 @@ public class FileTypeFilter extends RequestFilter {
 	public boolean hasStringLiterals() {
 		return true;
 	}
-
-	@Override
-	public String[] getFilterStringLiterals() {
-		return filterFileTypes;
-	}
-
-	@Override
-	public void setFilterStringLiterals(String[] stringLiterals) {
-		this.filterFileTypes = stringLiterals;
-	}
-
-
 }

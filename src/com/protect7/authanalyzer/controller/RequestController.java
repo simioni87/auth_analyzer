@@ -190,11 +190,11 @@ public class RequestController {
 		byte[] sessionResponseBody = Arrays.copyOfRange(sessionResponse, sessionResponseInfo.getBodyOffset(),
 				sessionResponse.length);
 		if (Arrays.equals(originalResponseBody, sessionResponseBody)
-				&& (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode())) {
+				&& (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode() || !CurrentConfig.getCurrentConfig().isRespectResponseCodeForSameStatus())) {
 			return BypassConstants.SAME;
 		}
-		if (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode()) {
-			int range = originalResponseBody.length / 20; // calc 5% of response length
+		if (originalResponseInfo.getStatusCode() == sessionResponseInfo.getStatusCode() || !CurrentConfig.getCurrentConfig().isRespectResponseCodeForSimilarStatus()) {
+			int range = originalResponseBody.length / (100/CurrentConfig.getCurrentConfig().getDerivationForSimilarStatus());
 			int difference = originalResponseBody.length - sessionResponseBody.length;
 			// Check if difference is in range
 			if (difference <= range && difference >= -range) {

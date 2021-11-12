@@ -8,16 +8,15 @@ public class QueryFilter extends RequestFilter {
 
 	public QueryFilter(int filterIndex, String description) {
 		super(filterIndex, description);
+		setFilterStringLiterals(new String[]{});
 	}
-
-	private String[] filterStringLiterals = {};
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(isSelected) {
+		if(onOffButton.isSelected()) {
 			if(requestInfo.getUrl().getQuery() != null) {
 				String query = requestInfo.getUrl().getQuery().toString().toLowerCase();
-				for(String stringLiteral : filterStringLiterals) {
+				for(String stringLiteral : stringLiterals) {
 					if(query.contains(stringLiteral.toLowerCase()) && !stringLiteral.trim().equals("")) {
 						incrementFiltered();
 						return true;
@@ -26,16 +25,6 @@ public class QueryFilter extends RequestFilter {
 			}
 		}
 		return false;
-	}
-
-	@Override
-	public String[] getFilterStringLiterals() {
-		return filterStringLiterals;
-	}
-
-	@Override
-	public void setFilterStringLiterals(String[] filterStringLiterals) {
-		this.filterStringLiterals = filterStringLiterals;
 	}
 
 	@Override

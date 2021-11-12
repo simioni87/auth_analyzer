@@ -1,5 +1,7 @@
 package com.protect7.authanalyzer.util;
 
+import com.protect7.authanalyzer.entities.Range;
+
 import burp.BurpExtender;
 
 public class Setting {
@@ -62,23 +64,31 @@ public class Setting {
 	
 	public enum Item {
 		AUTOSET_PARAM_STATIC_PATTERNS("token,code,user,mail,pass,key,csrf,xsrf", 
-				Type.ARRAY, "Static Patterns (for Automatically Set Parameters)"),
+				Type.ARRAY, "Static Patterns (for Automatically Set Parameters)", null),
 		AUTOSET_PARAM_DYNAMIC_PATTERNS("viewstate,eventvalidation,requestverificationtoken", Type.ARRAY,
-				"Dynamic Patterns (for Automatically Set Parameters)"),
-		NUMBER_OF_THREADS("20", Type.INTEGER, "Number of Threads (for Request Processing)"),
+				"Dynamic Patterns (for Automatically Set Parameters)", null),
+		NUMBER_OF_THREADS("20", Type.INTEGER, "Number of Threads (for Request Processing)", new Range(1,50)),
 		ONLY_ONE_THREAD_IF_PROMT_FOR_INPUT("true", Type.BOOLEAN, 
-				"One Thread if a Prompt for Input Parameter is present"),
+				"One Thread if a Prompt for Input Parameter is present", null),
 		SHOW_PENDING_REQUEST_INFO("false", Type.BOOLEAN, 
-				"Show Pending Request Info (Reload Extension)");
+				"Show Pending Request Info (Reload Extension)", null),
+		STATUS_SAME_RESPONSE_CODE("true", Type.BOOLEAN, 
+				"Respect Response Code to flag with Status SAME", null),
+		STATUS_SIMILAR_RESPONSE_CODE("true", Type.BOOLEAN, 
+				"(Condition 1) Respect Response Code to flag with Status SIMILAR", null),
+		STATUS_SIMILAR_RESPONSE_LENGTH("5", Type.INTEGER, 
+				"(Condition 2) Deviation of Content-Length in percent to flag with Status SIMILAR", new Range(1,100));
 		
 		private final String defaultValue;
 		private final Type type;
 		private final String description;
+		private final Range range;
 		
-		private Item(String defaultValue, Type type, String description) {
+		private Item(String defaultValue, Type type, String description, Range range) {
 			this.defaultValue = defaultValue;
 			this.type = type;
 			this.description = description;
+			this.range = range;
 		}
 		
 		public String getDefaultValue() {
@@ -92,9 +102,13 @@ public class Setting {
 		public String getDescription() {
 			return description;
 		}
+		
+		public Range getRange() {
+			return range;
+		}
 	}
 	
 	public enum Type {
 		ARRAY(), STRING(), INTEGER(), BOOLEAN();
-	}
+	}	
 }

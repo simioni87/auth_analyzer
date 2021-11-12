@@ -31,22 +31,9 @@ public class TokenSettingsDialog {
 		else {
 			infoLabel = new JLabel("<html><strong>Replace Parameter at</strong></html>");
 		}
-		JCheckBox addParameterCheckBox = new JCheckBox("Add Parameter if not Exists");
-		removeTokenCheckBox.addActionListener(e -> {
-			tokenPanel.setFieldsEnabledDisabled();
-			tokenPanel.setIsRemoveToken(removeTokenCheckBox.isSelected());
-			setChildComponentsEnabled(extractPanel, !removeTokenCheckBox.isSelected());
-			if(removeTokenCheckBox.isSelected()) {
-				infoLabel.setText("<html><strong>Remove Parameter at</strong></html>");
-				addParameterCheckBox.setEnabled(false);
-			}
-			else {
-				infoLabel.setText("<html><strong>Replace Parameter at</strong></html>");
-				addParameterCheckBox.setEnabled(true);
-			}
-		});
-		
+		JCheckBox addParameterCheckBox = new JCheckBox("Add Parameter if not Exists");		
 		addParameterCheckBox.setSelected(tokenPanel.isAddTokenIfNotExists());
+		addParameterCheckBox.setEnabled(!removeTokenCheckBox.isSelected());
 		if(addParameterCheckBox.isSelected()) {
 			infoLabel.setText("<html><strong>Replace / Add Parameter at</strong></html>");
 		}
@@ -67,17 +54,21 @@ public class TokenSettingsDialog {
 		});
 		inputPanel.add(addParameterCheckBox);
 		
+		JCheckBox urlEncodeTokenValue = new JCheckBox("URL Encode Value");
+		urlEncodeTokenValue.setSelected(tokenPanel.isUrlEncoded());
+		urlEncodeTokenValue.setEnabled(!removeTokenCheckBox.isSelected());
+		urlEncodeTokenValue.addActionListener(e -> {
+			tokenPanel.setUrlEncoded(urlEncodeTokenValue.isSelected());
+		});
+		inputPanel.add(urlEncodeTokenValue);
+		
 		JCheckBox caseSensitiveTokenNameCheckBox = new JCheckBox("Case Sensitive Parameter Name");
 		caseSensitiveTokenNameCheckBox.setSelected(tokenPanel.isCaseSensitiveTokenName());
 		caseSensitiveTokenNameCheckBox.addActionListener(e -> {
-			if(caseSensitiveTokenNameCheckBox.isSelected()) {
-				tokenPanel.setCaseSensitiveTokenName(true);
-			}
-			else {
-				tokenPanel.setCaseSensitiveTokenName(false);
-			}
+			tokenPanel.setCaseSensitiveTokenName(caseSensitiveTokenNameCheckBox.isSelected());
 		});
 		inputPanel.add(caseSensitiveTokenNameCheckBox);
+		
 		inputPanel.add(new JLabel(" "));
     	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
     	inputPanel.add(new JLabel(" "));
@@ -96,6 +87,22 @@ public class TokenSettingsDialog {
 			inputPanel.add(locationCheckBox);
 		}
 		inputPanel.add(extractPanel);
+			
+		removeTokenCheckBox.addActionListener(e -> {
+			tokenPanel.setFieldsEnabledDisabled();
+			tokenPanel.setIsRemoveToken(removeTokenCheckBox.isSelected());
+			setChildComponentsEnabled(extractPanel, !removeTokenCheckBox.isSelected());
+			if(removeTokenCheckBox.isSelected()) {
+				infoLabel.setText("<html><strong>Remove Parameter at</strong></html>");
+				addParameterCheckBox.setEnabled(false);
+				urlEncodeTokenValue.setEnabled(false);
+			}
+			else {
+				infoLabel.setText("<html><strong>Replace Parameter at</strong></html>");
+				addParameterCheckBox.setEnabled(true);
+				urlEncodeTokenValue.setEnabled(true);
+			}
+		});
 		
 		if(tokenPanel.isSelectedItem(tokenPanel.OPTION_FROM_TO_STRING) || tokenPanel.isSelectedItem(tokenPanel.OPTION_AUTO_EXTRACT)) {
 			extractPanel.add(new JLabel(" "));

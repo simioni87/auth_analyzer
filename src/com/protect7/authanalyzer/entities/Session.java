@@ -28,10 +28,11 @@ public class Session {
 	private int tabbedPaneResponseIndex;
 	private final HashMap<Integer, AnalyzerRequestResponse> requestResponseMap = new HashMap<>();
 	private ArrayList<Token> tokens = new ArrayList<Token>();
+	private ArrayList<MatchAndReplace> matchAndReplaceList = new ArrayList<MatchAndReplace>();
 	private final StatusPanel statusPanel;
 
 	public Session(String name, String headersToReplace, boolean removeHeaders, String headersToRemove, boolean filterRequestsWithSameHeader, boolean restrictToScope, 
-			URL scopeUrl, boolean testCors, ArrayList<Token> tokens, StatusPanel statusPanel) {
+			URL scopeUrl, boolean testCors, ArrayList<Token> tokens, ArrayList<MatchAndReplace> matchAndReplaceList, StatusPanel statusPanel) {
 		this.name = name;
 		this.removeHeaders = removeHeaders;
 		this.headersToReplace = headersToReplace;
@@ -41,6 +42,7 @@ public class Session {
 		this.headersToRemove = headersToRemove;
 		this.setScopeUrl(scopeUrl);
 		this.setTokens(tokens);
+		this.matchAndReplaceList = matchAndReplaceList;
 		this.statusPanel = statusPanel;
 	}
 
@@ -182,5 +184,13 @@ public class Session {
 
 	public void setTestCors(boolean testCors) {
 		this.testCors = testCors;
+	}
+
+	public ArrayList<MatchAndReplace> getMatchAndReplaceList() {
+		return matchAndReplaceList;
+	}
+	
+	public void setMatchAndReplaceList(ArrayList<MatchAndReplace> matchAndReplaceList) {
+		this.matchAndReplaceList = matchAndReplaceList;
 	}
 }

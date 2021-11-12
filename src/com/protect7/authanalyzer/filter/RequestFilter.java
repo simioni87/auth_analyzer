@@ -1,21 +1,17 @@
 package com.protect7.authanalyzer.filter;
 
 import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import javax.swing.JCheckBox;
-
+import com.protect7.authanalyzer.gui.util.HintCheckBox;
 import com.protect7.authanalyzer.util.GenericHelper;
-
 import burp.IBurpExtenderCallbacks;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
 
 public abstract class RequestFilter {
 	
-	protected boolean isSelected = true;
-	protected JCheckBox onOffButton = null;
+	protected HintCheckBox onOffButton = null;
 	protected int amountOfFilteredRequests = 0;
+	protected String[] stringLiterals = null;
 	private final int filterIndex;
 	private final String description;
 	
@@ -24,32 +20,25 @@ public abstract class RequestFilter {
 		this.description = description;
 	}
 	
-	public void registerOnOffButton(JCheckBox button) {
+	public void registerOnOffButton(HintCheckBox button) {
 		onOffButton = button;
-		isSelected = button.isSelected();
-		button.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				isSelected = button.isSelected();
-			}
-		});
+		onOffButton.setHint(getInfoText());
 	}
 	
 	protected void incrementFiltered() {
 		amountOfFilteredRequests++;
-		if(getOnOffButton() != null) {
-			String textWihtoutFilterAmount = getOnOffButton().getText().split(" \\(")[0];
-			getOnOffButton().setText(textWihtoutFilterAmount + " (Filtered: " + amountOfFilteredRequests + ")");
-			GenericHelper.uiUpdateAnimation(getOnOffButton(), Color.RED);
+		if(onOffButton != null) {
+			String textWihtoutFilterAmount = onOffButton.getText().split(" \\(")[0];
+			onOffButton.setText(textWihtoutFilterAmount + " (Filtered: " + amountOfFilteredRequests + ")");
+			GenericHelper.uiUpdateAnimation(onOffButton, Color.RED);
 		}
 	}
 	
 	public void resetFilteredAmount() {
 		amountOfFilteredRequests = 0;
-		if(getOnOffButton() != null) {
-			String textWihtoutFilterAmount = getOnOffButton().getText().split(" \\(")[0];
-			getOnOffButton().setText(textWihtoutFilterAmount);
+		if(onOffButton != null) {
+			String textWihtoutFilterAmount = onOffButton.getText().split(" \\(")[0];
+			onOffButton.setText(textWihtoutFilterAmount);
 		}
 	}
 	
@@ -57,12 +46,23 @@ public abstract class RequestFilter {
 
 	public abstract boolean hasStringLiterals();
 	
-	public abstract String[] getFilterStringLiterals();
+	public String[] getFilterStringLiterals() {
+		return stringLiterals;
+	}
 	
-	public abstract void setFilterStringLiterals(String[] stringLiterals);
+	public void setFilterStringLiterals(String[] stringLiterals) {
+		this.stringLiterals = stringLiterals;
+		if(onOffButton != null) {
+			onOffButton.setHint(getInfoText());
+		}
+	}
+	
+	public void setIsSelected(boolean selected) {
+		onOffButton.setSelected(selected);
+	}
 	
 	public String toJson() {
-		String json = "{\"filterIndex\":"+filterIndex+",\"isSelected\":"+isSelected;
+		String json = "{\"filterIndex\":"+filterIndex+",\"isSelected\":"+onOffButton.isSelected();
 		if(!hasStringLiterals()) {
 			json = json + "}";
 		}
@@ -81,11 +81,16 @@ public abstract class RequestFilter {
 		return json;
 	}
 	
-	public void setIsSelected(boolean isSelected) {
-		this.isSelected = isSelected;
-		if(getOnOffButton() != null) {
-			getOnOffButton().setSelected(isSelected);
+	public String getInfoText() {
+		if (onOffButton != null) {
+			if (hasStringLiterals()) {
+				return "<html>" + getDescription() + "<br><strong><em>"
+						+ GenericHelper.getArrayAsString(getFilterStringLiterals()) + "</em></strong></html>";
+			} else {
+				return getDescription();
+			}
 		}
+		return "";
 	}
 
 	public int getFilterIndex() {
@@ -95,9 +100,4 @@ public abstract class RequestFilter {
 	public String getDescription() {
 		return description;
 	}
-
-	public JCheckBox getOnOffButton() {
-		return onOffButton;
-	}
-	
 }

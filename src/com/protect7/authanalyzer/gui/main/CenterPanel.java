@@ -27,6 +27,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
@@ -407,6 +408,16 @@ public class CenterPanel extends JPanel {
 				    			tableModel.deleteRequestResponse(requestResponse);
 				    		}
 				    	});
+				    	JMenuItem commentItem = new JMenuItem("Comment");
+				    	commentItem.addActionListener(e -> {
+				    		if(requestResponseList.size() > 0) {
+				    			JTextArea commentTextArea = new JTextArea(requestResponseList.get(0).getComment(), 2, 8);
+				    			JOptionPane.showMessageDialog(commentItem, new JScrollPane(commentTextArea), "Comment", JOptionPane.INFORMATION_MESSAGE);
+				    			for(OriginalRequestResponse requestResponse : requestResponseList) {
+					    			requestResponse.setComment(commentTextArea.getText());
+					    		}
+				    		}
+				    	});
 				    	if(rows.length == 1) {
 				    		if(requestResponseList.get(0).isMarked()) {
 				    			contextMenu.add(unmarkRowItem);
@@ -421,6 +432,7 @@ public class CenterPanel extends JPanel {
 				    	}
 				    	contextMenu.add(repeatRequestItem);
 				    	contextMenu.add(deleteRowItem); 
+				    	contextMenu.add(commentItem);
 				    	contextMenu.show(event.getComponent(), event.getX(), event.getY());
 				    }
 				}				

@@ -76,8 +76,8 @@ public class SettingsDialog extends JDialog {
 		}
 		if(item.getType() == Setting.Type.INTEGER) {
 			JSpinner integerField = new JSpinner();
-			((SpinnerNumberModel) integerField.getModel()).setMinimum(1);
-			((SpinnerNumberModel) integerField.getModel()).setMaximum(100);
+			((SpinnerNumberModel) integerField.getModel()).setMinimum(item.getRange().getMinimum());
+			((SpinnerNumberModel) integerField.getModel()).setMaximum(item.getRange().getMaximum());
 			((SpinnerNumberModel) integerField.getModel()).setStepSize(1);
 			int currentValue = Setting.getValueAsInteger(item);
 			integerField.setValue(new Integer(currentValue));
