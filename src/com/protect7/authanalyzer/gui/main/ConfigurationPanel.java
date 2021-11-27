@@ -670,11 +670,14 @@ public class ConfigurationPanel extends JPanel {
 					EnumSet<FromToExtractLocation> fromToExtractLocationSet =  new Gson().fromJson(tokenObject.get("fromToExtractLocationSet"), type);
 					tokenPanel.setFromToExtractLocationSet(fromToExtractLocationSet);
 				}
-				if(tokenObject.get("caseSensitiveTokenName") != null) {
-					tokenPanel.setCaseSensitiveTokenName(tokenObject.get("caseSensitiveTokenName").getAsBoolean());
-				}
 				if(tokenObject.get("addIfNotExists") != null) {
 					tokenPanel.setAddTokenIfNotExists(tokenObject.get("addIfNotExists").getAsBoolean());
+				}
+				if(tokenObject.get("urlEncoded") != null) {
+					tokenPanel.setUrlEncoded(tokenObject.get("urlEncoded").getAsBoolean());
+				}
+				if(tokenObject.get("caseSensitiveTokenName") != null) {
+					tokenPanel.setCaseSensitiveTokenName(tokenObject.get("caseSensitiveTokenName").getAsBoolean());
 				}
 				tokenPanel.setIsRemoveToken(tokenObject.get("remove").getAsBoolean());
 				tokenPanel.setTokenValueComboBox(tokenObject.get("autoExtract").getAsBoolean(),
