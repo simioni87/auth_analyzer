@@ -19,7 +19,9 @@ public class TokenSettingsDialog {
 		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
 		JPanel extractPanel = new JPanel();
 		extractPanel.setLayout(new BoxLayout(extractPanel , BoxLayout.PAGE_AXIS));
-		inputPanel.add(new JLabel("<html><strong>General Settings</strong></html>"));
+		JLabel generalSettingsText = new JLabel("<html><strong>General Settings</strong></html>");
+		generalSettingsText.putClientProperty("html.disable", null);
+		inputPanel.add(generalSettingsText);
 		
 		JCheckBox removeTokenCheckBox = new JCheckBox("Remove Parameter");
 		removeTokenCheckBox.setSelected(tokenPanel.isRemoveToken());
@@ -31,7 +33,7 @@ public class TokenSettingsDialog {
 		else {
 			infoLabel = new JLabel("<html><strong>Replace Parameter at</strong></html>");
 		}
-		JCheckBox addParameterCheckBox = new JCheckBox("Add Parameter if not Exists");		
+		JCheckBox addParameterCheckBox = new JCheckBox("Add Parameter if not Exists");
 		addParameterCheckBox.setSelected(tokenPanel.isAddTokenIfNotExists());
 		addParameterCheckBox.setEnabled(!removeTokenCheckBox.isSelected());
 		if(addParameterCheckBox.isSelected()) {
@@ -72,6 +74,7 @@ public class TokenSettingsDialog {
 		inputPanel.add(new JLabel(" "));
     	inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
     	inputPanel.add(new JLabel(" "));
+    	infoLabel.putClientProperty("html.disable", null);
 		inputPanel.add(infoLabel);
 		for(TokenLocation tokenLocation : TokenLocation.values()) {
 			JCheckBox locationCheckBox = new JCheckBox(tokenLocation.getName());
@@ -108,7 +111,9 @@ public class TokenSettingsDialog {
 			extractPanel.add(new JLabel(" "));
 			extractPanel.add(new JSeparator(JSeparator.HORIZONTAL));
 			extractPanel.add(new JLabel(" "));
-			extractPanel.add(new JLabel("<html><strong>Try to extract value from</strong></html>"));
+			JLabel tryToExtractValueFromLabel = new JLabel("<html><strong>Try to extract value from</strong></html>");
+			tryToExtractValueFromLabel.putClientProperty("html.disable", null);
+			extractPanel.add(tryToExtractValueFromLabel);
 	    	if(tokenPanel.isSelectedItem(tokenPanel.OPTION_AUTO_EXTRACT)) {
 	    		for(AutoExtractLocation autoExtractLocation : AutoExtractLocation.values()) {
 	    			JCheckBox locationCheckBox = new JCheckBox(autoExtractLocation.getName());

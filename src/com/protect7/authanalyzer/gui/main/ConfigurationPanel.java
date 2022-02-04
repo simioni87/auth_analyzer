@@ -195,7 +195,7 @@ public class ConfigurationPanel extends JPanel {
 				queryFilterButton,
 				"Enter string literals for queries to be excluded. Comma separated.\r\neg: log, core");
 		filterPanel.add(queryFilterButton);
-
+		startStopButton.putClientProperty("html.disable", null);
 		startStopButton.setText(ANALYZER_STOPPED_TEXT);
 		startStopButton.addActionListener(new ActionListener() {
 

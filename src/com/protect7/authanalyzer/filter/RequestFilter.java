@@ -22,6 +22,7 @@ public abstract class RequestFilter {
 	
 	public void registerOnOffButton(HintCheckBox button) {
 		onOffButton = button;
+		onOffButton.putClientProperty("html.disable", null);
 		onOffButton.setHint(getInfoText());
 	}
 	

@@ -76,6 +76,7 @@ public class SessionPanel extends JPanel {
 		sessionPanel.add(headersToReplaceText, c);
 		headersToReplaceText.setToolTipText(
 				"<html>eg:<br>Cookie: session=06q7c9fj33rhb72f6qb60f52s6<br>AnyHeader: key=value</html>");
+		headersToReplaceText.putClientProperty("html.disable", null);
 		
 		removeHeaders = new HintCheckBox("Remove Header(s)", false, "The defined Headers will be removed");
 		c.gridwidth = 1;
@@ -357,7 +358,7 @@ public class SessionPanel extends JPanel {
 					for (TokenPanel tokenPanel : tokenPanels) {
 						JMenuItem item = new JMenuItem("Set Insertion Point for " + tokenPanel.getTokenName());
 						String textWithReplacement = headersToReplaceText.getText().substring(0,
-								headersToReplaceText.getSelectionStart()) + "ง" + tokenPanel.getTokenName() + "ง"
+								headersToReplaceText.getSelectionStart()) + "ยง" + tokenPanel.getTokenName() + "ยง"
 								+ headersToReplaceText.getText().substring(headersToReplaceText.getSelectionEnd());
 						item.addActionListener(e -> headersToReplaceText.setText(textWithReplacement));
 						contextMenu.add(item);

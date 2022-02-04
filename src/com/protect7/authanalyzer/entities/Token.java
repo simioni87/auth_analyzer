@@ -98,7 +98,7 @@ public class Token {
 		return this.promptForInput;
 	}	
 	public String getHeaderInsertionPointName() {
-		return "ง" + name + "ง";
+		return "ยง" + name + "ยง";
 	}
 	public boolean doReplaceAtLocation(TokenLocation tokenLocation) {
 		return getTokenLocationSet().contains(tokenLocation);

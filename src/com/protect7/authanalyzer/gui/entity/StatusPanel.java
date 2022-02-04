@@ -61,6 +61,7 @@ public class StatusPanel extends JPanel{
 		c.gridx = 2;
 		c.anchor = GridBagConstraints.WEST;
 		JButton onOffSwitch = new JButton(SESSION_STARTED_TEXT);
+		onOffSwitch.putClientProperty("html.disable", null);
 		if(!running) {
 			onOffSwitch.setText(SESSION_PAUSED_TEXT);
 		}
@@ -80,6 +81,7 @@ public class StatusPanel extends JPanel{
 		c.gridx = 0;
 		c.gridy++;
 		c.insets = new Insets(5, 0, 0, 0);
+		headerToReplaceValue.putClientProperty("html.disable", null);
 		add(headerToReplaceValue, c);
 		if(session.getHeadersToReplace().equals("")) {
 			headerLabel.setText("                                  ");//Set ugly placeholder to keep match and replace distance
@@ -88,15 +90,18 @@ public class StatusPanel extends JPanel{
 		else {
 			headerToReplaceValue.setText(format(session.getHeadersToReplace(), session));
 			headerLabel.setText("<html><p><strong>Header(s) to Replace</strong></html>");
+			headerLabel.putClientProperty("html.disable", null);
 			headerToReplaceValue.setVisible(true);
 		}
 	
 		if(session.isRemoveHeaders()) {
 			c.gridy++;
 			c.insets = new Insets(10, 0, 0, 0);
+			headerRemoveLabel.putClientProperty("html.disable", null);
 			add(headerRemoveLabel, c);
 			c.insets = new Insets(5, 0, 0, 0);
 			c.gridy++;
+			headerToRemoveValue.putClientProperty("html.disable", null);
 			add(headerToRemoveValue, c);
 			if(session.getHeadersToRemove().equals("")) {
 				headerToRemoveValue.setText("No Headers specified");
@@ -111,6 +116,7 @@ public class StatusPanel extends JPanel{
 		c.fill = GridBagConstraints.HORIZONTAL;
 		if(session.getTokens().size() == 0) {
 			JLabel dummyLabel = new JLabel("<html><p style='width:490px'>&nbsp;</p></html>");
+			dummyLabel.putClientProperty("html.disable", null);
 			c.gridwidth = 2;
 			c.gridx = 0;
 			add(dummyLabel, c);
@@ -120,6 +126,7 @@ public class StatusPanel extends JPanel{
 			c.gridx = 0;
 			c.anchor = GridBagConstraints.WEST;
 			JLabel tokenLabel = new JLabel(getTokenText(token));
+			tokenLabel.putClientProperty("html.disable", null);
 			tokenLabelMap.put(token.getName(), tokenLabel);
 			add(tokenLabel, c);
 			if(token.isAutoExtract() || token.isFromToString()) {
@@ -158,9 +165,13 @@ public class StatusPanel extends JPanel{
 		if(session.getMatchAndReplaceList().size() > 0) {
 			c.gridwidth = 2;
 			c.gridx = 0;
-			add(new JLabel("<html><strong>Match:</strong></html>"), c);
+			JLabel matchLabel = new JLabel("<html><strong>Match:</strong></html>");
+			matchLabel.putClientProperty("html.disable", null);
+			add(matchLabel, c);
 			c.gridx = 1;
-			add(new JLabel("<html><strong>Replace:</strong></html>"), c);
+			JLabel replaceLabel = new JLabel("<html><strong>Replace:</strong></html>");
+			replaceLabel.putClientProperty("html.disable", null);
+			add(replaceLabel, c);
 			c.gridy++;
 			c.insets = new Insets(5, 0, 0, 0);
 		}

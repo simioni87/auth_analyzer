@@ -62,6 +62,7 @@ public class TokenPanel extends JPanel {
 		addHeader("Parameter Name", c);
 		nameTextField = new PlaceholderTextArea(1, 20);
 		nameTextField.setToolTipText(TOOLTIP_EXTRACT_TOKEN_NAME);
+		nameTextField.putClientProperty("html.disable", null);
 		nameTextField.setPlaceholder("Enter Parameter Name...");
 		add(nameTextField, c);
 		
@@ -70,6 +71,7 @@ public class TokenPanel extends JPanel {
 		String[] tokenValueItems = {OPTION_AUTO_EXTRACT, OPTION_STATIC_VALUE, OPTION_FROM_TO_STRING, OPTION_PROMPT_FOR_INPUT};
 		tokenValueComboBox = new JComboBox<String>(tokenValueItems);
 		tokenValueComboBox.setToolTipText(TOOLTIP_VALUE_EXTRACTION);
+		tokenValueComboBox.putClientProperty("html.disable", null);
 		add(tokenValueComboBox, c);
 		
 		
@@ -77,6 +79,7 @@ public class TokenPanel extends JPanel {
 		addHeader("Static Value / From To String", c);
 		genericTextField = new PlaceholderTextArea(1, 27);
 		genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
+		genericTextField.putClientProperty("html.disable", null);
 		genericTextField.setPlaceholder("");
 		genericTextField.setEnabled(false);
 		add(genericTextField, c);
@@ -121,14 +124,17 @@ public class TokenPanel extends JPanel {
 			genericTextField.setEnabled(false);
 			genericTextField.setPlaceholder("");
 			genericTextField.setToolTipText(TOOLTIP_EXTRACT_FIELD_NAME);
+			genericTextField.putClientProperty("html.disable", null);
 		}
 		if(newOption.equals(OPTION_STATIC_VALUE)) {
 			genericTextField.setPlaceholder(PLACEHOLDER_STATIC_VALUE);
 			genericTextField.setToolTipText(TOOLTIP_STATIC_VALUE);
+			genericTextField.putClientProperty("html.disable", null);
 		}
 		if(newOption.equals(OPTION_FROM_TO_STRING)) {
 			genericTextField.setPlaceholder(PLACEHOLDER_FROM_TO_STRING);
 			genericTextField.setToolTipText(TOOLTIP_FROM_TO_STRING);
+			genericTextField.putClientProperty("html.disable", null);
 			// Set Default Value for generic Text Field from to option
 			if(genericTextField.getText().equals("")) {
 				genericTextField.setText("from [] to []");
@@ -138,6 +144,7 @@ public class TokenPanel extends JPanel {
 			genericTextField.setEnabled(false);
 			genericTextField.setPlaceholder("");
 			genericTextField.setToolTipText(TOOLTIP_PROMPT_FOR_INPUT);
+			genericTextField.putClientProperty("html.disable", null);
 		}
 		genericTextField.repaint();
 	}
