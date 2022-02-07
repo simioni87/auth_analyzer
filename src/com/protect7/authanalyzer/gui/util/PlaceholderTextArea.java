@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import javax.swing.BorderFactory;
 import javax.swing.JTextArea;
+import javax.swing.JToolTip;
 import javax.swing.border.Border;
 
 public class PlaceholderTextArea extends JTextArea {
@@ -21,6 +22,14 @@ public class PlaceholderTextArea extends JTextArea {
     public PlaceholderTextArea(int rows, int columns) {
     	super(rows, columns);
     	init();
+    }
+
+    public JToolTip createToolTip()
+    {
+	    JToolTip tip = new JToolTip();
+	    tip.setComponent(this);
+	    tip.putClientProperty("html.disable", null);
+	    return tip;
     }
 
     private void init() {
