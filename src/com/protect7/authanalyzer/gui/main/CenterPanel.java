@@ -50,6 +50,7 @@ import burp.IHttpRequestResponse;
 import burp.IHttpService;
 import burp.IMessageEditor;
 import burp.IMessageEditorController;
+import com.protect7.authanalyzer.util.StringUtil;
 
 public class CenterPanel extends JPanel {
 
@@ -109,21 +110,25 @@ public class CenterPanel extends JPanel {
 		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
 		settingsButton.addActionListener(e -> showTableSettingsDialog(tableFilterPanel));
 		tableFilterPanel.add(settingsButton);
-		tablePanel.add(new JScrollPane(tableFilterPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.NORTH);
-		
+		tablePanel.add(new JScrollPane(tableFilterPanel, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.NORTH);
+
 		loadTableSettings();
-		initTableWithModel();		
+		initTableWithModel();
 		table.setDefaultRenderer(Integer.class, new BypassCellRenderer());
 		table.setDefaultRenderer(String.class, new BypassCellRenderer());
-		table.setDefaultRenderer(BypassConstants.class, new BypassCellRenderer());	
-		tablePanel.add(new JScrollPane(table), BorderLayout.CENTER);
-		
+		table.setDefaultRenderer(BypassConstants.class, new BypassCellRenderer());
+
+
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		JScrollPane jScrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		tablePanel.add(jScrollPane, BorderLayout.CENTER);
+
 		JPanel tableConfigPanel = new JPanel();
 		clearTableButton = new JButton("Clear Table");
 		clearTableButton.addActionListener(e -> clearTablePressed());
 		tableConfigPanel.add(clearTableButton);
 		JButton exportDataButton = new JButton("Export Table Data");
-		exportDataButton.addActionListener(e -> { 
+		exportDataButton.addActionListener(e -> {
 			exportDataButton.setIcon(loaderImageIcon);
 			new Thread(new Runnable() {
 				
@@ -408,33 +413,53 @@ public class CenterPanel extends JPanel {
 				    			tableModel.deleteRequestResponse(requestResponse);
 				    		}
 				    	});
-				    	JMenuItem commentItem = new JMenuItem("Comment");
-				    	commentItem.addActionListener(e -> {
-				    		if(requestResponseList.size() > 0) {
-				    			JTextArea commentTextArea = new JTextArea(requestResponseList.get(0).getComment(), 2, 8);
-				    			JOptionPane.showMessageDialog(commentItem, new JScrollPane(commentTextArea), "Comment", JOptionPane.INFORMATION_MESSAGE);
-				    			for(OriginalRequestResponse requestResponse : requestResponseList) {
-					    			requestResponse.setComment(commentTextArea.getText());
-					    		}
-				    		}
-				    	});
-				    	if(rows.length == 1) {
-				    		if(requestResponseList.get(0).isMarked()) {
-				    			contextMenu.add(unmarkRowItem);
-				    		}
-				    		else {
-				    			contextMenu.add(markRowItem);
-				    		}
-				    	}
-				    	else {
-				    		contextMenu.add(markRowItem);
-					    	contextMenu.add(unmarkRowItem);
-				    	}
-				    	contextMenu.add(repeatRequestItem);
-				    	contextMenu.add(deleteRowItem); 
-				    	contextMenu.add(commentItem);
-				    	contextMenu.show(event.getComponent(), event.getX(), event.getY());
-				    }
+						JMenuItem commentItem = new JMenuItem("Comment");
+						commentItem.addActionListener(e -> {
+							if (requestResponseList.size() > 0) {
+								JTextArea commentTextArea = new JTextArea(requestResponseList.get(0).getComment(), 2, 8);
+								JOptionPane.showMessageDialog(commentItem, new JScrollPane(commentTextArea), "Comment", JOptionPane.INFORMATION_MESSAGE);
+								for (OriginalRequestResponse requestResponse : requestResponseList) {
+									requestResponse.setComment(commentTextArea.getText());
+								}
+							}
+						});
+
+
+						JMenuItem copyUrlItem = new JMenuItem("copy url" + appendix);
+						copyUrlItem.addActionListener(e -> {
+							if (requestResponseList.size() > 0) {
+								List<String> urlList = new ArrayList<>();
+								for (OriginalRequestResponse requestResponse : requestResponseList) {
+									String protocol = requestResponse.getRequestResponse().getHttpService().getProtocol();
+									String method = requestResponse.getMethod();
+									String uri = StringUtil.trimUriParams(requestResponse.getUrl());
+									String item = protocol + " " + method + " " + uri;
+
+									urlList.add(item);
+								}
+
+								String listString = StringUtil.list2String(urlList);
+								StringUtil.copyString2Clipboard(listString);
+							}
+						});
+
+						if (rows.length == 1) {
+							if (requestResponseList.get(0).isMarked()) {
+								contextMenu.add(unmarkRowItem);
+							} else {
+								contextMenu.add(markRowItem);
+							}
+						} else {
+							contextMenu.add(markRowItem);
+							contextMenu.add(unmarkRowItem);
+						}
+
+						contextMenu.add(copyUrlItem);
+						contextMenu.add(repeatRequestItem);
+						contextMenu.add(deleteRowItem);
+						contextMenu.add(commentItem);
+						contextMenu.show(event.getComponent(), event.getX(), event.getY());
+					}
 				}				
 			}
 		});
