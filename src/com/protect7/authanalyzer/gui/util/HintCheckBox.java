@@ -3,10 +3,13 @@ package com.protect7.authanalyzer.gui.util;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
-import java.awt.Toolkit;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.GraphicsConfiguration;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.stream.Stream;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -63,7 +66,14 @@ public class HintCheckBox extends JPanel {
 				dialog.setLocation(new Point(xPos, yPos));
 				dialog.setVisible(true);
 				// Correct dialog location if it is shown out of screen
-				int leftDisplayBorder = (int)Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+				GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+				int leftDisplayBorder = Stream.
+						of(devices).
+						map(GraphicsDevice::getDefaultConfiguration).
+						map(GraphicsConfiguration::getBounds).
+						mapToInt(bounds -> bounds.x + bounds.width).
+						max().
+						orElse(0);
 				int rightPoint = (int)dialog.getLocationOnScreen().getX()+dialog.getWidth();
 				while (rightPoint > leftDisplayBorder) {
 					rightPoint = rightPoint - 10;
