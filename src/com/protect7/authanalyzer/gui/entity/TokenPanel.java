@@ -49,7 +49,7 @@ public class TokenPanel extends JPanel {
 	private boolean addTokenIfNotExists = false;
 	private boolean removeToken = false;
 	private boolean urlEncoded = true;
-
+	
 	public TokenPanel() {
 		setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();

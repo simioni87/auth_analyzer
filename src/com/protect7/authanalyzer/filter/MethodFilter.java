@@ -13,7 +13,6 @@ public class MethodFilter extends RequestFilter {
 
 	@Override
 	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		
 		if(onOffButton.isSelected()) {		
 			String requestMethod = requestInfo.getMethod();
 			for(String method : stringLiterals) {

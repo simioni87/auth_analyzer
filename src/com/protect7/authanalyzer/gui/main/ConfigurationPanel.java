@@ -38,6 +38,7 @@ import com.protect7.authanalyzer.entities.FromToExtractLocation;
 import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.entities.TokenBuilder;
 import com.protect7.authanalyzer.entities.TokenLocation;
 import com.protect7.authanalyzer.filter.FileTypeFilter;
 import com.protect7.authanalyzer.filter.InScopeFilter;
@@ -309,11 +310,11 @@ public class ConfigurationPanel extends JPanel {
 				File selectedFile = chooser.getSelectedFile();
 				if(selectedFile != null) {
 					Scanner scanner;
-					String jsonString = null;
+					String jsonString = "";
 					try {
 						scanner = new Scanner(selectedFile);
 						while (scanner.hasNextLine()) {
-							jsonString = scanner.nextLine();
+							jsonString += scanner.nextLine();
 						}
 						scanner.close();
 						sessionTabbedPane.removeAll();
@@ -567,11 +568,24 @@ public class ConfigurationPanel extends JPanel {
 			SessionPanel sessionPanel = sessionPanelMap.get(session);
 			ArrayList<Token> tokenList = new ArrayList<Token>();
 			for (TokenPanel tokenPanel : sessionPanel.getTokenPanelList()) {
-				Token token = new Token(tokenPanel.getTokenName(), tokenPanel.getTokenLocationSet(), tokenPanel.getAutoExtractLocationSet(), 
-						tokenPanel.getFromToExtractLocationSet(), tokenPanel.getStaticTokenValue(), tokenPanel.getAutoExtractFieldName(), 
-						tokenPanel.getGrepFromString(),	tokenPanel.getGrepToString(), tokenPanel.isRemoveToken(),
-						tokenPanel.isAutoExtract(), tokenPanel.isStaticValue(), tokenPanel.isFromToString(),
-						tokenPanel.isPromptForInput(), tokenPanel.isCaseSensitiveTokenName(), tokenPanel.isAddTokenIfNotExists(), tokenPanel.isUrlEncoded());
+				Token token = new TokenBuilder()
+						.setName(tokenPanel.getTokenName())
+						.setTokenLocationSet(tokenPanel.getTokenLocationSet())
+						.setAutoExtractLocationSet(tokenPanel.getAutoExtractLocationSet())
+						.setFromToExtractLocationSet(tokenPanel.getFromToExtractLocationSet())
+						.setValue(tokenPanel.getStaticTokenValue())
+						.setExtractName(tokenPanel.getAutoExtractFieldName())
+						.setGrepFromString(tokenPanel.getGrepFromString())
+						.setGrepToString(tokenPanel.getGrepToString())
+						.setIsRemove(tokenPanel.isRemoveToken())
+						.setIsAutoExtract(tokenPanel.isAutoExtract())
+						.setIsStaticValue(tokenPanel.isStaticValue())
+						.setIsFromToString(tokenPanel.isFromToString())
+						.setIsPromptForInput(tokenPanel.isPromptForInput())
+						.setIsCaseSensitiveTokenName(tokenPanel.isCaseSensitiveTokenName())
+						.setIsAddIfNotExists(tokenPanel.isAddTokenIfNotExists())
+						.setIsUrlEncoded(tokenPanel.isUrlEncoded())
+						.build();
 				tokenList.add(token);
 			}
 			Session newSession = null;

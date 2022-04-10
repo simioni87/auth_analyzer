@@ -163,16 +163,12 @@ public class RequestController {
 
 	public boolean isSameHeader(List<String> headers, Session session) {
 		String[] headersToReplace = session.getHeadersToReplace().split("\n");
-		boolean requestContainsHeader = true;
 		for (String headerToReplace : headersToReplace) {
 			if (!headers.contains(headerToReplace)) {
-				requestContainsHeader = false;
+				return false;
 			}
 		}
-		if (requestContainsHeader) {
-			return true;
-		}
-		return false;
+		return true;
 	}
 
 

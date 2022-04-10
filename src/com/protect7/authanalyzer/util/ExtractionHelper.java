@@ -20,6 +20,7 @@ import com.google.gson.stream.JsonReader;
 import com.protect7.authanalyzer.entities.AutoExtractLocation;
 import com.protect7.authanalyzer.entities.FromToExtractLocation;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.entities.TokenBuilder;
 import com.protect7.authanalyzer.entities.TokenLocation;
 import burp.BurpExtender;
 import burp.ICookie;
@@ -214,26 +215,49 @@ public class ExtractionHelper {
 						}
 						if(param.getType() == IParameter.PARAM_COOKIE) {
 							// Create Token with dynamic value
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.COOKIE), EnumSet.of(AutoExtractLocation.COOKIE), 
-									FromToExtractLocation.getDefaultSet(), param.getValue(), param.getName(), null, null, false, true, 
-									false, false, false, false, false, true);
+							token = new TokenBuilder()
+									.setName(urlDecodedName)
+									.setTokenLocationSet(EnumSet.of(TokenLocation.COOKIE))
+									.setAutoExtractLocationSet(EnumSet.of(AutoExtractLocation.COOKIE))
+									.setValue(param.getValue())
+									.setExtractName(param.getName())
+									.setIsAutoExtract(true)
+									.build();
 						}
 						if(param.getType() == IParameter.PARAM_URL) {
 							// Create Token with static value
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.URL), EnumSet.of(AutoExtractLocation.HTML), 
-									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
-									!autoExtract, false, false, false, false, true);
+							token = new TokenBuilder()
+									.setName(urlDecodedName)
+									.setTokenLocationSet(EnumSet.of(TokenLocation.URL))
+									.setAutoExtractLocationSet(EnumSet.of(AutoExtractLocation.HTML))
+									.setValue(urlDecodedValue)
+									.setExtractName(urlDecodedName)
+									.setIsAutoExtract(autoExtract)
+									.setIsStaticValue(!autoExtract)
+									.build();
 						}
 						if(param.getType() == IParameter.PARAM_BODY) {
 							// Create Token with static value
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.BODY), EnumSet.of(AutoExtractLocation.HTML), 
-									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
-									!autoExtract, false, false, false, false, true);
+							token = new TokenBuilder()
+									.setName(urlDecodedName)
+									.setTokenLocationSet(EnumSet.of(TokenLocation.BODY))
+									.setAutoExtractLocationSet(EnumSet.of(AutoExtractLocation.HTML))
+									.setValue(urlDecodedValue)
+									.setExtractName(urlDecodedName)
+									.setIsAutoExtract(autoExtract)
+									.setIsStaticValue(!autoExtract)
+									.build();
 						}
 						if(param.getType() == IParameter.PARAM_JSON) {
-							token = new Token(urlDecodedName, EnumSet.of(TokenLocation.JSON), EnumSet.of(AutoExtractLocation.JSON), 
-									FromToExtractLocation.getDefaultSet(), urlDecodedValue, urlDecodedName, null, null, false, autoExtract, 
-									!autoExtract, false, false, false, false, true);
+							token = new TokenBuilder()
+									.setName(urlDecodedName)
+									.setTokenLocationSet(EnumSet.of(TokenLocation.JSON))
+									.setAutoExtractLocationSet(EnumSet.of(AutoExtractLocation.JSON))
+									.setValue(urlDecodedValue)
+									.setExtractName(urlDecodedName)
+									.setIsAutoExtract(autoExtract)
+									.setIsStaticValue(!autoExtract)
+									.build();
 						}
 						if(token != null) {
 							tokenMap.put(token.getName(), token);
@@ -244,8 +268,13 @@ public class ExtractionHelper {
 			if(message.getResponse() != null) {
 				IResponseInfo responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(message.getResponse());
 				for(ICookie cookie : responseInfo.getCookies()) {
-					Token token = new Token(cookie.getName(), EnumSet.of(TokenLocation.COOKIE), EnumSet.of(AutoExtractLocation.COOKIE), 
-							FromToExtractLocation.getDefaultSet(), null, cookie.getName(), null, null, false, true, false, false, false, false, false, true);
+					Token token = new TokenBuilder()
+							.setName(cookie.getName())
+							.setTokenLocationSet(EnumSet.of(TokenLocation.COOKIE))
+							.setAutoExtractLocationSet(EnumSet.of(AutoExtractLocation.COOKIE))
+							.setExtractName(cookie.getName())
+							.setIsAutoExtract(true)
+							.build();
 					tokenMap.put(token.getName(), token);
 				}
 				if(responseInfo.getStatedMimeType().equals("JSON")	|| responseInfo.getInferredMimeType().equals("JSON")) {
@@ -272,8 +301,13 @@ public class ExtractionHelper {
 					String[] staticPatterns = Setting.getValueAsArray(Setting.Item.AUTOSET_PARAM_STATIC_PATTERNS);
 					for(String pattern : staticPatterns) {
 						if(entry.getKey().toLowerCase().contains(pattern)) {
-							Token token = new Token(entry.getKey(), EnumSet.of(TokenLocation.JSON), EnumSet.of(AutoExtractLocation.JSON), 
-									FromToExtractLocation.getDefaultSet(), null, entry.getKey(), null, null, false, true, false, false, false, false, false, true);
+							Token token = new TokenBuilder()
+									.setName(entry.getKey())
+									.setTokenLocationSet(EnumSet.of(TokenLocation.JSON))
+									.setAutoExtractLocationSet(EnumSet.of(AutoExtractLocation.JSON))
+									.setExtractName(entry.getKey())
+									.setIsAutoExtract(true)
+									.build();
 							tokenMap.put(token.getName(), token);
 							break;
 						}

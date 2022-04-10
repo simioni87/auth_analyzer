@@ -42,16 +42,14 @@ public class DataExporter {
 									requestResponse.getId(), originalRequestInfo, originalRequestResponse))
 							+ "</" + column.getName().replace(" ", "_") + ">\n");
 				}
-				IResponseInfo originalResponseInfo = BurpExtender.callbacks.getHelpers()
-						.analyzeResponse(originalRequestResponse.getResponse());
 				for (SessionColumn column : sessionColumns) {
 					if (column != SessionColumn.BYPASS_STATUS) {
 						String data;
 						if ((column == SessionColumn.REQUEST || column == SessionColumn.RESPONSE) && doBase64Encode) {
 							data = Base64.getEncoder().encodeToString(getCellValue(column, requestResponse.getId(),
-									originalResponseInfo, originalRequestResponse, null).getBytes());
+									originalRequestResponse, null).getBytes());
 						} else {
-							data = setIntoCDATA(getCellValue(column, requestResponse.getId(), originalResponseInfo,
+							data = setIntoCDATA(getCellValue(column, requestResponse.getId(),
 									originalRequestResponse, null));
 						}
 						row.append("<Original_" + column.getName().replace(" ", "_") + ">" + data + "</Original_"
@@ -61,17 +59,15 @@ public class DataExporter {
 				for (Session session : sessions) {
 					AnalyzerRequestResponse sessionRequestResponse = session.getRequestResponseMap()
 							.get(requestResponse.getId());
-					IResponseInfo sessionResponseInfo = BurpExtender.callbacks.getHelpers()
-							.analyzeResponse(sessionRequestResponse.getRequestResponse().getResponse());
 					for (SessionColumn column : sessionColumns) {
 						String data;
 						if ((column == SessionColumn.REQUEST || column == SessionColumn.RESPONSE) && doBase64Encode) {
 							data = Base64.getEncoder()
 									.encodeToString(setIntoCDATA(getCellValue(column, requestResponse.getId(),
-											sessionResponseInfo, sessionRequestResponse.getRequestResponse(),
+											sessionRequestResponse.getRequestResponse(),
 											sessionRequestResponse.getStatus())).getBytes());
 						} else {
-							data = setIntoCDATA(getCellValue(column, requestResponse.getId(), sessionResponseInfo,
+							data = setIntoCDATA(getCellValue(column, requestResponse.getId(),
 									sessionRequestResponse.getRequestResponse(), sessionRequestResponse.getStatus()));
 						}
 						row.append("<" + session.getName().replace(" ", "_") + "_" + column.getName().replace(" ", "_")
@@ -132,23 +128,19 @@ public class DataExporter {
 							getCellValue(column, requestResponse.getId(), originalRequestInfo, originalRequestResponse))
 							+ "</div></td>");
 				}
-				IResponseInfo originalResponseInfo = BurpExtender.callbacks.getHelpers()
-						.analyzeResponse(originalRequestResponse.getResponse());
 				for (SessionColumn column : sessionColumns) {
 					if (column != SessionColumn.BYPASS_STATUS) {
 						row.append("<td><div>" + encodeHTML(getCellValue(column, requestResponse.getId(),
-								originalResponseInfo, originalRequestResponse, null)) + "</div></td>");
+								originalRequestResponse, null)) + "</div></td>");
 					}
 				}
 				for (Session session : sessions) {
 					AnalyzerRequestResponse sessionRequestResponse = session.getRequestResponseMap()
 							.get(requestResponse.getId());
-					IResponseInfo sessionResponseInfo = BurpExtender.callbacks.getHelpers()
-							.analyzeResponse(sessionRequestResponse.getRequestResponse().getResponse());
 					for (SessionColumn column : sessionColumns) {
 						String startTag = "<td><div class='message'>" ;
 						String cellValue = getCellValue(column, requestResponse.getId(),
-								sessionResponseInfo, sessionRequestResponse.getRequestResponse(),
+								sessionRequestResponse.getRequestResponse(),
 								sessionRequestResponse.getStatus());
 						String endTag = "</div></td>";
 						if(column == SessionColumn.BYPASS_STATUS) {
@@ -207,20 +199,44 @@ public class DataExporter {
 		}
 	}
 
-	private String getCellValue(SessionColumn column, Integer id, IResponseInfo responseInfo,
+	private String getCellValue(SessionColumn column, Integer id,
 			IHttpRequestResponse requestResponse, BypassConstants bypassStatus) {
-
+		IResponseInfo responseInfo = null;
+		if(requestResponse != null && requestResponse.getResponse() != null) {
+			responseInfo = BurpExtender.callbacks.getHelpers()
+					.analyzeResponse(requestResponse.getResponse());
+		}
 		switch (column) {
 		case BYPASS_STATUS:
 			return bypassStatus.getName();
 		case REQUEST:
-			return new String(requestResponse.getRequest());
+			if(requestResponse != null) {
+				return new String(requestResponse.getRequest());
+			}
+			else {
+				return "";
+			}
 		case RESPONSE:
-			return new String(requestResponse.getResponse());
+			if(requestResponse != null) {
+				return new String(requestResponse.getResponse());
+			}
+			else {
+				return "";
+			}
 		case STATUS_CODE:
-			return String.valueOf(responseInfo.getStatusCode());
+			if(responseInfo != null) {
+				return String.valueOf(responseInfo.getStatusCode());
+			}
+			else {
+				return "-1";
+			}
 		case CONTENT_LENGTH:
-			return String.valueOf(requestResponse.getResponse().length - responseInfo.getBodyOffset());
+			if(responseInfo != null) {
+				return String.valueOf(requestResponse.getResponse().length - responseInfo.getBodyOffset());
+			}
+			else {
+				return "-1";
+			}
 		default:
 			return null;
 		}

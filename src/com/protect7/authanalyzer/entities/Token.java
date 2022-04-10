@@ -27,10 +27,12 @@ public class Token {
 	private final boolean addIfNotExists;
 	private final boolean urlEncoded;
 	
+
+	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
 			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
 			String grepToString, boolean remove, boolean autoExtract, boolean staticValue, boolean fromToString, boolean promptForInput,
-			boolean caseSensitiveTokenName, boolean addIfNotExists, boolean urlEncoded) {
+			boolean caseSensitiveTokenName, boolean addIfNotExists, boolean urlEncoded, String test) {
 		this.name = name;
 		this.value = value;
 		this.extractName = extractName;
@@ -47,6 +49,25 @@ public class Token {
 		this.caseSensitiveTokenName = caseSensitiveTokenName;
 		this.addIfNotExists = addIfNotExists;
 		this.urlEncoded = urlEncoded;
+	}
+	
+	public Token(TokenBuilder builder) {
+		this.name = builder.getName();
+		this.value = builder.getValue();
+		this.extractName = builder.getExtractName();
+		this.grepFromString = builder.getGrepFromString();
+		this.grepToString = builder.getGrepToString();
+		this.remove = builder.isRemove();
+		this.autoExtract = builder.isAutoExtract();
+		this.staticValue = builder.isStaticValue();
+		this.fromToString = builder.isFromToString();
+		this.promptForInput = builder.isPromptForInput();
+		this.tokenLocationSet = builder.getTokenLocationSet();
+		this.autoExtractLocationSet = builder.getAutoExtractLocationSet();
+		this.fromToExtractLocationSet = builder.getFromToExtractLocationSet();
+		this.caseSensitiveTokenName = builder.isCaseSensitiveTokenName();
+		this.addIfNotExists = builder.isAddIfNotExists();
+		this.urlEncoded = builder.isUrlEncoded();
 	}
 	
 	public String getName() {

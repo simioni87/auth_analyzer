@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.JOptionPane;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
 import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
@@ -341,28 +341,7 @@ public class RequestModifHelper {
 						if (token.isRemove()) {
 							jsonObject.remove(entry.getKey());
 						} else {
-							//Check the type
-							JsonPrimitive primitiveValue = entry.getValue().getAsJsonPrimitive();
-							if(primitiveValue.isBoolean() && (token.getValue().toLowerCase().equals("true") || 
-									token.getValue().toLowerCase().equals("false"))) {
-								try {
-									jsonObject.addProperty(entry.getKey(), Boolean.parseBoolean(token.getValue()));
-								}
-								catch (Exception e) {
-									jsonObject.addProperty(entry.getKey(), token.getValue());
-								}
-							}
-							else if(primitiveValue.isNumber()) {
-								try {
-									jsonObject.addProperty(entry.getKey(), Integer.parseInt(token.getValue()));
-								}
-								catch (Exception e) {
-									jsonObject.addProperty(entry.getKey(), token.getValue());
-								}
-							}
-							else {
-								jsonObject.addProperty(entry.getKey(), token.getValue());
-							}
+							putJsonValue(jsonObject, entry.getKey(), token);
 						}
 						return true;
 					}
@@ -381,8 +360,34 @@ public class RequestModifHelper {
 	
 	private static void addJsonToken(JsonElement jsonElement, Token token) {
 		if (jsonElement.isJsonObject()) {
-			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			jsonObject.addProperty(token.getName(), token.getValue());
+			putJsonValue(jsonElement.getAsJsonObject(), token.getName(), token);
+			//JsonObject jsonObject = jsonElement.getAsJsonObject();
+			//jsonObject.addProperty(token.getName(), token.getValue());
+		}
+	}
+	
+	private static void putJsonValue(JsonObject jsonObject, String key, Token token) {
+		if(token.getValue().toLowerCase().equals("true") || token.getValue().toLowerCase().equals("false")) {
+			jsonObject.addProperty(key, Boolean.parseBoolean(token.getValue().toLowerCase()));
+		}
+		else if(token.getValue().toLowerCase().equals("null")) {
+			jsonObject.add(key, JsonNull.INSTANCE);
+		}
+		else if(isInt(token.getValue())) {
+			jsonObject.addProperty(key, Integer.parseInt(token.getValue()));
+		}
+		else {
+			jsonObject.addProperty(key, token.getValue());
+		}
+	}
+	
+	private static boolean isInt(String value) {
+		try {
+			Integer.parseInt(value);
+			return true;
+		}
+		catch (Exception e) {
+			return false;
 		}
 	}
 }
