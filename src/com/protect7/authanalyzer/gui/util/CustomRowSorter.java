@@ -13,7 +13,7 @@ import com.protect7.authanalyzer.util.BypassConstants;
 public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 
 	public CustomRowSorter(RequestTableModel tableModel, JCheckBox showOnlyMarked, JCheckBox showDuplicates, JCheckBox showBypassed, 
-			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed, JCheckBox showNA) {
+			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed, JCheckBox showNA, PlaceholderTextField filterText) {
 		super(tableModel);
 		showOnlyMarked.addActionListener(e -> tableModel.fireTableDataChanged());
 		showDuplicates.addActionListener(e -> tableModel.fireTableDataChanged());
@@ -21,6 +21,7 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 		showPotentialBypassed.addActionListener(e -> tableModel.fireTableDataChanged());
 		showNotBypassed.addActionListener(e -> tableModel.fireTableDataChanged());
 		showNA.addActionListener(e -> tableModel.fireTableDataChanged());
+		filterText.addActionListener(e -> tableModel.fireTableDataChanged());
 		setMaxSortKeys(1);
         setSortKeys(Collections.singletonList(new RowSorter.SortKey(0, SortOrder.DESCENDING)));
 		
@@ -28,6 +29,11 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 		RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
 			
 			public boolean include(Entry<?, ?> entry) {
+				if(filterText.getText() != null && !filterText.getText().equals("")) {
+					if(!entry.getStringValue(3).toString().contains(filterText.getText())) {
+						return false;
+					}
+				}
 				if(showOnlyMarked.isSelected()) {
 					OriginalRequestResponse requestResponse = tableModel.getOriginalRequestResponseById(Integer.parseInt(entry.getStringValue(0)));
 					if(requestResponse != null && !requestResponse.isMarked()) {

@@ -121,8 +121,10 @@ public class DataExporter {
 				writer.write("<tr>");
 				IHttpRequestResponse originalRequestResponse = requestResponse.getRequestResponse();
 				StringBuffer row = new StringBuffer();
-				IRequestInfo originalRequestInfo = BurpExtender.callbacks.getHelpers()
-						.analyzeRequest(originalRequestResponse);
+				IRequestInfo originalRequestInfo = null;
+				if(originalRequestResponse != null) {
+					originalRequestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(originalRequestResponse);
+				}
 				for (MainColumn column : mainColumns) {
 					row.append("<td><div>" + encodeHTML(
 							getCellValue(column, requestResponse.getId(), originalRequestInfo, originalRequestResponse))
@@ -180,7 +182,6 @@ public class DataExporter {
 
 	private String getCellValue(MainColumn column, Integer id, IRequestInfo requestInfo,
 			IHttpRequestResponse requestResponse) {
-
 		switch (column) {
 		case ID:
 			return String.valueOf(id);
@@ -210,14 +211,14 @@ public class DataExporter {
 		case BYPASS_STATUS:
 			return bypassStatus.getName();
 		case REQUEST:
-			if(requestResponse != null) {
+			if(requestResponse != null && requestResponse.getRequest() != null) {
 				return new String(requestResponse.getRequest());
 			}
 			else {
 				return "";
 			}
 		case RESPONSE:
-			if(requestResponse != null) {
+			if(requestResponse != null  && requestResponse.getResponse() != null) {
 				return new String(requestResponse.getResponse());
 			}
 			else {
@@ -231,7 +232,7 @@ public class DataExporter {
 				return "-1";
 			}
 		case CONTENT_LENGTH:
-			if(responseInfo != null) {
+			if(responseInfo != null && requestResponse.getResponse() != null) {
 				return String.valueOf(requestResponse.getResponse().length - responseInfo.getBodyOffset());
 			}
 			else {
