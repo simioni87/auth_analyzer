@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -241,10 +243,11 @@ public class RequestModifHelper {
 				}
 				if (paramLocation != null) {
 					if (token.isPromptForInput()) {
-						String paramValue = JOptionPane.showInputDialog(session.getStatusPanel(),
-								"<html><strong>"+Globals.EXTENSION_NAME+"</strong><br>" + "Enter Parameter Value<br>Session: "
-										+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
-										+ "Parameter Location: " + paramLocation + "<br></html>");
+						JLabel message = new JLabel("<html><strong>"+Globals.EXTENSION_NAME+"</strong><br>" + "Enter Parameter Value<br>Session: "
+								+ session.getName() + "<br>Parameter Name: " + token.getName() + "<br>"
+								+ "Parameter Location: " + paramLocation + "<br></html>");
+						message.putClientProperty("html.disable", null);
+						String paramValue = JOptionPane.showInputDialog(session.getStatusPanel(), message);
 						token.setValue(paramValue);
 						session.getStatusPanel().updateTokenStatus(token);
 					}

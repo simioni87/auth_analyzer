@@ -76,7 +76,7 @@ public class SessionPanel extends JPanel {
 		sessionPanel.add(headersToReplaceText, c);
 		headersToReplaceText.setToolTipText(
 				"<html>eg:<br>Cookie: session=06q7c9fj33rhb72f6qb60f52s6<br>AnyHeader: key=value</html>");
-		
+		headersToReplaceText.putClientProperty("html.disable", null);
 		removeHeaders = new HintCheckBox("Remove Header(s)", false, "The defined Headers will be removed");
 		c.gridwidth = 1;
 		c.insets = new Insets(5, 0, 0, 20);

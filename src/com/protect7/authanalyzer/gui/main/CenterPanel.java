@@ -122,6 +122,7 @@ public class CenterPanel extends JPanel {
 		tableFilterPanel.add(settingsButton);
 		//topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
 		topPanel.add(tableFilterPanel, BorderLayout.NORTH);
+		tableFilterInfoLabel.putClientProperty("html.disable", null);
 		topPanel.add(tableFilterInfoLabel, BorderLayout.CENTER);
 		tablePanel.add(new JScrollPane(topPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.NORTH);
 	

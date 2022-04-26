@@ -252,6 +252,7 @@ public class StatusPanel extends JPanel{
 	
 	public void updateTokenStatus(Token token) {
 		JLabel tokenLabel = tokenLabelMap.get(token.getName());
+		tokenLabel.putClientProperty("html.disable", null);
 		tokenLabel.setText(getTokenText(token));
 		GenericHelper.uiUpdateAnimation(tokenLabel, new Color(0, 153, 0));
 		if(token.getValue() != null) {
