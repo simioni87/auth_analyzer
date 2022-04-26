@@ -176,6 +176,7 @@ public class CenterPanel extends JPanel {
 		tabbedPanel2.setVisible(false);
 		c.gridy++;
 		diffPane.setEditable(false);
+		diffPane.putClientProperty("html.disable", null);
 		comparisonScrollPane.setVisible(false);
 		messageViewPanel.add(comparisonScrollPane, c);
 		expandDiffButton.setEnabled(false);

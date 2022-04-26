@@ -90,6 +90,7 @@ public class HintCheckBox extends JPanel {
 	
 	public void setHint(String hint) {
 		textLabel.setText(hint);
+		textLabel.putClientProperty("html.disable", null);
 	}
 	
 	public void addActionListener(ActionListener l) {

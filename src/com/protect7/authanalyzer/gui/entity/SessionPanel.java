@@ -357,7 +357,7 @@ public class SessionPanel extends JPanel {
 					for (TokenPanel tokenPanel : tokenPanels) {
 						JMenuItem item = new JMenuItem("Set Insertion Point for " + tokenPanel.getTokenName());
 						String textWithReplacement = headersToReplaceText.getText().substring(0,
-								headersToReplaceText.getSelectionStart()) + "ง" + tokenPanel.getTokenName() + "ง"
+								headersToReplaceText.getSelectionStart()) + "ยง" + tokenPanel.getTokenName() + "ยง"
 								+ headersToReplaceText.getText().substring(headersToReplaceText.getSelectionEnd());
 						item.addActionListener(e -> headersToReplaceText.setText(textWithReplacement));
 						contextMenu.add(item);

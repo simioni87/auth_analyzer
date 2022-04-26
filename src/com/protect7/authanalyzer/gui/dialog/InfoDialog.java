@@ -26,8 +26,10 @@ public class InfoDialog extends JDialog {
 		JPanel dialogPanel = (JPanel) getContentPane();
 		dialogPanel.setBorder(new EmptyBorder(10, 50, 30, 50));
 		dialogPanel.setLayout(new GridLayout(0, 1, 10, 10));
-		
-		add(new JLabel("<html><strong>Auth Analyzer</strong></html>"));
+
+		JLabel title = new JLabel("<html><strong>Auth Analyzer</strong></html>");
+		title.putClientProperty("html.disable", null);
+		add(title);
 		add(new JLabel("Version: " + Globals.VERSION));
 		add(new JLabel("Developed by: Simon Reinhart"));
 		ImageIcon p7logo = new ImageIcon(this.getClass().getClassLoader().getResource("p7_logo.png"));

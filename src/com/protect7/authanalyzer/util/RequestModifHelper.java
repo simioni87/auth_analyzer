@@ -156,7 +156,7 @@ public class RequestModifHelper {
 				for (Token token : session.getTokens()) {
 					if (headerToReplace.contains(token.getHeaderInsertionPointName())) {
 						int startIndex = headerToReplace.indexOf(token.getHeaderInsertionPointName());
-						int endIndex = headerToReplace.indexOf("ง", startIndex + 1) + 1;
+						int endIndex = headerToReplace.indexOf("ยง", startIndex + 1) + 1;
 						if (startIndex != -1 && endIndex != -1) {
 							if (token.getValue() != null) {
 								headerToReplace = headerToReplace.substring(0, startIndex)
