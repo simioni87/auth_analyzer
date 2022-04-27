@@ -11,9 +11,6 @@ import com.protect7.authanalyzer.gui.listener.CloneSessionListener;
 import com.protect7.authanalyzer.gui.listener.DeleteSessionListener;
 import com.protect7.authanalyzer.gui.listener.NewSessionListener;
 import com.protect7.authanalyzer.gui.listener.RenameSessionListener;
-
-import burp.BurpExtender;
-
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Insets;
@@ -71,13 +68,7 @@ public class SessionTabbedPane extends JTabbedPane {
             @Override
             public void mouseClicked(MouseEvent e) {
             	setSelectedIndex(index);
-            	if(e.getClickCount() == 2) {
-            		if(renameSessionListener != null) {
-            			renameSessionListener.renameSession(title);
-            		}
-            	}
             }             
-
         });
 	}
 	
