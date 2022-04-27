@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +22,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -50,7 +48,12 @@ import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
 import com.protect7.authanalyzer.gui.entity.SessionPanel;
 import com.protect7.authanalyzer.gui.entity.TokenPanel;
+import com.protect7.authanalyzer.gui.listener.CloneSessionListener;
+import com.protect7.authanalyzer.gui.listener.DeleteSessionListener;
+import com.protect7.authanalyzer.gui.listener.NewSessionListener;
+import com.protect7.authanalyzer.gui.listener.RenameSessionListener;
 import com.protect7.authanalyzer.gui.util.HintCheckBox;
+import com.protect7.authanalyzer.gui.util.SessionTabbedPane;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.DataStorageProvider;
 import com.protect7.authanalyzer.util.GenericHelper;
@@ -72,77 +75,63 @@ public class ConfigurationPanel extends JPanel {
 	private final JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
 	private final LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
-	private final JButton createSessionButton;
-	private final JButton cloneSessionButton;
-	private final JButton renameSessionButton;
-	private final JButton removeSessionButton;
 	private final String PAUSE_TEXT = "\u23f8";
 	private final String PLAY_TEXT = "\u25b6";
-	private final JTabbedPane sessionTabbedPane = new JTabbedPane();
+	private final SessionTabbedPane sessionTabbedPane = new SessionTabbedPane();
 	boolean sessionListChanged = true;
 	private final MainPanel mainPanel;
 
 	public ConfigurationPanel(MainPanel mainPanel) {
-		this.mainPanel = mainPanel;
-		JPanel sessionButtonPanel = new JPanel(new GridLayout(0, 1, 0, 5));
-		createSessionButton = new JButton("New Session");
-		cloneSessionButton = new JButton("Clone Session");
-		cloneSessionButton.setEnabled(false);
-		renameSessionButton = new JButton("Rename Session");
-		renameSessionButton.setEnabled(false);
-		removeSessionButton = new JButton("Remove Session");
-		removeSessionButton.setEnabled(false);
+		this.mainPanel = mainPanel;	
+		sessionTabbedPane.addNewSessionListener(new NewSessionListener() {
+			@Override
+			public void newSession() {
+				String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session");
+				if (sessionName != null && isSessionNameValid(sessionName)) {
+					createSession(sessionName);
+				}
+			}
+		});
 		
-	
-
-		createSessionButton.addActionListener(e -> {
-			String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of Session");
-			if (sessionName != null && isSessionNameValid(sessionName)) {
-				createSession(sessionName);
+		sessionTabbedPane.addCloneSessionListener(new CloneSessionListener() {
+			
+			@Override
+			public void cloneSession() {
+				String newSessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of New Session");
+				if (newSessionName != null && isSessionNameValid(newSessionName)) {
+					int currentIndex = sessionTabbedPane.getSelectedIndex();
+					String currentSessionName = sessionTabbedPane.getTitleAt(currentIndex);
+					doCloneSession(newSessionName, sessionPanelMap.get(currentSessionName));
+				}
 			}
 		});
-
-		cloneSessionButton.addActionListener(e -> {
-			String newSessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Enter Name of New Session");
-			if (newSessionName != null && isSessionNameValid(newSessionName)) {
-				int currentIndex = sessionTabbedPane.getSelectedIndex();
-				String currentSessionName = sessionTabbedPane.getTitleAt(currentIndex);
-				cloneSession(newSessionName, sessionPanelMap.get(currentSessionName));
+		
+		sessionTabbedPane.addRenameSessionListener(new RenameSessionListener() {
+			@Override
+			public void renameSession(String currentName) {
+				String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Rename Current Session:",
+						currentName);
+				if (sessionName != null && isSessionNameValid(sessionName)) {
+					if (doModify()) {
+						sessionTabbedPane.setTitleAt(getTabbedPaneIndexForTitle(currentName), sessionName);
+						sessionPanelMap.put(sessionName, sessionPanelMap.get(currentName));
+						sessionPanelMap.remove(currentName);
+						sessionPanelMap.get(sessionName).setSessionName(sessionName);
+					}
+				}
 			}
 		});
-
-		renameSessionButton.addActionListener(e -> {
-			int currentIndex = sessionTabbedPane.getSelectedIndex();
-			String currentTitle = sessionTabbedPane.getTitleAt(currentIndex);
-			String sessionName = JOptionPane.showInputDialog(sessionTabbedPane, "Rename Current Session:",
-					currentTitle);
-			if (sessionName != null && isSessionNameValid(sessionName)) {
+		
+		sessionTabbedPane.addDeleteSessionListener(new DeleteSessionListener() {		
+			@Override
+			public void deleteSession(String title) {
 				if (doModify()) {
-					sessionTabbedPane.setTitleAt(currentIndex, sessionName);
-					sessionPanelMap.put(sessionName, sessionPanelMap.get(currentTitle));
-					sessionPanelMap.remove(currentTitle);
-					sessionPanelMap.get(sessionName).setSessionName(sessionName);
+					sessionPanelMap.remove(title);
+					sessionTabbedPane.remove(getTabbedPaneIndexForTitle(title));
+					sessionTabbedPane.setSelectedIndex(0);
 				}
 			}
 		});
-
-		removeSessionButton.addActionListener(e -> {
-			if (doModify()) {
-				int currentIndex = sessionTabbedPane.getSelectedIndex();
-				sessionPanelMap.remove(sessionTabbedPane.getTitleAt(currentIndex));
-				sessionTabbedPane.remove(currentIndex);
-				if (sessionTabbedPane.getTabCount() == 0) {
-					cloneSessionButton.setEnabled(false);
-					renameSessionButton.setEnabled(false);
-					removeSessionButton.setEnabled(false);
-				}
-			}
-		});
-
-		sessionButtonPanel.add(createSessionButton);
-		sessionButtonPanel.add(cloneSessionButton);
-		sessionButtonPanel.add(renameSessionButton);
-		sessionButtonPanel.add(removeSessionButton);
 
 		filterPanel = new JPanel();
 		filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
@@ -219,22 +208,6 @@ public class ConfigurationPanel extends JPanel {
 		dropOriginalButton.setEnabled(false);
 
 		setLayout(new GridBagLayout());
-		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 0;
-		c.gridy = 0;
-		c.anchor = GridBagConstraints.PAGE_START;
-		c.insets = new Insets(10, 20, 20, 20);
-
-		add(sessionButtonPanel, c);
-		c.gridx = 1;
-		c.insets = new Insets(5, 20, 20, 20);
-		sessionTabbedPane.setBorder(new CompoundBorder(BorderFactory.createTitledBorder("Sessions"), new EmptyBorder(3, 3, 3, 3)));
-		add(sessionTabbedPane, c);
-		c.insets = new Insets(5, 20, 20, 25);
-		c.gridx = 2;
-		filterPanel.setBorder(new CompoundBorder(BorderFactory.createTitledBorder("Filters"), new EmptyBorder(3, 3, 3, 3)));
-		add(filterPanel, c);
-		
 		JPanel startStopButtonPanel = new JPanel();
 		startStopButtonPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c1 = new GridBagConstraints();
@@ -255,8 +228,22 @@ public class ConfigurationPanel extends JPanel {
 		c1.gridwidth = 2;
 		startStopButtonPanel.add(dropOriginalButton, c1);
 		
-		c.gridx = 3;
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 0;
+		c.anchor = GridBagConstraints.PAGE_START;
+		c.insets = new Insets(10, 20, 20, 20);
+
 		add(startStopButtonPanel, c);
+		c.gridx = 1;
+		c.insets = new Insets(5, 20, 20, 20);
+		sessionTabbedPane.setBorder(new CompoundBorder(BorderFactory.createTitledBorder("Sessions"), new EmptyBorder(3, 3, 3, 3)));
+		add(sessionTabbedPane, c);
+		c.insets = new Insets(5, 20, 20, 25);
+		c.gridx = 2;
+		filterPanel.setBorder(new CompoundBorder(BorderFactory.createTitledBorder("Filters"), new EmptyBorder(3, 3, 3, 3)));
+		add(filterPanel, c);
 		
 	}
 
@@ -270,6 +257,10 @@ public class ConfigurationPanel extends JPanel {
 		} catch (Exception e) {
 			BurpExtender.callbacks.printOutput("Can not restore saved Data. Error Message: " + e.getMessage());
 		}
+		if(sessionTabbedPane.getTabCount() == 1) {
+			createSession("user1");
+		}
+		sessionTabbedPane.setSelectedIndex(0);
 	}
 	
 	public void saveSetup() {
@@ -365,18 +356,15 @@ public class ConfigurationPanel extends JPanel {
 		if (doModify()) {
 			SessionPanel sessionPanel = new SessionPanel(sessionName, mainPanel);
 			sessionTabbedPane.add(sessionName, sessionPanel);
-			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 1);
+			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 2);
 			sessionPanelMap.put(sessionName, sessionPanel);
-			cloneSessionButton.setEnabled(true);
-			renameSessionButton.setEnabled(true);
-			removeSessionButton.setEnabled(true);
 			return sessionPanel;
 		} else {
 			return null;
 		}
 	}
 
-	private boolean cloneSession(String newSessionName, SessionPanel sessionPanelToClone) {
+	private boolean doCloneSession(String newSessionName, SessionPanel sessionPanelToClone) {
 		if (doModify()) {
 			SessionPanel sessionPanel = new SessionPanel(newSessionName, mainPanel);
 			sessionPanel.setHeadersToReplaceText(sessionPanelToClone.getHeadersToReplaceText());
@@ -409,7 +397,7 @@ public class ConfigurationPanel extends JPanel {
 				}
 			}
 			sessionTabbedPane.add(newSessionName, sessionPanel);
-			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 1);
+			sessionTabbedPane.setSelectedIndex(sessionTabbedPane.getTabCount() - 2);
 			sessionPanelMap.put(newSessionName, sessionPanel);
 			return true;
 		} else {
@@ -453,17 +441,24 @@ public class ConfigurationPanel extends JPanel {
 	}
 
 	public void setSelectedSession(String sessionName) {
-		for (int i = 0; i < sessionTabbedPane.getTabCount(); i++) {
-			if (sessionTabbedPane.getTitleAt(i).equals(sessionName)) {
-				sessionTabbedPane.setSelectedIndex(i);
-				break;
+		int index = getTabbedPaneIndexForTitle(sessionName);
+		if(index != -1) {
+			sessionTabbedPane.setSelectedIndex(index);
+		}
+	}
+	
+	private int getTabbedPaneIndexForTitle(String title) {
+		for (int i = 0; i < sessionTabbedPane.getTabCount()-1; i++) {
+			if (sessionTabbedPane.getTitleAt(i).equals(title)) {
+				return i;
 			}
 		}
+		return -1;
 	}
 
 	public ArrayList<String> getSessionNames() {
 		ArrayList<String> sessionNames = new ArrayList<String>();
-		for (int i = 0; i < sessionTabbedPane.getTabCount(); i++) {
+		for (int i = 0; i < sessionTabbedPane.getTabCount()-1; i++) {
 			sessionNames.add(sessionTabbedPane.getTitleAt(i));
 		}
 		return sessionNames;
@@ -499,10 +494,7 @@ public class ConfigurationPanel extends JPanel {
 				for (String session : sessionPanelMap.keySet()) {
 					sessionPanelMap.get(session).setStopped();
 				}
-				createSessionButton.setEnabled(true);
-				renameSessionButton.setEnabled(true);
-				removeSessionButton.setEnabled(true);
-				cloneSessionButton.setEnabled(true);
+				sessionTabbedPane.setModifEnabled(true);
 				pauseButton.setText(PAUSE_TEXT);
 				pauseButton.setEnabled(false);
 				dropOriginalButton.setEnabled(false);
@@ -536,10 +528,7 @@ public class ConfigurationPanel extends JPanel {
 					if(sessionListChanged) {
 						mainPanel.getCenterPanel().initCenterPanel();
 					}
-					createSessionButton.setEnabled(false);
-					cloneSessionButton.setEnabled(false);
-					renameSessionButton.setEnabled(false);
-					removeSessionButton.setEnabled(false);
+					sessionTabbedPane.setModifEnabled(false);
 					pauseButton.setEnabled(true);
 					dropOriginalButton.setEnabled(true);
 					config.setRunning(true);
@@ -708,9 +697,7 @@ public class ConfigurationPanel extends JPanel {
 			}
 			sessionTabbedPane.add(sessionPanel.getSessionName(), sessionPanel);
 			sessionPanelMap.put(sessionPanel.getSessionName(), sessionPanel);
-			cloneSessionButton.setEnabled(true);
-			renameSessionButton.setEnabled(true);
-			removeSessionButton.setEnabled(true);
+			sessionTabbedPane.setModifEnabled(true);
 		}
 	
 		// Load Filters

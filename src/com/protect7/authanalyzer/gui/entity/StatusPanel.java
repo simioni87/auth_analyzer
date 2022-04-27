@@ -19,9 +19,9 @@ import com.protect7.authanalyzer.util.GenericHelper;
 
 public class StatusPanel extends JPanel{
 	
-	private final JLabel headerLabel = new JLabel("<html><p><strong>Header(s) to Replace</strong></html>");
+	private final JLabel headerLabel = new JLabel("<html><strong>Header(s) to Replace</strong></html>");
 	private final JLabel headerToReplaceValue = new JLabel("");
-	private final JLabel headerRemoveLabel = new JLabel("<html><p><strong>Header(s) to Remove</strong></html>");
+	private final JLabel headerRemoveLabel = new JLabel("<html><strong>Header(s) to Remove</strong></html>");
 	private final JLabel headerToRemoveValue = new JLabel("");
 	private final JLabel amountOfFilteredRequestsLabel = new JLabel("");
 	private final String SESSION_STARTED_TEXT = "<html><span style='color:green; font-weight: bold'>&#x26AB;</span> Session Running</html>";
@@ -45,7 +45,7 @@ public class StatusPanel extends JPanel{
 		c.gridx = 0;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(10, 0, 0, 0);
-	
+		headerLabel.putClientProperty("html.disable", null);
 		add(headerLabel, c);
 		
 		c.gridx = 1;
