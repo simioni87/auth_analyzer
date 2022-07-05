@@ -53,7 +53,6 @@ public class ContextMenuController implements IContextMenuFactory {
 					return menuItems;
 				}
 				String selectedText = new String(Arrays.copyOfRange(message.getRequest(), selection[0], selection[1]));
-				BurpExtender.callbacks.printOutput(selectedText);
 				if (isHeader(selectedText)) {
 					// Set header menu
 					addHeaderMenu(authAnalyzerMenu, selectedText);

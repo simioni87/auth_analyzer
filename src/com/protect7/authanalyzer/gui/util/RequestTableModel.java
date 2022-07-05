@@ -89,7 +89,7 @@ public class RequestTableModel extends AbstractTableModel {
 			return null;
 		}
 		OriginalRequestResponse originalRequestResponse = originalRequestResponseList.get(row);
-		int tempColunmIndex = 5;
+		int tempColunmIndex = 4;
 		if(column == 0) {
 			return originalRequestResponse.getId();
 		}
@@ -104,9 +104,6 @@ public class RequestTableModel extends AbstractTableModel {
 		}
 		if(column == 4) {
 			return originalRequestResponse.getStatusCode();
-		}
-		if(column == 5) {
-			return originalRequestResponse.getComment();
 		}
 		for(int i=0; i<config.getSessions().size(); i++) {
 			tempColunmIndex++;
@@ -138,12 +135,16 @@ public class RequestTableModel extends AbstractTableModel {
 				return config.getSessions().get(i).getRequestResponseMap().get(originalRequestResponse.getId()).getStatus();
 			}
 		}
+		tempColunmIndex++;
+		if(column == tempColunmIndex) {
+			return originalRequestResponse.getComment();
+		}
 		throw new IndexOutOfBoundsException("Column index out of bounds: " + column);
 	}
 
 	@Override
 	public String getColumnName(int column) {
-		int tempColunmIndex = 5;
+		int tempColunmIndex = 4;
 		if(column == 0) {
 			return Column.ID.toString();
 		}
@@ -158,9 +159,6 @@ public class RequestTableModel extends AbstractTableModel {
 		}
 		if(column == 4) {
 			return Column.Code.toString();
-		}
-		if(column == 5) {
-			return Column.Comment.toString();
 		}
 		for(int i=0; i<config.getSessions().size(); i++) {
 			tempColunmIndex++;
@@ -190,12 +188,16 @@ public class RequestTableModel extends AbstractTableModel {
 				return config.getSessions().get(i).getName() + " " + Column.Status;
 			}
 		}
+		tempColunmIndex++;
+		if(column == tempColunmIndex) {
+			return Column.Comment.toString();
+		}
 		throw new IndexOutOfBoundsException("Column index out of bounds: " + column);
 	}
 
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
-		int tempColunmIndex = 5;
+		int tempColunmIndex = 4;
 		if(columnIndex == 0) {
 			return Integer.class;
 		}
@@ -210,9 +212,6 @@ public class RequestTableModel extends AbstractTableModel {
 		}
 		if(columnIndex == 4) {
 			return Integer.class;
-		}
-		if(columnIndex == 5) {
-			return String.class;
 		}
 		for(int i=0; i<config.getSessions().size(); i++) {
 			tempColunmIndex++;
@@ -242,11 +241,15 @@ public class RequestTableModel extends AbstractTableModel {
 				return BypassConstants.class;
 			}
 		}
+		tempColunmIndex++;
+		if(columnIndex == tempColunmIndex) {
+			return String.class;
+		}
 		throw new IndexOutOfBoundsException("Column index out of bounds: " + columnIndex);
 	}
 	
 	public enum Column {
-		ID, Method, Host, Path, Code, Comment, Length, Diff, Status;
+		ID, Method, Host, Path, Code, Length, Diff, Status, Comment;
 		
 		public static EnumSet<Column> getDefaultSet() {
 			return EnumSet.of(ID, Method, Host, Path, Status);

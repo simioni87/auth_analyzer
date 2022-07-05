@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -71,9 +72,11 @@ public class ExtractionHelper {
 	public static String getTokenValueFromInputField(String document, String name) {
 		Document doc = Jsoup.parse(document);
 		Elements csrfFields = doc.getElementsByAttributeValue("name", name);
-		if (csrfFields.size() > 0) {
-			String csrfValue = csrfFields.get(0).attr("value");
-			return csrfValue;
+		for(Element element : csrfFields) {
+			String csrfValue = element.attr("value");
+			if(csrfValue != null && !csrfValue.equals("")) {
+				return csrfValue;
+			}
 		}
 		return null;
 	}
@@ -81,8 +84,6 @@ public class ExtractionHelper {
 	public static boolean extractTokenWithFromToString(byte[] sessionResponse, IResponseInfo responseInfo, Token token) {
 		try {
 			boolean doExtract = token.doFromToExtractAtLocation(FromToExtractLocation.ALL);
-			BurpExtender.callbacks.printOutput("Stated: " + responseInfo.getInferredMimeType().equals(""));
-			BurpExtender.callbacks.printOutput("Interffered: " + responseInfo.getStatedMimeType().toUpperCase());
 			for(FromToExtractLocation locationType : FromToExtractLocation.values()) {
 				if(locationType != FromToExtractLocation.ALL && locationType != FromToExtractLocation.HEADER && locationType != FromToExtractLocation.BODY) {
 					if (token.doFromToExtractAtLocation(locationType) && (responseInfo.getStatedMimeType().toUpperCase().equals(locationType.toString())
