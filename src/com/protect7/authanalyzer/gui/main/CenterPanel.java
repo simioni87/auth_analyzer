@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
@@ -35,7 +36,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
-
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
@@ -93,6 +93,9 @@ public class CenterPanel extends JPanel {
 	private final PlaceholderTextField filterText;
 	private final JPanel topPanel = new JPanel(new BorderLayout());
 	private final JLabel tableFilterInfoLabel = new JLabel("", SwingConstants.CENTER);
+	private final JCheckBox searchInPath = new JCheckBox("Search in Path", true);
+	private final JCheckBox searchInRequest = new JCheckBox("Search in Request", false);
+	private final JCheckBox searchInResponse = new JCheckBox("Search in Response", false);
 	private int selectedId = -1;
 
 	public CenterPanel() {
@@ -506,7 +509,7 @@ public class CenterPanel extends JPanel {
 		table.setModel(tableModel);
 		config.setTableModel(tableModel);
 		sorter = new CustomRowSorter(tableModel, showOnlyMarked, showDuplicates, showBypassed, 
-				showPotentialBypassed, showNotBypassed, showNA, filterText);
+				showPotentialBypassed, showNotBypassed, showNA, filterText, searchInPath, searchInRequest, searchInResponse);
 		sorter.addRowSorterListener(new RowSorterListener() {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {
@@ -518,7 +521,7 @@ public class CenterPanel extends JPanel {
 	}
 
 	private void updateTableFilterInfo() {
-		if(table.getRowCount() != tableModel.getRowCount()) {
+		if(table.getRowCount() < tableModel.getRowCount()) {
 			String text = "<html><h3 style='color:red;'>Table Filtered: " + table.getRowCount() + "/"+
 					tableModel.getRowCount()+" Entries Visible...</h3></html>";
 			tableFilterInfoLabel.setText(text);
@@ -646,28 +649,30 @@ public class CenterPanel extends JPanel {
 		return new JLabel(labelText, JLabel.CENTER);
 	}
 
-	private void updateColumnWidths() {
+	private void updateColumnWidths() {		
 		for (Column column : Column.values()) {
 			if (!columnSet.contains(column)) {
-				for (int i = 0; i < tableModel.getColumnCount(); i++) {
-					if (tableModel.getColumnName(i).endsWith(column.toString())) {
+				for(int i=0; i<table.getColumnModel().getColumnCount(); i++) {
+					String columnName = table.getColumnModel().getColumn(i).getHeaderValue().toString();
+					if(columnName.endsWith(column.toString())) {
 						table.getColumnModel().getColumn(i).setMinWidth(0);
 						table.getColumnModel().getColumn(i).setMaxWidth(0);
 					}
 				}
 			} else {
 				if (column == Column.ID) {
-					table.getColumnModel().getColumn(0).setMaxWidth(40);
-					table.getColumnModel().getColumn(0).setPreferredWidth(40);
+					table.getColumnModel().getColumn(getColumnIdByName(Column.ID)).setMaxWidth(40);
+					table.getColumnModel().getColumn(getColumnIdByName(Column.ID)).setPreferredWidth(40);
 				} else if (column == Column.Host) {
-					table.getColumnModel().getColumn(2).setMaxWidth(10000);
-					table.getColumnModel().getColumn(2).setPreferredWidth(200);
+					table.getColumnModel().getColumn(getColumnIdByName(Column.Host)).setMaxWidth(10000);
+					table.getColumnModel().getColumn(getColumnIdByName(Column.Host)).setPreferredWidth(200);
 				} else if (column == Column.Path) {
-					table.getColumnModel().getColumn(3).setMaxWidth(10000);
-					table.getColumnModel().getColumn(3).setPreferredWidth(400);
+					table.getColumnModel().getColumn(getColumnIdByName(Column.Path)).setMaxWidth(10000);
+					table.getColumnModel().getColumn(getColumnIdByName(Column.Path)).setPreferredWidth(400);
 				} else {
-					for (int i = 0; i < tableModel.getColumnCount(); i++) {
-						if (tableModel.getColumnName(i).endsWith(column.toString())) {
+					for(int i=0; i<table.getColumnModel().getColumnCount(); i++) {
+						String currentColumnName = table.getColumnModel().getColumn(i).getHeaderValue().toString();
+						if(currentColumnName.endsWith(column.toString())) {
 							table.getColumnModel().getColumn(i).setMaxWidth(10000);
 							table.getColumnModel().getColumn(i).setPreferredWidth(80);
 						}
@@ -676,7 +681,17 @@ public class CenterPanel extends JPanel {
 			}
 		}
 	}
-
+	
+	private int getColumnIdByName(Column columnName) {
+		for(int i=0; i<table.getColumnModel().getColumnCount(); i++) {
+			String currentColumnName = table.getColumnModel().getColumn(i).getHeaderValue().toString();
+			if(currentColumnName.endsWith(columnName.toString())) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
 	private void showTableSettingsDialog(Component parent) {
 		JPanel inputPanel = new JPanel();
 		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
@@ -694,7 +709,15 @@ public class CenterPanel extends JPanel {
 			});
 			inputPanel.add(columnCheckBox);
 		}
-		JOptionPane.showConfirmDialog(parent, inputPanel, "Show / Hide Table Columns", JOptionPane.CLOSED_OPTION);
+		inputPanel.add(new JLabel(" "));
+		inputPanel.add(new JSeparator(SwingConstants.HORIZONTAL));
+		inputPanel.add(new JLabel(" "));
+		inputPanel.add(new JLabel("Search Options"));
+		inputPanel.add(searchInPath);
+		inputPanel.add(searchInRequest);
+		inputPanel.add(searchInResponse);
+		
+		JOptionPane.showConfirmDialog(parent, inputPanel, "Table Settings", JOptionPane.CLOSED_OPTION);
 		String saveString = columnSet.toString().replaceAll(" ", "").replace("[", "").replace("]", "");
 		BurpExtender.callbacks.saveExtensionSetting(TABLE_SETTINGS, saveString);
 	}

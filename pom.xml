@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.protect7.authanalyzer</groupId>
 	<artifactId>AuthAnalyzer</artifactId>
-	<version>1.1.11</version>
+	<version>1.1.12</version>
 	<description>Burp Extension</description>
 	<properties>
 			<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -64,7 +64,7 @@
 		<dependency>
 			<groupId>net.portswigger.burp.extender</groupId>
 			<artifactId>burp-extender-api</artifactId>
-			<version>2.1</version>
+			<version>2.3</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
