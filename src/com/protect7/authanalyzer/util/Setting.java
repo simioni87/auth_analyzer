@@ -72,6 +72,8 @@ public class Setting {
 				"One Thread if a Prompt for Input Parameter is present", null),
 		SHOW_PENDING_REQUEST_INFO("false", Type.BOOLEAN, 
 				"Show Pending Request Info (Reload Extension)", null),
+		APPLY_FILTER_ON_MANUAL_REPEAT("false", Type.BOOLEAN, 
+				"Apply Filters on Manual Request Repetition", null),
 		STATUS_SAME_RESPONSE_CODE("true", Type.BOOLEAN, 
 				"Respect Response Code to flag with Status SAME", null),
 		STATUS_SIMILAR_RESPONSE_CODE("true", Type.BOOLEAN, 

@@ -19,7 +19,7 @@ public class MainPanel extends JPanel {
 	public MainPanel() {
 		setLayout(new BorderLayout(10, 10));
 		setBorder(new EmptyBorder(5, 5, 5, 5));
-		centerPanel = new CenterPanel();
+		centerPanel = new CenterPanel(this);
 		configurationPanel = new ConfigurationPanel(this);
 		JScrollPane scrollPane = new JScrollPane(configurationPanel);
 		scrollPane.getVerticalScrollBar().setUnitIncrement(20);

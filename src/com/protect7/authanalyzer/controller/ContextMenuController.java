@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import com.protect7.authanalyzer.entities.Token;
 import com.protect7.authanalyzer.gui.entity.SessionPanel;
 import com.protect7.authanalyzer.gui.entity.TokenPanel;
 import com.protect7.authanalyzer.gui.main.ConfigurationPanel;
-import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.ExtractionHelper;
 import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.Globals;
@@ -42,6 +43,7 @@ public class ContextMenuController implements IContextMenuFactory {
 			// Set Repeat Request Menu
 			addRepeatRequestMenu(authAnalyzerMenu, invocation);
 			addRepeatUniqueRequestsMenu(authAnalyzerMenu, invocation);
+			addRepeatWithPatternRequestsMenu(authAnalyzerMenu, invocation);
 			authAnalyzerMenu.addSeparator();
 			// Set Token Auto Add Menu
 			addAutoSetTokenMenu(authAnalyzerMenu, invocation);
@@ -105,12 +107,7 @@ public class ContextMenuController implements IContextMenuFactory {
 			repeatRequests = new JMenuItem("Repeat All Requests (" + invocation.getSelectedMessages().length + ")");
 		}
 		repeatRequests.addActionListener(e -> {
-			if(!CurrentConfig.getCurrentConfig().isRunning()) {
-				configurationPanel.startStopButtonPressed();
-			}
-			for(IHttpRequestResponse message : invocation.getSelectedMessages()) {
-				CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
-			}
+			GenericHelper.repeatRequests(invocation.getSelectedMessages(), configurationPanel);
 		});
 		authAnalyzerMenu.add(repeatRequests);	
 	}
@@ -119,9 +116,7 @@ public class ContextMenuController implements IContextMenuFactory {
 		JMenuItem repeatRequests = new JMenuItem("Repeat only Unique Requests");
 		repeatRequests.addActionListener(e -> {
 			HashSet<String> uniqueRequests = new HashSet<String>();
-			if(!CurrentConfig.getCurrentConfig().isRunning()) {
-				configurationPanel.startStopButtonPressed();
-			}
+			ArrayList<IHttpRequestResponse> messages = new ArrayList<>();
 			for(IHttpRequestResponse message : invocation.getSelectedMessages()) {
 				String key = message.getHttpService().getHost();
 				if(message.getRequest() != null) {
@@ -130,9 +125,39 @@ public class ContextMenuController implements IContextMenuFactory {
 				}
 				if(!uniqueRequests.contains(key)) {
 					uniqueRequests.add(key);
-					CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
+					messages.add(message);
+					//CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
 				}
 			}
+			IHttpRequestResponse[] messagesAsArray = messages.toArray(new IHttpRequestResponse[messages.size()]);
+			GenericHelper.repeatRequests(messagesAsArray, configurationPanel);
+			
+		});
+		authAnalyzerMenu.add(repeatRequests);	
+	}
+	
+	private void addRepeatWithPatternRequestsMenu(JMenu authAnalyzerMenu, IContextMenuInvocation invocation) {
+		JMenuItem repeatRequests = new JMenuItem("Repeat Requests with Pattern");
+		repeatRequests.addActionListener(e -> {
+			JLabel optionPaneMsg = new JLabel("The request will be repeated if the entered \nPattern (String Literal) exists in the Request");
+			String pattern = JOptionPane.showInputDialog(authAnalyzerMenu, optionPaneMsg, "Auth Analyzer Pattern based Repetition", JOptionPane.PLAIN_MESSAGE);
+			ArrayList<IHttpRequestResponse> messages = new ArrayList<>();
+			for(IHttpRequestResponse message : invocation.getSelectedMessages()) {
+				if(message.getRequest() != null) {
+					try {
+						String request = new String(message.getRequest());
+						if(request.contains(pattern)) {
+							messages.add(message);
+						}
+					}
+					catch (Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+			IHttpRequestResponse[] messagesAsArray = messages.toArray(new IHttpRequestResponse[messages.size()]);
+			GenericHelper.repeatRequests(messagesAsArray, configurationPanel);
+			
 		});
 		authAnalyzerMenu.add(repeatRequests);	
 	}

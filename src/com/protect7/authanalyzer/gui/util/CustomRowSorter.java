@@ -9,15 +9,19 @@ import javax.swing.table.TableRowSorter;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
+import com.protect7.authanalyzer.gui.main.CenterPanel;
 import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
 
 public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 
-	public CustomRowSorter(RequestTableModel tableModel, JCheckBox showOnlyMarked, JCheckBox showDuplicates, JCheckBox showBypassed, 
+	private final CenterPanel centerPanel;
+	
+	public CustomRowSorter(CenterPanel centerPanel, RequestTableModel tableModel, JCheckBox showOnlyMarked, JCheckBox showDuplicates, JCheckBox showBypassed, 
 			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed, JCheckBox showNA, PlaceholderTextField filterText,
 			JCheckBox searchInPath, JCheckBox searchInRequest, JCheckBox searchInResponse) {
 		super(tableModel);
+		this.centerPanel = centerPanel;
 		showOnlyMarked.addActionListener(e -> tableModel.fireTableDataChanged());
 		showDuplicates.addActionListener(e -> tableModel.fireTableDataChanged());
 		showBypassed.addActionListener(e -> tableModel.fireTableDataChanged());
@@ -33,6 +37,7 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 			
 			public boolean include(Entry<?, ?> entry) {
 				if(filterText.getText() != null && !filterText.getText().equals("")) {
+					centerPanel.toggleSearchButtonText();
 					boolean containsPattern = false;
 					if(searchInPath.isSelected()) {
 						if(entry.getStringValue(3).toString().contains(filterText.getText())) {
@@ -75,6 +80,7 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 							e.printStackTrace();
 						}
 					}
+					centerPanel.toggleSearchButtonText();
 					if(!containsPattern && (searchInPath.isSelected() || searchInResponse.isSelected() || searchInRequest.isSelected())) {
 						return false;
 					}

@@ -229,7 +229,19 @@ public class StatusPanel extends JPanel{
 	}
 	
 	private String format(String text, Session session) {
-		String htmlString = "<html><p style='width:600px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
+		String htmlString = "<html><p style='width:600px'>";
+		for(String line : text.split("\n")) {
+			int maxLength = 100;
+			if(line.length() > maxLength) {
+				htmlString += line.substring(0, maxLength) + "...";
+			}
+			else {
+				htmlString += line;
+			}
+			htmlString += "<br>";
+		}
+		htmlString += "</p></html>";
+		//String htmlString = "<html><p style='width:600px'>"+text.replace("<", "&lt;").replace("\n", "<br>")+"</p></html>";
 		return htmlString;
 	}
 	

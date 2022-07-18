@@ -8,9 +8,49 @@ import java.awt.event.ActionListener;
 import javax.swing.JTabbedPane;
 import javax.swing.Timer;
 
+import com.protect7.authanalyzer.filter.RequestFilter;
+import com.protect7.authanalyzer.gui.main.ConfigurationPanel;
+import com.protect7.authanalyzer.util.Setting.Item;
+
 import burp.BurpExtender;
+import burp.IBurpExtenderCallbacks;
+import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 
 public class GenericHelper {
+	
+	public static void repeatRequests(IHttpRequestResponse[] messages, ConfigurationPanel configurationPanel) {
+		if(configurationPanel.isPaused()) {
+			configurationPanel.pauseButtonPressed();
+		}
+		if(!CurrentConfig.getCurrentConfig().isRunning()) {
+			configurationPanel.startStopButtonPressed();
+		}
+		if(CurrentConfig.getCurrentConfig().isRunning()) {
+			boolean applyFilters = Setting.getValueAsBoolean(Item.APPLY_FILTER_ON_MANUAL_REPEAT);
+			for(IHttpRequestResponse message : messages) {
+				boolean isFiltered = false;
+				if(applyFilters) {
+					IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(message);
+					IResponseInfo responseInfo = null;
+					if(message.getResponse() != null) {
+						responseInfo = BurpExtender.callbacks.getHelpers().analyzeResponse(message.getResponse());
+					}
+					for(int i=0; i<CurrentConfig.getCurrentConfig().getRequestFilterList().size(); i++) {
+						RequestFilter filter = CurrentConfig.getCurrentConfig().getRequestFilterAt(i);
+						if(filter.filterRequest(BurpExtender.callbacks, IBurpExtenderCallbacks.TOOL_PROXY, requestInfo, responseInfo)) {
+							isFiltered = true;
+							break;
+						}
+					}
+				}
+				if(!isFiltered) {
+					CurrentConfig.getCurrentConfig().performAuthAnalyzerRequest(message);
+				}
+			}
+		}
+	}
 	
 	public static void uiUpdateAnimation(Component component, Color animationColor) {
 		Color foregroundColor = component.getForeground();

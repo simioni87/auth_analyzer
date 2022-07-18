@@ -718,7 +718,7 @@ public class ConfigurationPanel extends JPanel {
 		}
 	}
 
-	private void pauseButtonPressed() {
+	public void pauseButtonPressed() {
 		if (config.isRunning()) {
 			config.setRunning(false);
 			pauseButton.setText(PLAY_TEXT);
@@ -730,6 +730,10 @@ public class ConfigurationPanel extends JPanel {
 			startStopButton.setText(ANALYZER_STARTED_TEXT);
 			pauseButton.setToolTipText("Currently Running");
 		}
+	}
+	
+	public boolean isPaused() {
+		return pauseButton.getText().equals(PLAY_TEXT);
 	}
 
 	private String[] getInputArray(Component parentFrame, String message, String value) {
