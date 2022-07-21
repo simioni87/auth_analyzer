@@ -4,14 +4,11 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
 import javax.swing.JTabbedPane;
 import javax.swing.Timer;
-
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.gui.main.ConfigurationPanel;
 import com.protect7.authanalyzer.util.Setting.Item;
-
 import burp.BurpExtender;
 import burp.IBurpExtenderCallbacks;
 import burp.IHttpRequestResponse;

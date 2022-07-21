@@ -70,8 +70,6 @@ public class Setting {
 		NUMBER_OF_THREADS("20", Type.INTEGER, "Number of Threads (for Request Processing)", new Range(1,50)),
 		ONLY_ONE_THREAD_IF_PROMT_FOR_INPUT("true", Type.BOOLEAN, 
 				"One Thread if a Prompt for Input Parameter is present", null),
-		SHOW_PENDING_REQUEST_INFO("false", Type.BOOLEAN, 
-				"Show Pending Request Info (Reload Extension)", null),
 		APPLY_FILTER_ON_MANUAL_REPEAT("false", Type.BOOLEAN, 
 				"Apply Filters on Manual Request Repetition", null),
 		STATUS_SAME_RESPONSE_CODE("true", Type.BOOLEAN, 

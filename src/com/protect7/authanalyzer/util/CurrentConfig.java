@@ -38,11 +38,11 @@ public class CurrentConfig {
 			@Override
 			public void run() {
 				getRequestController().analyze(messageInfo);
-				BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(
+				BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
 						analyzerThreadExecutor.getQueue().size());
 			}
 		});
-		BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(
+		BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
 				analyzerThreadExecutor.getQueue().size());
 	}
 	
@@ -74,7 +74,7 @@ public class CurrentConfig {
 		}
 		else {
 			analyzerThreadExecutor.shutdownNow();
-			BurpExtender.mainPanel.getConfigurationPanel().updateAmountOfPendingRequests(0);
+			BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(0);
 		}
 		this.running = running;
 	}

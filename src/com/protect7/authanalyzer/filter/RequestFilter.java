@@ -31,7 +31,7 @@ public abstract class RequestFilter {
 		if(onOffButton != null) {
 			String textWihtoutFilterAmount = onOffButton.getText().split(" \\(")[0];
 			onOffButton.setText(textWihtoutFilterAmount + " (Filtered: " + amountOfFilteredRequests + ")");
-			GenericHelper.uiUpdateAnimation(onOffButton, Color.RED);
+			GenericHelper.uiUpdateAnimation(onOffButton, new Color(240, 110, 0));
 		}
 	}
 	

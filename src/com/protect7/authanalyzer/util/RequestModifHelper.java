@@ -196,10 +196,11 @@ public class RequestModifHelper {
 			try {
 				String requestAsString = new String(request);
 				for(MatchAndReplace matchAndReplace : session.getMatchAndReplaceList()) {
-					int index = requestAsString.indexOf(matchAndReplace.getMatch());
-					if(index != -1) {
-						requestAsString = requestAsString.substring(0, index) + matchAndReplace.getReplace() 
-						+ requestAsString.substring(index + matchAndReplace.getMatch().length(), requestAsString.length()); 
+					int endIndex = requestAsString.indexOf(matchAndReplace.getMatch());
+					while(endIndex != -1) {
+						requestAsString = requestAsString.substring(0, endIndex) + matchAndReplace.getReplace() 
+						+ requestAsString.substring(endIndex + matchAndReplace.getMatch().length(), requestAsString.length());
+						endIndex = requestAsString.indexOf(matchAndReplace.getMatch(), endIndex);
 					}
 				}
 				return requestAsString.getBytes();

@@ -1,6 +1,5 @@
 package com.protect7.authanalyzer.gui.main;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -19,7 +18,6 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
@@ -57,7 +55,6 @@ import com.protect7.authanalyzer.gui.util.SessionTabbedPane;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.DataStorageProvider;
 import com.protect7.authanalyzer.util.GenericHelper;
-import com.protect7.authanalyzer.util.Setting;
 import burp.BurpExtender;
 
 public class ConfigurationPanel extends JPanel {
@@ -71,7 +68,7 @@ public class ConfigurationPanel extends JPanel {
 	private final String STOP_DROP_REQUEST_TEXT = "Stop Drop Requests";
 	private final JButton startStopButton = new JButton();
 	private final JButton pauseButton = new JButton();
-	private final JLabel pendingRequestsLabel = new JLabel("Pending Requests Queue: 0");
+	//private final JLabel pendingRequestsLabel = new JLabel("Pending Requests Queue: 0");
 	private final JToggleButton dropOriginalButton = new JToggleButton(DROP_REQUEST_TEXT);
 	private final JPanel filterPanel;
 	private final LinkedHashMap<String, SessionPanel> sessionPanelMap = new LinkedHashMap<>();
@@ -216,8 +213,6 @@ public class ConfigurationPanel extends JPanel {
 		c1.gridx = 0;
 		c1.gridwidth = 2;
 		c1.insets = new Insets(10, 0, 0, 5);
-		pendingRequestsLabel.setVisible(Setting.getValueAsBoolean(Setting.Item.SHOW_PENDING_REQUEST_INFO));
-		startStopButtonPanel.add(pendingRequestsLabel, c1);
 		c1.gridy = 1;
 		c1.gridwidth = 1;
 		startStopButtonPanel.add(startStopButton, c1);
@@ -462,11 +457,6 @@ public class ConfigurationPanel extends JPanel {
 			sessionNames.add(sessionTabbedPane.getTitleAt(i));
 		}
 		return sessionNames;
-	}
-	
-	public void updateAmountOfPendingRequests(int amountOfPendingRequests) {
-		pendingRequestsLabel.setText("Pending Requests Queue: " + amountOfPendingRequests);
-		GenericHelper.uiUpdateAnimation(pendingRequestsLabel, new Color(240, 110, 0));
 	}
 
 	private void addFilter(RequestFilter filter, HintCheckBox onOffButton, String inputDialogText) {

@@ -14,14 +14,11 @@ import com.protect7.authanalyzer.util.BypassConstants;
 import com.protect7.authanalyzer.util.CurrentConfig;
 
 public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
-
-	private final CenterPanel centerPanel;
 	
 	public CustomRowSorter(CenterPanel centerPanel, RequestTableModel tableModel, JCheckBox showOnlyMarked, JCheckBox showDuplicates, JCheckBox showBypassed, 
 			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed, JCheckBox showNA, PlaceholderTextField filterText,
 			JCheckBox searchInPath, JCheckBox searchInRequest, JCheckBox searchInResponse) {
 		super(tableModel);
-		this.centerPanel = centerPanel;
 		showOnlyMarked.addActionListener(e -> tableModel.fireTableDataChanged());
 		showDuplicates.addActionListener(e -> tableModel.fireTableDataChanged());
 		showBypassed.addActionListener(e -> tableModel.fireTableDataChanged());

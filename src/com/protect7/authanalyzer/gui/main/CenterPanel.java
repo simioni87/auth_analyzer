@@ -95,6 +95,7 @@ public class CenterPanel extends JPanel {
 	private final PlaceholderTextField filterText;
 	private final JPanel topPanel = new JPanel(new BorderLayout());
 	private final JLabel tableFilterInfoLabel = new JLabel("", SwingConstants.CENTER);
+	private final JLabel pendingRequestsLabel = new JLabel("", SwingConstants.CENTER);
 	private final JCheckBox searchInPath = new JCheckBox("Search in Path", true);
 	private final JCheckBox searchInRequest = new JCheckBox("Search in Request", false);
 	private final JCheckBox searchInResponse = new JCheckBox("Search in Response", false);
@@ -122,10 +123,13 @@ public class CenterPanel extends JPanel {
 		settingsButton.setIcon(new ImageIcon(this.getClass().getClassLoader().getResource("settings.png")));
 		settingsButton.addActionListener(e -> showTableSettingsDialog(tableControlPanel));
 		tableControlPanel.add(settingsButton);
-		//topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
 		topPanel.add(tableControlPanel, BorderLayout.NORTH);
 		tableFilterInfoLabel.putClientProperty("html.disable", null);
 		topPanel.add(tableFilterInfoLabel, BorderLayout.CENTER);
+		pendingRequestsLabel.setForeground(new Color(240, 110, 0));
+		pendingRequestsLabel.setVisible(false);
+		topPanel.add(pendingRequestsLabel, BorderLayout.SOUTH);
+		
 		tablePanel.add(new JScrollPane(topPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.NORTH);
 	
 		loadTableSettings();
@@ -254,7 +258,6 @@ public class CenterPanel extends JPanel {
 		add(splitPane, BorderLayout.CENTER);
 
 		selectionModel = table.getSelectionModel();
-		//selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
 
 			@Override
@@ -538,6 +541,16 @@ public class CenterPanel extends JPanel {
 		}
 		tablePanel.revalidate();
 	}
+	
+	public void updateAmountOfPendingRequests(int amountOfPendingRequests) {
+		if(amountOfPendingRequests == 0) {
+			pendingRequestsLabel.setVisible(false);
+		}
+		else {
+			pendingRequestsLabel.setVisible(true);
+			pendingRequestsLabel.setText("Pending Requests Queue: " + amountOfPendingRequests);
+		}
+	} 
 	
 	private void changeRequestResponseView(boolean force) {
 		if (table.getSelectedRow() != -1) {
