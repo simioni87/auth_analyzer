@@ -88,10 +88,10 @@ public class CenterPanel extends JPanel {
 	private final JButton clearTableButton;
 	private final JCheckBox showOnlyMarked = new JCheckBox("Marked", false);
 	private final JCheckBox showDuplicates = new JCheckBox("Duplicates", true);
-	private final JCheckBox showBypassed = new JCheckBox(BypassConstants.SAME.getName(), true);
-	private final JCheckBox showPotentialBypassed = new JCheckBox(BypassConstants.SIMILAR.getName(), true);
-	private final JCheckBox showNotBypassed = new JCheckBox(BypassConstants.DIFFERENT.getName(), true);
-	private final JCheckBox showNA = new JCheckBox(BypassConstants.NA.getName(), true);
+	private final JCheckBox showBypassed = new JCheckBox("Status " + BypassConstants.SAME.getName(), true);
+	private final JCheckBox showPotentialBypassed = new JCheckBox("Status " + BypassConstants.SIMILAR.getName(), true);
+	private final JCheckBox showNotBypassed = new JCheckBox("Status " + BypassConstants.DIFFERENT.getName(), true);
+	private final JCheckBox showNA = new JCheckBox("Status " + BypassConstants.NA.getName(), true);
 	private final PlaceholderTextField filterText;
 	private final JPanel topPanel = new JPanel(new BorderLayout());
 	private final JLabel tableFilterInfoLabel = new JLabel("", SwingConstants.CENTER);

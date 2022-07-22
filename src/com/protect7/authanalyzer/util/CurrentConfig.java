@@ -29,6 +29,7 @@ public class CurrentConfig {
 	private boolean respectResponseCodeForSameStatus = true;
 	private boolean respectResponseCodeForSimilarStatus = true; 
 	private int deviationForSimilarStatus = 5;
+	private long delayBetweenRequestsInMilliseconds = 0;
 
 	private CurrentConfig() {
 	}
@@ -37,9 +38,14 @@ public class CurrentConfig {
 		analyzerThreadExecutor.execute(new Runnable() {				
 			@Override
 			public void run() {
-				getRequestController().analyze(messageInfo);
 				BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
 						analyzerThreadExecutor.getQueue().size());
+				getRequestController().analyze(messageInfo);
+				try {
+					Thread.sleep(delayBetweenRequestsInMilliseconds);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		});
 		BurpExtender.mainPanel.getCenterPanel().updateAmountOfPendingRequests(
@@ -63,6 +69,7 @@ public class CurrentConfig {
 			respectResponseCodeForSameStatus = Setting.getValueAsBoolean(Setting.Item.STATUS_SAME_RESPONSE_CODE);
 			respectResponseCodeForSimilarStatus = Setting.getValueAsBoolean(Setting.Item.STATUS_SIMILAR_RESPONSE_CODE);
 			deviationForSimilarStatus = Setting.getValueAsInteger(Setting.Item.STATUS_SIMILAR_RESPONSE_LENGTH);
+			delayBetweenRequestsInMilliseconds = Setting.getValueAsInteger(Setting.Item.DELAY_BETWEEN_REQUESTS);
 			if(hasPromptForInput() && Setting.getValueAsBoolean(Setting.Item.ONLY_ONE_THREAD_IF_PROMT_FOR_INPUT)) {
 				//Set POOL Size to 1 --> if prompt for input dialog appears no further requests will be repeated until dialog is closed
 				analyzerThreadExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(POOL_SIZE_MIN);

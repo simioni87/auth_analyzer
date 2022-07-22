@@ -1,37 +1,21 @@
 package com.protect7.authanalyzer.controller;
 
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.WindowConstants;
-import javax.swing.border.EmptyBorder;
 import com.protect7.authanalyzer.entities.Token;
+import com.protect7.authanalyzer.gui.dialog.RepeatRequestFilterDialog;
 import com.protect7.authanalyzer.gui.entity.SessionPanel;
 import com.protect7.authanalyzer.gui.entity.TokenPanel;
 import com.protect7.authanalyzer.gui.main.ConfigurationPanel;
-import com.protect7.authanalyzer.gui.util.HintCheckBox;
-import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
 import com.protect7.authanalyzer.util.ExtractionHelper;
 import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.Globals;
-import burp.BurpExtender;
 import burp.IContextMenuFactory;
 import burp.IContextMenuInvocation;
 import burp.IHttpRequestResponse;
-import burp.IRequestInfo;
 
 public class ContextMenuController implements IContextMenuFactory {
 
@@ -126,105 +110,9 @@ public class ContextMenuController implements IContextMenuFactory {
 	}
 	
 	private void addRepeatWithOptionsMenu(JMenu authAnalyzerMenu, IContextMenuInvocation invocation) {
-		JMenuItem repeatRequests = new JMenuItem("Repeat Requests with Options");
-		repeatRequests.addActionListener(e -> {
-			JDialog dialog = new JDialog();
-			JPanel inputPanel = (JPanel) dialog.getContentPane();
-			inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
-			inputPanel.setBorder(new EmptyBorder(10,10,10,10));
-			
-			HintCheckBox uniqueRequestsCheckbox = new HintCheckBox("Filter Duplicates", "Duplicated Requests only repeated once. Unique identifier: METHOD + HOST + URL + PATH");
-			inputPanel.add(uniqueRequestsCheckbox);
-			inputPanel.add(Box.createRigidArea(new Dimension(0,10)));
-			
-			HintCheckBox withResponseCheckbox = new HintCheckBox("With avalibale Responses", "The request will no be repeated ff the selected Message does not has a response.");
-			inputPanel.add(withResponseCheckbox);
-			inputPanel.add(Box.createRigidArea(new Dimension(0,10)));
-			
-			JLabel patternLabel = new JLabel("Request contains:");
-			inputPanel.add(patternLabel);
-			PlaceholderTextField patternTextField = new PlaceholderTextField();
-			patternTextField.setPlaceholder("Leave empty to apply no filter...");
-			inputPanel.add(patternTextField);
-			inputPanel.add(Box.createRigidArea(new Dimension(0,10)));
-			
-			JLabel methodLabel = new JLabel("HTTP Method(s) (Comma seperated)");
-			inputPanel.add(methodLabel);
-			PlaceholderTextField methodTextField = new PlaceholderTextField(25);
-			methodTextField.setPlaceholder("Leave empty to apply no filter...");
-			inputPanel.add(methodTextField);
-			inputPanel.add(Box.createRigidArea(new Dimension(0,20)));
-		
-			JButton repeatButton = new JButton("Repeat Requests");
-			inputPanel.add(repeatButton);
-			repeatButton.addActionListener(new ActionListener() {
-				
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					IHttpRequestResponse[] messages = getMessageToRepeat(invocation.getSelectedMessages(), uniqueRequestsCheckbox.isSelected(), withResponseCheckbox.isSelected(), 
-							patternTextField.getText().trim(), methodTextField.getText());
-					GenericHelper.repeatRequests(messages, configurationPanel);
-				}
-			});
-			
-			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);	
-			dialog.setVisible(true);
-			dialog.setTitle("Repeat Options");
-			dialog.pack();
-			dialog.setLocationRelativeTo(authAnalyzerMenu);
-		});
+		JMenuItem repeatRequests = new JMenuItem("Repeat Requests with Filter Options");
+		repeatRequests.addActionListener(e1 -> new RepeatRequestFilterDialog(authAnalyzerMenu, configurationPanel, invocation.getSelectedMessages()));
 		authAnalyzerMenu.add(repeatRequests);
-	}
-	
-	private IHttpRequestResponse[] getMessageToRepeat(IHttpRequestResponse[] sourceMessages, boolean onlyUnique, boolean onlyWithResponse, String pattern, String methods) {
-		ArrayList<IHttpRequestResponse> messages = new ArrayList<>();
-		HashSet<String> uniqueRequests = new HashSet<String>();
-		for(IHttpRequestResponse message : sourceMessages) {
-			boolean doRepeat = true;
-			if(onlyWithResponse && message.getResponse() == null) {
-				doRepeat = false;
-			}
-			if(doRepeat && onlyUnique) {
-				String key = message.getHttpService().getHost();
-				if(message.getRequest() != null) {
-					IRequestInfo requestInfo = BurpExtender.callbacks.getHelpers().analyzeRequest(message);
-					key += requestInfo.getMethod() + requestInfo.getUrl().getPath();
-				}
-				if(uniqueRequests.contains(key)) {
-					doRepeat = false;
-				}
-				else {
-					uniqueRequests.add(key);
-				}
-			}
-			if(doRepeat && (!pattern.equals("") || !methods.equals(""))) {
-				if(message.getRequest() != null) {
-					String request = new String(message.getRequest());
-					if(!pattern.equals("")) {
-						if(!request.contains(pattern)) {
-							doRepeat = false;
-						}
-					}
-					if(!methods.equals("")) {
-						String[] methodSplit = methods.split(",");
-						boolean methodInList = false;
-						for(String method : methodSplit) {
-							if(request.startsWith(method.trim())) {
-								methodInList = true;
-								break;
-							}
-						}
-						if(!methodInList) {
-							doRepeat = false;
-						}
-					}
-				}
-			}
-			if(doRepeat) {
-				messages.add(message);
-			}
-		}
-		return messages.toArray(new IHttpRequestResponse[messages.size()]);
 	}
 	
 	private void addAutoSetTokenMenu(JMenu authAnalyzerMenu, IContextMenuInvocation invocation) {
