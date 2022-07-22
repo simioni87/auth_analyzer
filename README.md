@@ -56,6 +56,9 @@ There are other existing Burp Extensions doing basically similar stuff. However,
 
 ![Auth Analyzer](https://github.com/simioni87/auth_analyzer/blob/main/pics/complete_gui.png)
 
+## Semi Automated Authorization Testing
+If you have the resources you want to test in your sitemap, it is very easy and quick to perform your authorization tests. In the very first step define your sessions you want to test. Then just expand your sitemap, select the resources and repeat the requests through the context menu. Additionally you can define some options which requests should be repeated and which not. With this you can perform authorization tests of a complex website within seconds.
+
 ## Parameter Extraction
 The Auth Analyzer has the possibility to define parameters which are replaced before the request for the given session will be repeated. The value for the given parameter can be set according to different requirements.
 ### Auto Extract
@@ -219,3 +222,5 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Send Header(s) and / or Parameter(s) directly to Auth Analyzer by Context Menu
 *	Auto save current configuration
 * Save to file and load from file current configuration
+* Search function in repeated requests
+* Semi Automated Authoriztaion Testing
