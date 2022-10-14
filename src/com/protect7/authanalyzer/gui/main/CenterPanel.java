@@ -99,6 +99,7 @@ public class CenterPanel extends JPanel {
 	private final JCheckBox searchInPath = new JCheckBox("Search in Path", true);
 	private final JCheckBox searchInRequest = new JCheckBox("Search in Request", false);
 	private final JCheckBox searchInResponse = new JCheckBox("Search in Response", false);
+	private final JCheckBox negativeSearch = new JCheckBox("Negative Search", false);
 	private final JButton searchButton = new JButton("Search");
 	private int selectedId = -1;
 
@@ -518,7 +519,7 @@ public class CenterPanel extends JPanel {
 		table.setModel(tableModel);
 		config.setTableModel(tableModel);
 		sorter = new CustomRowSorter(this, tableModel, showOnlyMarked, showDuplicates, showBypassed, 
-				showPotentialBypassed, showNotBypassed, showNA, filterText, searchInPath, searchInRequest, searchInResponse);
+				showPotentialBypassed, showNotBypassed, showNA, filterText, searchInPath, searchInRequest, searchInResponse, negativeSearch);
 		sorter.addRowSorterListener(new RowSorterListener() {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {
@@ -729,6 +730,7 @@ public class CenterPanel extends JPanel {
 		inputPanel.add(searchInPath);
 		inputPanel.add(searchInRequest);
 		inputPanel.add(searchInResponse);	
+		inputPanel.add(negativeSearch);
 		JOptionPane.showConfirmDialog(parent, inputPanel, "Table Filters", JOptionPane.CLOSED_OPTION);
 		
 	}

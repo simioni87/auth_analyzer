@@ -13,12 +13,15 @@ public class FileTypeFilter extends RequestFilter {
 	}
 	
 	@Override
-	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {
-		if(onOffButton.isSelected() && responseInfo != null) {
-			String url = requestInfo.getUrl().toString().toLowerCase();
+	public boolean filterRequest(IBurpExtenderCallbacks callbacks, int toolFlag, IRequestInfo requestInfo, IResponseInfo responseInfo) {		
+		if(onOffButton.isSelected()) {
+			String url = requestInfo.getUrl().getPath().toString().toLowerCase();
 			for(String fileType : stringLiterals) {
-				if(url.endsWith(fileType.toLowerCase()) && !fileType.equals("") || 
-						(fileType.toLowerCase().equals(responseInfo.getInferredMimeType().toLowerCase()) && !fileType.trim().equals(""))) {
+				if(url.endsWith(fileType.toLowerCase()) && !fileType.equals("")) {
+					incrementFiltered();
+					return true;
+				}
+				else if(responseInfo != null && fileType.toLowerCase().equals(responseInfo.getInferredMimeType().toLowerCase())) {
 					incrementFiltered();
 					return true;
 				}

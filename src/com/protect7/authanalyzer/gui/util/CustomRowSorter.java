@@ -17,7 +17,7 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 	
 	public CustomRowSorter(CenterPanel centerPanel, RequestTableModel tableModel, JCheckBox showOnlyMarked, JCheckBox showDuplicates, JCheckBox showBypassed, 
 			JCheckBox showPotentialBypassed, JCheckBox showNotBypassed, JCheckBox showNA, PlaceholderTextField filterText,
-			JCheckBox searchInPath, JCheckBox searchInRequest, JCheckBox searchInResponse) {
+			JCheckBox searchInPath, JCheckBox searchInRequest, JCheckBox searchInResponse, JCheckBox negativeSearch) {
 		super(tableModel);
 		showOnlyMarked.addActionListener(e -> tableModel.fireTableDataChanged());
 		showDuplicates.addActionListener(e -> tableModel.fireTableDataChanged());
@@ -35,21 +35,23 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 			public boolean include(Entry<?, ?> entry) {
 				if(filterText.getText() != null && !filterText.getText().equals("")) {
 					centerPanel.toggleSearchButtonText();
-					boolean containsPattern = false;
+					boolean doShow = false;
 					if(searchInPath.isSelected()) {
-						if(entry.getStringValue(3).toString().contains(filterText.getText())) {
-							containsPattern = true;
+						boolean contained = entry.getStringValue(3).toString().contains(filterText.getText());
+						if((contained && !negativeSearch.isSelected()) || (!contained && negativeSearch.isSelected())) {
+							doShow = true;
 						}
 					}
-					if(searchInRequest.isSelected() && !containsPattern) {	
+					if(searchInRequest.isSelected() && !doShow) {	
 						try {
 							int id = Integer.parseInt(entry.getStringValue(0));
 							for (Session session : CurrentConfig.getCurrentConfig().getSessions()) {
 								AnalyzerRequestResponse analyzerRequestResponse = session.getRequestResponseMap().get(id);
 								if(analyzerRequestResponse.getRequestResponse().getRequest() != null) {
 									String response = new String(analyzerRequestResponse.getRequestResponse().getRequest());
-									if(response.contains(filterText.getText())) {
-										containsPattern = true;
+									boolean contained = response.contains(filterText.getText());
+									if((contained && !negativeSearch.isSelected()) || (!contained && negativeSearch.isSelected())) {
+										doShow = true;
 										break;
 									}
 								}
@@ -59,15 +61,16 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 							e.printStackTrace();
 						}
 					}
-					if(searchInResponse.isSelected() && !containsPattern) {	
+					if(searchInResponse.isSelected() && !doShow) {	
 						try {
 							int id = Integer.parseInt(entry.getStringValue(0));
 							for (Session session : CurrentConfig.getCurrentConfig().getSessions()) {
 								AnalyzerRequestResponse analyzerRequestResponse = session.getRequestResponseMap().get(id);
 								if(analyzerRequestResponse.getRequestResponse().getResponse() != null) {
 									String response = new String(analyzerRequestResponse.getRequestResponse().getResponse());
-									if(response.contains(filterText.getText())) {
-										containsPattern = true;
+									boolean contained = response.contains(filterText.getText());
+									if((contained && !negativeSearch.isSelected()) || (!contained && negativeSearch.isSelected())) {
+										doShow = true;
 										break;
 									}
 								}
@@ -78,7 +81,7 @@ public class CustomRowSorter extends TableRowSorter<RequestTableModel> {
 						}
 					}
 					centerPanel.toggleSearchButtonText();
-					if(!containsPattern && (searchInPath.isSelected() || searchInResponse.isSelected() || searchInRequest.isSelected())) {
+					if(!doShow && (searchInPath.isSelected() || searchInResponse.isSelected() || searchInRequest.isSelected())) {
 						return false;
 					}
 				}
