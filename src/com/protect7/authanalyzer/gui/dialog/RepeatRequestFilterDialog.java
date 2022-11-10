@@ -85,6 +85,7 @@ public class RepeatRequestFilterDialog extends JDialog {
 				IHttpRequestResponse[] messages = getMessageToRepeat(selectedMessages, uniqueRequestsCheckbox.isSelected(), withResponseCheckbox.isSelected(), 
 						patternTextField.getText().trim(), methodTextField.getText());
 				GenericHelper.repeatRequests(messages, configurationPanel);
+				dispose();
 			}
 		});
 		

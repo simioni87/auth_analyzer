@@ -4,6 +4,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
+
+import com.protect7.authanalyzer.util.Globals;
+
 import burp.IHttpRequestResponse;
 
 public class Token {
@@ -119,7 +122,7 @@ public class Token {
 		return this.promptForInput;
 	}	
 	public String getHeaderInsertionPointName() {
-		return "§" + name + "§";
+		return Globals.INSERTION_POINT_IDENTIFIER + name + Globals.INSERTION_POINT_IDENTIFIER;
 	}
 	public boolean doReplaceAtLocation(TokenLocation tokenLocation) {
 		return getTokenLocationSet().contains(tokenLocation);
