@@ -18,6 +18,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
@@ -44,6 +45,7 @@ import com.protect7.authanalyzer.filter.PathFilter;
 import com.protect7.authanalyzer.filter.QueryFilter;
 import com.protect7.authanalyzer.filter.RequestFilter;
 import com.protect7.authanalyzer.filter.StatusCodeFilter;
+import com.protect7.authanalyzer.gui.dialog.SettingsDialog;
 import com.protect7.authanalyzer.gui.entity.SessionPanel;
 import com.protect7.authanalyzer.gui.entity.TokenPanel;
 import com.protect7.authanalyzer.gui.listener.CloneSessionListener;
@@ -203,6 +205,9 @@ public class ConfigurationPanel extends JPanel {
 
 		dropOriginalButton.addActionListener(e -> dropOriginalButtonPressed());
 		dropOriginalButton.setEnabled(false);
+		
+		JButton settingsButton = new JButton("Settings");
+		settingsButton.addActionListener(e -> new SettingsDialog(this));
 
 		setLayout(new GridBagLayout());
 		JPanel startStopButtonPanel = new JPanel();
@@ -222,6 +227,10 @@ public class ConfigurationPanel extends JPanel {
 		c1.gridx = 0;
 		c1.gridwidth = 2;
 		startStopButtonPanel.add(dropOriginalButton, c1);
+		c1.gridy = 3;
+		startStopButtonPanel.add(new JLabel(" "), c1);
+		c1.gridy = 4;
+		startStopButtonPanel.add(settingsButton, c1);
 		
 		
 		GridBagConstraints c = new GridBagConstraints();

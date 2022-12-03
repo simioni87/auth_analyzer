@@ -39,7 +39,7 @@ public class DataExporter {
 				for (MainColumn column : mainColumns) {
 					row.append("<"
 							+ column.getName().replace(" ", "_") + ">" + setIntoCDATA(getCellValue(column,
-									requestResponse.getId(), originalRequestInfo, originalRequestResponse))
+									requestResponse.getId(), originalRequestInfo, originalRequestResponse, requestResponse.getComment()))
 							+ "</" + column.getName().replace(" ", "_") + ">\n");
 				}
 				for (SessionColumn column : sessionColumns) {
@@ -127,7 +127,7 @@ public class DataExporter {
 				}
 				for (MainColumn column : mainColumns) {
 					row.append("<td><div>" + encodeHTML(
-							getCellValue(column, requestResponse.getId(), originalRequestInfo, originalRequestResponse))
+							getCellValue(column, requestResponse.getId(), originalRequestInfo, originalRequestResponse, requestResponse.getComment()))
 							+ "</div></td>");
 				}
 				for (SessionColumn column : sessionColumns) {
@@ -181,12 +181,14 @@ public class DataExporter {
 	}
 
 	private String getCellValue(MainColumn column, Integer id, IRequestInfo requestInfo,
-			IHttpRequestResponse requestResponse) {
+			IHttpRequestResponse requestResponse, String comment) {
 		switch (column) {
 		case ID:
 			return String.valueOf(id);
 		case METHOD:
 			return requestInfo.getMethod();
+		case COMMENT:
+			return comment;
 		case HOST:
 			return requestResponse.getHttpService().getHost();
 		case PATH:
@@ -245,7 +247,7 @@ public class DataExporter {
 
 	public enum MainColumn {
 
-		ID("ID"), METHOD("Method"), HOST("Host"), PATH("Path");
+		ID("ID"), METHOD("Method"), HOST("Host"), PATH("Path"), COMMENT("Comment");
 
 		private final String name;
 
