@@ -2,8 +2,11 @@ package com.protect7.authanalyzer.util;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import javax.swing.Timer;
 import com.protect7.authanalyzer.filter.RequestFilter;
@@ -104,4 +107,13 @@ public class GenericHelper {
 		}
 		return arrayAsString;
 	}
+	
+	public static JFrame getBurpFrame() {
+        for (Frame f : Frame.getFrames()) {
+            if (f.isVisible() && f.getTitle().startsWith(("Burp Suite"))) {
+                return (JFrame) f;
+            }
+        }
+        return null;
+    }
 }

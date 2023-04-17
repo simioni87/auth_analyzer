@@ -214,9 +214,7 @@ public class ConfigurationPanel extends JPanel {
 		startStopButtonPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c1 = new GridBagConstraints();
 		c1.fill = GridBagConstraints.BOTH;
-		c1.gridy = 0;
 		c1.gridx = 0;
-		c1.gridwidth = 2;
 		c1.insets = new Insets(10, 0, 0, 5);
 		c1.gridy = 1;
 		c1.gridwidth = 1;
@@ -231,7 +229,6 @@ public class ConfigurationPanel extends JPanel {
 		startStopButtonPanel.add(new JLabel(" "), c1);
 		c1.gridy = 4;
 		startStopButtonPanel.add(settingsButton, c1);
-		
 		
 		GridBagConstraints c = new GridBagConstraints();
 		c.gridx = 0;

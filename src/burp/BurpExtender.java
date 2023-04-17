@@ -10,6 +10,7 @@ import com.protect7.authanalyzer.controller.HttpListener;
 import com.protect7.authanalyzer.gui.main.MainPanel;
 import com.protect7.authanalyzer.gui.util.AuthAnalyzerMenu;
 import com.protect7.authanalyzer.util.DataStorageProvider;
+import com.protect7.authanalyzer.util.GenericHelper;
 import com.protect7.authanalyzer.util.Globals;
 
 public class BurpExtender implements IBurpExtender, ITab, IExtensionStateListener {
@@ -52,13 +53,11 @@ public class BurpExtender implements IBurpExtender, ITab, IExtensionStateListene
 			
 			@Override
 			public void run() {
-				if(SwingUtilities.getWindowAncestor(mainPanel) instanceof JFrame) {
-					JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(mainPanel);
-					if(parentFrame.getJMenuBar() != null) {
-						JMenuBar menuBar = parentFrame.getJMenuBar();
-						authAnalyzerMenu = new AuthAnalyzerMenu(Globals.EXTENSION_NAME);
-						menuBar.add(authAnalyzerMenu, menuBar.getMenuCount() - 1);
-					}
+				JFrame burpFrame = GenericHelper.getBurpFrame();
+				if(burpFrame != null) {
+					authAnalyzerMenu = new AuthAnalyzerMenu(Globals.EXTENSION_NAME);
+					JMenuBar burpMenuBar = burpFrame.getJMenuBar();
+					burpMenuBar.add(authAnalyzerMenu, burpMenuBar.getMenuCount() - 1);
 				}
 			}
 		});
