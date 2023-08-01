@@ -29,8 +29,7 @@ public class Token {
 	private final boolean caseSensitiveTokenName;
 	private final boolean addIfNotExists;
 	private final boolean urlEncoded;
-	
-
+	private String aliases = "";
 	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
 			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
@@ -71,6 +70,7 @@ public class Token {
 		this.caseSensitiveTokenName = builder.isCaseSensitiveTokenName();
 		this.addIfNotExists = builder.isAddIfNotExists();
 		this.urlEncoded = builder.isUrlEncoded();
+		this.aliases = builder.getAliases();
 	}
 	
 	public String getName() {
@@ -96,6 +96,9 @@ public class Token {
 	}
 	public void setValue(String value) {
 		this.value = value;
+	}
+	public String getAliases() {
+		return aliases;
 	}
 	public String getExtractName() {
 		return extractName;

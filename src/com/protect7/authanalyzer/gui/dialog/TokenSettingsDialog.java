@@ -7,6 +7,10 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JTextField;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
+
 import com.protect7.authanalyzer.entities.AutoExtractLocation;
 import com.protect7.authanalyzer.entities.FromToExtractLocation;
 import com.protect7.authanalyzer.entities.TokenLocation;
@@ -15,6 +19,7 @@ import com.protect7.authanalyzer.gui.entity.TokenPanel;
 public class TokenSettingsDialog {
 	
 	public TokenSettingsDialog(TokenPanel tokenPanel) {
+		JTextField aliases = null;
 		JPanel inputPanel = new JPanel();
 		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
 		JPanel extractPanel = new JPanel();
@@ -128,6 +133,17 @@ public class TokenSettingsDialog {
 	    			});
 	    			extractPanel.add(locationCheckBox);
 	    		}
+
+				// add parameter aliases
+				extractPanel.add(new JLabel(" "));
+				extractPanel.add(new JSeparator(JSeparator.HORIZONTAL));
+				extractPanel.add(new JLabel(" "));
+				JLabel paramAliases = new JLabel("<html><strong>Parameter Aliases</strong></html>");
+				paramAliases.putClientProperty("html.disable", null);
+				extractPanel.add(paramAliases);
+				aliases = new JTextField(tokenPanel.getAliases(),16);
+				extractPanel.add(aliases);
+
 			}
 	    	if(tokenPanel.isSelectedItem(tokenPanel.OPTION_FROM_TO_STRING)) {
 	    		final ArrayList<JCheckBox> locationCheckBoxList = new ArrayList<JCheckBox>();
@@ -170,6 +186,9 @@ public class TokenSettingsDialog {
 		}
 		setChildComponentsEnabled(extractPanel, !removeTokenCheckBox.isSelected());
 		JOptionPane.showConfirmDialog(tokenPanel, inputPanel, "Parameter Settings for " + tokenPanel.getTokenName(), JOptionPane.CLOSED_OPTION);
+
+		// update Aliases on JOptionPane close
+		tokenPanel.setAliases(aliases.getText());
 	}
 	
 	private void setChildComponentsEnabled(JPanel parent, boolean enabled) {

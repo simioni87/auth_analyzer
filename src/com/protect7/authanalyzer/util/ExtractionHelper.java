@@ -77,6 +77,10 @@ public class ExtractionHelper {
 			if(csrfValue != null && !csrfValue.equals("")) {
 				return csrfValue;
 			}
+			csrfValue = element.attr("content");
+			if(csrfValue != null && !csrfValue.equals("")) {
+				return csrfValue;
+			}
 		}
 		return null;
 	}

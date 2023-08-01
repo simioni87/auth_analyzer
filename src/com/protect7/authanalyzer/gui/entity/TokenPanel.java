@@ -49,6 +49,7 @@ public class TokenPanel extends JPanel {
 	private boolean addTokenIfNotExists = false;
 	private boolean removeToken = false;
 	private boolean urlEncoded = true;
+	public String aliases = "";
 	
 	public TokenPanel() {
 		setLayout(new GridBagLayout());
@@ -382,6 +383,13 @@ public class TokenPanel extends JPanel {
 
 	public void setCaseSensitiveTokenName(boolean caseSensitiveTokenName) {
 		this.caseSensitiveTokenName = caseSensitiveTokenName;
+	}
+
+	public String getAliases() {
+		return this.aliases;
+	}
+	public void setAliases(String aliases) {
+		this.aliases = aliases;
 	}
 
 	public boolean isAddTokenIfNotExists() {

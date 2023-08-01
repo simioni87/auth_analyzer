@@ -1,6 +1,9 @@
 package com.protect7.authanalyzer.util;
 
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -217,8 +220,17 @@ public class RequestModifHelper {
 		byte[] modifiedRequest = request;
 		boolean tokenExists = false;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
-			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
-					(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
+			// check if alias
+			boolean isAlias = false;
+			List<String> aliases = Arrays.asList(token.getAliases());
+			for(String alias : aliases){
+				if(parameter.getName().equals(alias)){
+					isAlias = true;
+					break;
+				}
+			}
+
+			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) || (!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase())) || isAlias ) {
 				tokenExists = true;
 				String paramLocation = null;
 				// Helper can only handle URL, COOKIE and BODY Parameters
