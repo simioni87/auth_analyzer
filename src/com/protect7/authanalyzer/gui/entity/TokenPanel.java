@@ -63,7 +63,7 @@ public class TokenPanel extends JPanel {
 		nameTextField = new PlaceholderTextArea(1, 20);
 		nameTextField.setToolTipText(TOOLTIP_EXTRACT_TOKEN_NAME);
 		nameTextField.putClientProperty("html.disable", null);
-		nameTextField.setPlaceholder("Enter Parameter Name...");
+		nameTextField.setPlaceholder("Enter Parameter Name (Wildcard *)...");
 		add(nameTextField, c);
 		
 		c.gridx++;

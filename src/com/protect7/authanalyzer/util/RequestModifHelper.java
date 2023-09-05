@@ -217,7 +217,15 @@ public class RequestModifHelper {
 		byte[] modifiedRequest = request;
 		boolean tokenExists = false;
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
-			if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
+			//Wildcard Replace for standard GET and POST if token name equals '*' and has static replace
+			if(token.getName().equals("*") && token.isStaticValue() && (parameter.getType() == IParameter.PARAM_URL || parameter.getType() == IParameter.PARAM_BODY)) {
+				IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(parameter.getName(),
+						token.getValue(), parameter.getType());
+				modifiedRequest = BurpExtender.callbacks.getHelpers().updateParameter(modifiedRequest,
+						modifiedParameter);
+			}
+			//Continue with standard procedure
+			else if (parameter.getName().equals(token.getName()) || parameter.getName().equals(token.getUrlEncodedName()) ||
 					(!token.isCaseSensitiveTokenName() && parameter.getName().toLowerCase().equals(token.getName().toLowerCase()))) {
 				tokenExists = true;
 				String paramLocation = null;
@@ -264,14 +272,7 @@ public class RequestModifHelper {
 						if (parameter.getType() == IParameter.PARAM_JSON) {
 							modifiedRequest = getModifiedJsonRequest(request, originalRequestInfo, token);
 						} else {
-							// Do not URL encode Parameter Value if the Parameter is a Cookie
-							String parameterValue;
-							if(parameter.getType() == IParameter.PARAM_COOKIE) {
-								parameterValue = token.getValue();
-							}
-							else {
-								parameterValue = token.getValue();
-							}
+							String parameterValue = token.getValue();
 							IParameter modifiedParameter = BurpExtender.callbacks.getHelpers().buildParameter(parameter.getName(),
 									parameterValue, parameter.getType());
 							modifiedRequest = BurpExtender.callbacks.getHelpers().updateParameter(modifiedRequest,
@@ -366,8 +367,6 @@ public class RequestModifHelper {
 	private static void addJsonToken(JsonElement jsonElement, Token token) {
 		if (jsonElement.isJsonObject()) {
 			putJsonValue(jsonElement.getAsJsonObject(), token.getName(), token);
-			//JsonObject jsonObject = jsonElement.getAsJsonObject();
-			//jsonObject.addProperty(token.getName(), token.getValue());
 		}
 	}
 	
