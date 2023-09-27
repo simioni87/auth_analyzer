@@ -68,6 +68,15 @@ public class TokenSettingsDialog {
 			tokenPanel.setUrlEncoded(urlEncodeTokenValue.isSelected());
 		});
 		inputPanel.add(urlEncodeTokenValue);
+
+		// URL Decode Value
+		JCheckBox urlDecodeTokenValue = new JCheckBox("URL Decode Value");
+		urlDecodeTokenValue.setSelected(tokenPanel.isUrlDecoded());
+		urlDecodeTokenValue.setEnabled(!removeTokenCheckBox.isSelected());
+		urlDecodeTokenValue.addActionListener(e -> {
+			tokenPanel.setUrlDecoded(urlDecodeTokenValue.isSelected());
+		});
+		inputPanel.add(urlDecodeTokenValue);
 		
 		JCheckBox caseSensitiveTokenNameCheckBox = new JCheckBox("Case Sensitive Parameter Name");
 		caseSensitiveTokenNameCheckBox.setSelected(tokenPanel.isCaseSensitiveTokenName());

@@ -20,6 +20,7 @@ public class TokenBuilder {
 	private boolean caseSensitiveTokenName = true;
 	private boolean addIfNotExists = false;
 	private boolean urlEncoded = true;
+	private boolean urlDecoded = false;
 	private String aliases = "";
 	
 	public Token build() {
@@ -146,4 +147,11 @@ public class TokenBuilder {
 		return this;
 	}
 
+	public boolean isUrlDecoded() {
+		return urlDecoded;
+	}
+	public TokenBuilder setIsUrlDecoded(boolean urlDecoded) {
+		this.urlDecoded = urlDecoded;
+		return this;
+	}
 }

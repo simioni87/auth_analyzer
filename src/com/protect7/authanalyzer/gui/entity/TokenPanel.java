@@ -49,6 +49,7 @@ public class TokenPanel extends JPanel {
 	private boolean addTokenIfNotExists = false;
 	private boolean removeToken = false;
 	private boolean urlEncoded = true;
+	private boolean urlDecoded = false;
 	public String aliases = "";
 	
 	public TokenPanel() {
@@ -406,5 +407,13 @@ public class TokenPanel extends JPanel {
 
 	public void setUrlEncoded(boolean urlEncoded) {
 		this.urlEncoded = urlEncoded;
+	}
+
+	public boolean isUrlDecoded() {
+		return urlDecoded;
+	}
+
+	public void setUrlDecoded(boolean urlDecoded) {
+		this.urlDecoded = urlDecoded;
 	}
 }

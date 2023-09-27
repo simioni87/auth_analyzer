@@ -2,6 +2,7 @@ package com.protect7.authanalyzer.entities;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
@@ -29,6 +30,7 @@ public class Token {
 	private final boolean caseSensitiveTokenName;
 	private final boolean addIfNotExists;
 	private final boolean urlEncoded;
+	private boolean urlDecoded;
 	private String aliases = "";
 	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
@@ -70,6 +72,7 @@ public class Token {
 		this.caseSensitiveTokenName = builder.isCaseSensitiveTokenName();
 		this.addIfNotExists = builder.isAddIfNotExists();
 		this.urlEncoded = builder.isUrlEncoded();
+		this.urlDecoded = builder.isUrlDecoded();
 		this.aliases = builder.getAliases();
 	}
 	
@@ -88,6 +91,13 @@ public class Token {
 		if(urlEncoded && value != null) {
 			try {
 				return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+		}
+		if(urlDecoded && value != null) {
+			try {
+				return URLDecoder.decode(value, StandardCharsets.UTF_8.toString());
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
