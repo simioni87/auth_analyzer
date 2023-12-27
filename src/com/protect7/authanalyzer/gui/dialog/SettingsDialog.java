@@ -1,26 +1,15 @@
 package com.protect7.authanalyzer.gui.dialog;
 
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.WindowConstants;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import com.protect7.authanalyzer.gui.util.PlaceholderTextField;
 import com.protect7.authanalyzer.util.Globals;
 import com.protect7.authanalyzer.util.Setting;
 import com.protect7.authanalyzer.util.Setting.Item;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 public class SettingsDialog extends JDialog {
 	
@@ -80,14 +69,8 @@ public class SettingsDialog extends JDialog {
 			((SpinnerNumberModel) integerField.getModel()).setMaximum(item.getRange().getMaximum());
 			((SpinnerNumberModel) integerField.getModel()).setStepSize(1);
 			int currentValue = Setting.getValueAsInteger(item);
-			integerField.setValue(new Integer(currentValue));
-			integerField.addChangeListener(new ChangeListener() {
-				
-				@Override
-				public void stateChanged(ChangeEvent e) {
-					Setting.setValue(item, String.valueOf(integerField.getValue()));
-				}
-			});
+			integerField.setValue(currentValue);
+			integerField.addChangeListener(e -> Setting.setValue(item, String.valueOf(integerField.getValue())));
 			add(integerField);
 		}
 	}

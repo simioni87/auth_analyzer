@@ -1,6 +1,7 @@
 package com.protect7.authanalyzer.gui.dialog;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import javax.swing.BoxLayout;
@@ -16,6 +17,7 @@ import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.gui.main.CenterPanel;
 import com.protect7.authanalyzer.util.CurrentConfig;
 import com.protect7.authanalyzer.util.DataExporter;
+import org.oxff.util.JarResourceExtractor;
 
 public class DataExportDialog {
 
@@ -25,14 +27,18 @@ public class DataExportDialog {
 		
 		inputPanel.add(new JLabel("Choose the format of the export."));
     	JRadioButton htmlReport = new JRadioButton("HTML Export", true);
+		JRadioButton interactiveHTMLReport = new JRadioButton("Inter active HTML Export");
     	JRadioButton xmlReport = new JRadioButton("XML Export");
     	ButtonGroup group = new ButtonGroup();
     	group.add(htmlReport);
+		group.add(interactiveHTMLReport);
     	group.add(xmlReport);
     	inputPanel.add(htmlReport);
+		inputPanel.add(interactiveHTMLReport);
     	inputPanel.add(xmlReport);
     	JCheckBox doBase64Encode = new JCheckBox("Base64-encode requests and responses", true);
     	doBase64Encode.setEnabled(false);
+		interactiveHTMLReport.addActionListener(e -> doBase64Encode.setEnabled(false));
     	htmlReport.addActionListener(e -> doBase64Encode.setEnabled(false));
     	xmlReport.addActionListener(e -> doBase64Encode.setEnabled(true));
     	inputPanel.add(doBase64Encode);
@@ -83,8 +89,10 @@ public class DataExportDialog {
 			JFileChooser chooser = new JFileChooser();
 			if(htmlReport.isSelected()) {
 				chooser.setSelectedFile(new File("Auth_Analyzer_Report.html"));
-			}
-			else {
+			} else if (interactiveHTMLReport.isSelected()) {
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				chooser.setSelectedFile(new File("interActiveHTMLReport"));
+			} else {
 				chooser.setSelectedFile(new File("Auth_Analyzer_Report.xml"));
 			}
 			int status = chooser.showSaveDialog(centerPanel);
@@ -99,11 +107,12 @@ public class DataExportDialog {
 					else {
 						newFileName = file.getAbsolutePath();
 					}
-					if(htmlReport.isSelected()) {
-						newFileName = newFileName + ".html";
-					}
-					else {
-						newFileName = newFileName + ".xml";
+					if(htmlReport.isSelected() || xmlReport.isSelected()) {
+						if (htmlReport.isSelected()){
+							newFileName = newFileName + ".html";
+						}else{
+							newFileName = newFileName + ".xml";
+						}
 					}
 					file = new File(newFileName);
 				}
@@ -112,8 +121,16 @@ public class DataExportDialog {
 				if(htmlReport.isSelected()) {
 					success = DataExporter.getDataExporter().createHTML(file, filteredRequestResponseList, CurrentConfig.getCurrentConfig().getSessions(), 
 							mainColumns, sessionColumns);
-				}
-				else {
+				} else if (interactiveHTMLReport.isSelected()) {
+					try {
+						JarResourceExtractor.extractResourcesTo(file.getAbsolutePath());
+						success = DataExporter.getDataExporter().createInteractiveHTMLData(file,
+								filteredRequestResponseList,
+								CurrentConfig.getCurrentConfig().getSessions());
+					}catch (IOException e) {
+						e.printStackTrace();
+					}
+				} else {
 					success = DataExporter.getDataExporter().createXML(file, filteredRequestResponseList, CurrentConfig.getCurrentConfig().getSessions(), 
 							mainColumns, sessionColumns, doBase64Encode.isSelected());
 				}
