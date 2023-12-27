@@ -19,6 +19,7 @@ import burp.IResponseInfo;
 import org.oxff.entities.ExportAuthAnalyzerDataItem;
 import org.oxff.entities.SessionHTTPData;
 import org.oxff.util.BurpSuiteHTTPDataHelper;
+import org.oxff.util.FileWriteUtil;
 
 public class DataExporter {
 
@@ -295,11 +296,7 @@ public class DataExporter {
 			String jsDataFilePath = file.getAbsolutePath() + separator + "interActiveHTMLReport" + separator + jsDataFileName;
 
 			try {
-				File jsFile = new File(jsDataFilePath);
-				FileWriter writer = new FileWriter(jsFile);
-				writer.write(dataItemListString);
-				writer.write("\r\n");
-				writer.close();
+				FileWriteUtil.writeLargeStringToFile(dataItemListString, jsDataFilePath, 4096);
 			}catch (IOException ioException){
 				BurpExtender.stderr.println(ioException.getMessage());
 				return false;
