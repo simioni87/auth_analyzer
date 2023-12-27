@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumSet;
+import java.util.List;
+
+import com.alibaba.fastjson.JSON;
 import com.protect7.authanalyzer.entities.AnalyzerRequestResponse;
 import com.protect7.authanalyzer.entities.OriginalRequestResponse;
 import com.protect7.authanalyzer.entities.Session;
@@ -13,6 +16,9 @@ import burp.BurpExtender;
 import burp.IHttpRequestResponse;
 import burp.IRequestInfo;
 import burp.IResponseInfo;
+import org.oxff.entities.ExportAuthAnalyzerDataItem;
+import org.oxff.entities.SessionHTTPData;
+import org.oxff.util.BurpSuiteHTTPDataHelper;
 
 public class DataExporter {
 
@@ -243,6 +249,132 @@ public class DataExporter {
 		default:
 			return null;
 		}
+	}
+
+	public boolean createInteractiveHTMLData(File file, ArrayList<OriginalRequestResponse> originalRequestResponseList,
+											 ArrayList<Session> sessions) {
+		String separator = File.separator;
+		try{
+			// create dir to save files
+//            File folder = new File(file.getAbsoluteFile().getPath());
+//
+//            if (!folder.exists()) {
+//                boolean created = folder.mkdirs(); // 创建文件夹及其父文件夹
+//                if (created) {
+//                    System.out.println("文件夹创建成功");
+//                } else {
+//                    System.out.println("文件夹创建失败");
+//                }
+//            } else {
+//                System.out.println("文件夹已存在");
+//            }
+
+			// write static file to dir
+
+			// write data to javascript file struct to dir
+
+			//////////////////////////
+			// create data struct
+			//////////////////////////
+			List<ExportAuthAnalyzerDataItem> exportAuthAnalyzerDataItemList = createAuthAnalyzerData(originalRequestResponseList, sessions);
+			if (exportAuthAnalyzerDataItemList == null ||  exportAuthAnalyzerDataItemList.size() == 0){
+				return false;
+			}
+
+//            Gson gson = new Gson();
+//            String json = gson.toJson(exportAuthAnalyzerDataItemList);
+//            BurpExtender.callbacks.printOutput("json: " + json);
+//            JSONObject jsonObject = new JSONObject();
+//            jsonObject.put("dataItemList", exportAuthAnalyzerDataItemList);
+
+			String jsonString = JSON.toJSONString(exportAuthAnalyzerDataItemList);
+			String dataItemListString = "var dataItemList = " + jsonString + ";";
+			BurpExtender.callbacks.printOutput("jsonString: " + jsonString);
+
+			String jsDataFileName =  "data.js";
+			String jsDataFilePath = file.getAbsolutePath() + separator + "interActiveHTMLReport" + separator + jsDataFileName;
+
+			try {
+				File jsFile = new File(jsDataFilePath);
+				FileWriter writer = new FileWriter(jsFile);
+				writer.write(dataItemListString);
+				writer.write("\r\n");
+				writer.close();
+			}catch (IOException ioException){
+				BurpExtender.stderr.println(ioException.getMessage());
+				return false;
+			}
+
+
+//            String encodedJSON = encodeHTML(json);
+//            BurpExtender.stdout.println("encodedJSON: " + encodedJSON);
+
+
+		}catch (Exception e) {
+			BurpExtender.callbacks.printError("Error. Can not write data to interactive HTML page file. " + e.getMessage());
+			return false;
+		}
+		return true;
+	}
+
+	public List<ExportAuthAnalyzerDataItem> createAuthAnalyzerData(ArrayList<OriginalRequestResponse> originalRequestResponseList,
+																   ArrayList<Session> sessions){
+
+		List<ExportAuthAnalyzerDataItem> authAnalyzerDataItemList = new ArrayList<>();
+		for (OriginalRequestResponse originalRequestResponse : originalRequestResponseList) {
+			IHttpRequestResponse rawHttpRequestResponse = originalRequestResponse.getRequestResponse();
+			int id = originalRequestResponse.getId();
+			String method = originalRequestResponse.getMethod();
+			String host = originalRequestResponse.getHost();
+			int port = rawHttpRequestResponse.getHttpService().getPort();
+			String path = originalRequestResponse.getUrl();
+			String comment = originalRequestResponse.getComment();
+			if (comment == null || comment.isEmpty()){
+				comment = "None";
+			}
+
+			IRequestInfo requestInfo = BurpExtender.helpers.analyzeRequest(rawHttpRequestResponse);
+			List<String> requestHeaderList = requestInfo.getHeaders();
+			byte[] requestBodyBytes = BurpSuiteHTTPDataHelper.getRequestBodyBytes(rawHttpRequestResponse);
+			int requestContentLength = requestBodyBytes.length;
+
+			byte[] responseBytes = rawHttpRequestResponse.getResponse();
+			if (responseBytes == null || responseBytes.length == 0){
+				continue;
+			}
+			IResponseInfo responseInfo = BurpExtender.helpers.analyzeResponse(responseBytes);
+			List<String> responseHeaderList = responseInfo.getHeaders();
+			byte[] responseBodyBytes = BurpSuiteHTTPDataHelper.getResponseBodyBytes(rawHttpRequestResponse);
+
+			int responseContentLength = 0;
+			int responseStatusCode = responseInfo.getStatusCode();
+			if (responseBodyBytes == null || responseBodyBytes.length == 0){
+				responseBodyBytes = new byte[0];
+			}else{
+				responseContentLength =  responseBodyBytes.length;
+			}
+
+			ExportAuthAnalyzerDataItem  authAnalyzerDataItem = new ExportAuthAnalyzerDataItem(rawHttpRequestResponse,id, method, host, port,
+					path, requestHeaderList, requestBodyBytes, requestContentLength, responseHeaderList,
+					responseBodyBytes, responseContentLength, responseStatusCode, comment);
+
+			List<SessionHTTPData> sessionHTTPDataList = new ArrayList<>();
+			for (Session session : sessions) {
+				AnalyzerRequestResponse sessionRequestResponse = session.getRequestResponseMap().get(originalRequestResponse.getId());
+				IHttpRequestResponse sessionHttpRequestResponse = sessionRequestResponse.getRequestResponse();
+				BypassConstants status = sessionRequestResponse.getStatus();
+				SessionHTTPData sessionHTTPData = BurpSuiteHTTPDataHelper.createSessionsHTTPData(session.getName(), sessionHttpRequestResponse, status);
+				sessionHTTPDataList.add(sessionHTTPData);
+			}
+
+			authAnalyzerDataItem.setSessionsHTTPDataList(sessionHTTPDataList);
+
+			authAnalyzerDataItemList.add(authAnalyzerDataItem);
+
+
+		}
+
+		return authAnalyzerDataItemList;
 	}
 
 	public enum MainColumn {

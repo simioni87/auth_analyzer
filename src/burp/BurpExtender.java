@@ -1,6 +1,7 @@
 package burp;
 
 import java.awt.Component;
+import java.io.PrintWriter;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -19,11 +20,17 @@ public class BurpExtender implements IBurpExtender, ITab, IExtensionStateListene
 	private JMenu authAnalyzerMenu = null;
 	public static IBurpExtenderCallbacks callbacks;
 	public static JTabbedPane burpTabbedPane = null;
+	public static IExtensionHelpers helpers;
+	public static PrintWriter stdout;
+	public static PrintWriter stderr;
 
 	@Override
 	public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
 		BurpExtender.callbacks = callbacks;
 		callbacks.setExtensionName(Globals.EXTENSION_NAME);
+		helpers = callbacks.getHelpers();
+		stdout = new PrintWriter(callbacks.getStdout(), true);
+		stderr = new PrintWriter(callbacks.getStderr(), true);
 		mainPanel = new MainPanel();
 		callbacks.addSuiteTab(this);
 		addAuthAnalyzerMenu();
@@ -34,6 +41,7 @@ public class BurpExtender implements IBurpExtender, ITab, IExtensionStateListene
 		callbacks.printOutput(Globals.EXTENSION_NAME + " successfully started");
 		callbacks.printOutput("Version " + Globals.VERSION);
 		callbacks.printOutput("Created by Simon Reinhart");
+		callbacks.printOutput("Enhanced features by org 0xff");
 		callbacks.printOutput("Protect7 GmbH");
 		callbacks.printOutput("www.protect7.com");
 	}
