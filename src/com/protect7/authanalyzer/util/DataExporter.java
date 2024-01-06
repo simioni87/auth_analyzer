@@ -21,6 +21,8 @@ import org.oxff.entities.SessionHTTPData;
 import org.oxff.util.BurpSuiteHTTPDataHelper;
 import org.oxff.util.FileWriteUtil;
 
+import javax.swing.*;
+
 public class DataExporter {
 
 	private static DataExporter mInstance = new DataExporter();
@@ -252,41 +254,19 @@ public class DataExporter {
 		}
 	}
 
-	public boolean createInteractiveHTMLData(File file, ArrayList<OriginalRequestResponse> originalRequestResponseList,
+	public void createInteractiveHTMLData(File file, ArrayList<OriginalRequestResponse> originalRequestResponseList,
 											 ArrayList<Session> sessions) {
 		String separator = File.separator;
 		try{
-			// create dir to save files
-//            File folder = new File(file.getAbsoluteFile().getPath());
-//
-//            if (!folder.exists()) {
-//                boolean created = folder.mkdirs(); // 创建文件夹及其父文件夹
-//                if (created) {
-//                    System.out.println("文件夹创建成功");
-//                } else {
-//                    System.out.println("文件夹创建失败");
-//                }
-//            } else {
-//                System.out.println("文件夹已存在");
-//            }
-
-			// write static file to dir
-
-			// write data to javascript file struct to dir
-
 			//////////////////////////
 			// create data struct
 			//////////////////////////
 			List<ExportAuthAnalyzerDataItem> exportAuthAnalyzerDataItemList = createAuthAnalyzerData(originalRequestResponseList, sessions);
 			if (exportAuthAnalyzerDataItemList == null ||  exportAuthAnalyzerDataItemList.size() == 0){
-				return false;
+				BurpExtender.callbacks.printError("Error. Can not create data for interactive HTML page.");
+				JOptionPane.showMessageDialog(null, "Error. Can not create data for interactive HTML page.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
 			}
-
-//            Gson gson = new Gson();
-//            String json = gson.toJson(exportAuthAnalyzerDataItemList);
-//            BurpExtender.callbacks.printOutput("json: " + json);
-//            JSONObject jsonObject = new JSONObject();
-//            jsonObject.put("dataItemList", exportAuthAnalyzerDataItemList);
 
 			String jsonString = JSON.toJSONString(exportAuthAnalyzerDataItemList);
 			String dataItemListString = "var dataItemList = " + jsonString + ";";
@@ -299,20 +279,18 @@ public class DataExporter {
 				FileWriteUtil.writeLargeStringToFile(dataItemListString, jsDataFilePath, 4096);
 			}catch (IOException ioException){
 				BurpExtender.stderr.println(ioException.getMessage());
-				return false;
-			}
+				JOptionPane.showMessageDialog(null, "Error. Can not write data to interactive HTML page file.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
 
 
 //            String encodedJSON = encodeHTML(json);
 //            BurpExtender.stdout.println("encodedJSON: " + encodedJSON);
 
-
 		}catch (Exception e) {
 			BurpExtender.callbacks.printError("Error. Can not write data to interactive HTML page file. " + e.getMessage());
-			return false;
+			JOptionPane.showMessageDialog(null, "Error. Can not write data to interactive HTML page file.", "Error", JOptionPane.ERROR_MESSAGE);
 		}
-		return true;
-	}
+    }
 
 	public List<ExportAuthAnalyzerDataItem> createAuthAnalyzerData(ArrayList<OriginalRequestResponse> originalRequestResponseList,
 																   ArrayList<Session> sessions){
