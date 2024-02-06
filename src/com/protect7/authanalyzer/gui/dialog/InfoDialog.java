@@ -32,18 +32,6 @@ public class InfoDialog extends JDialog {
 		add(title);
 		add(new JLabel("Version: " + Globals.VERSION));
 		add(new JLabel("Developed by: Simon Reinhart"));
-		ImageIcon p7logo = new ImageIcon(this.getClass().getClassLoader().getResource("p7_logo.png"));
-		JLabel companyLabel = new JLabel("Company: ");
-		companyLabel.setHorizontalTextPosition(JLabel.LEFT);
-		companyLabel.setIcon(p7logo);
-		companyLabel.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				openWebsite("https://www.protect7.com");
-			}
-		});
-		add(companyLabel);
-		
 		add(new JSeparator());
 		
 		JButton helpButton = new JButton("Help");
