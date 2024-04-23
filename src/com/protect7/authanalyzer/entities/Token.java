@@ -2,6 +2,7 @@ package com.protect7.authanalyzer.entities;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
@@ -29,8 +30,8 @@ public class Token {
 	private final boolean caseSensitiveTokenName;
 	private final boolean addIfNotExists;
 	private final boolean urlEncoded;
-	
-
+	private boolean urlDecoded;
+	private String aliases = "";
 	
 	public Token(String name, EnumSet<TokenLocation> tokenLocationSet, EnumSet<AutoExtractLocation> autoExtractLocationSet, 
 			EnumSet<FromToExtractLocation> fromToExtractLocationSet, String value, String extractName, String grepFromString, 
@@ -71,6 +72,8 @@ public class Token {
 		this.caseSensitiveTokenName = builder.isCaseSensitiveTokenName();
 		this.addIfNotExists = builder.isAddIfNotExists();
 		this.urlEncoded = builder.isUrlEncoded();
+		this.urlDecoded = builder.isUrlDecoded();
+		this.aliases = builder.getAliases();
 	}
 	
 	public String getName() {
@@ -92,10 +95,20 @@ public class Token {
 				e.printStackTrace();
 			}
 		}
+		if(urlDecoded && value != null) {
+			try {
+				return URLDecoder.decode(value, StandardCharsets.UTF_8.toString());
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+		}
 		return value;
 	}
 	public void setValue(String value) {
 		this.value = value;
+	}
+	public String getAliases() {
+		return aliases;
 	}
 	public String getExtractName() {
 		return extractName;

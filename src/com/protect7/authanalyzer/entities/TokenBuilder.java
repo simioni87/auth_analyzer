@@ -5,7 +5,7 @@ import java.util.EnumSet;
 public class TokenBuilder {
 	
 	private String name = null;
-	private String value = null;;
+	private String value = null;
 	private String extractName = null;
 	private String grepFromString = null;
 	private String grepToString = null;
@@ -20,6 +20,8 @@ public class TokenBuilder {
 	private boolean caseSensitiveTokenName = true;
 	private boolean addIfNotExists = false;
 	private boolean urlEncoded = true;
+	private boolean urlDecoded = false;
+	private String aliases = "";
 	
 	public Token build() {
 		return new Token(this);
@@ -37,6 +39,13 @@ public class TokenBuilder {
 	}
 	public TokenBuilder setValue(String value) {
 		this.value = value;
+		return this;
+	}
+	public String getAliases() {
+		return this.aliases;
+	}
+	public TokenBuilder setAliases(String value) {
+		this.aliases = value;
 		return this;
 	}
 	public String getExtractName() {
@@ -138,4 +147,11 @@ public class TokenBuilder {
 		return this;
 	}
 
+	public boolean isUrlDecoded() {
+		return urlDecoded;
+	}
+	public TokenBuilder setIsUrlDecoded(boolean urlDecoded) {
+		this.urlDecoded = urlDecoded;
+		return this;
+	}
 }

@@ -570,6 +570,7 @@ public class ConfigurationPanel extends JPanel {
 						.setIsCaseSensitiveTokenName(tokenPanel.isCaseSensitiveTokenName())
 						.setIsAddIfNotExists(tokenPanel.isAddTokenIfNotExists())
 						.setIsUrlEncoded(tokenPanel.isUrlEncoded())
+						.setAliases(tokenPanel.getAliases())
 						.build();
 				tokenList.add(token);
 			}
