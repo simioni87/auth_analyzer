@@ -104,6 +104,16 @@ public class TokenSettingsDialog {
 			inputPanel.add(locationCheckBox);
 		}
 		inputPanel.add(extractPanel);
+		
+		// add parameter aliases
+		inputPanel.add(new JLabel(" "));
+		inputPanel.add(new JSeparator(JSeparator.HORIZONTAL));
+		inputPanel.add(new JLabel(" "));
+		JLabel paramAliases = new JLabel("<html><strong>Parameter Aliases (Comma seperated)</strong></html>");
+		paramAliases.putClientProperty("html.disable", null);
+		inputPanel.add(paramAliases);
+		aliases = new JTextField(tokenPanel.getAliases(),16);
+		inputPanel.add(aliases);
 			
 		removeTokenCheckBox.addActionListener(e -> {
 			tokenPanel.setFieldsEnabledDisabled();
@@ -142,16 +152,6 @@ public class TokenSettingsDialog {
 	    			});
 	    			extractPanel.add(locationCheckBox);
 	    		}
-
-				// add parameter aliases
-				extractPanel.add(new JLabel(" "));
-				extractPanel.add(new JSeparator(JSeparator.HORIZONTAL));
-				extractPanel.add(new JLabel(" "));
-				JLabel paramAliases = new JLabel("<html><strong>Parameter Aliases</strong></html>");
-				paramAliases.putClientProperty("html.disable", null);
-				extractPanel.add(paramAliases);
-				aliases = new JTextField(tokenPanel.getAliases(),16);
-				extractPanel.add(aliases);
 
 			}
 	    	if(tokenPanel.isSelectedItem(tokenPanel.OPTION_FROM_TO_STRING)) {

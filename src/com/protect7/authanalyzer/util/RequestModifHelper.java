@@ -222,9 +222,9 @@ public class RequestModifHelper {
 		for (IParameter parameter : originalRequestInfo.getParameters()) {
 			// check if alias
 			boolean isAlias = false;
-			List<String> aliases = Arrays.asList(token.getAliases());
+			String[] aliases = token.getAliases().split(",");
 			for(String alias : aliases){
-				if(parameter.getName().equals(alias)){
+				if(parameter.getName().equals(alias.trim())){
 					isAlias = true;
 					break;
 				}
