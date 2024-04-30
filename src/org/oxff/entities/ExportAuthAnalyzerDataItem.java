@@ -3,7 +3,6 @@ package org.oxff.entities;
 import burp.IHttpRequestResponse;
 import org.oxff.util.HttpMessageUtil;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -73,7 +72,7 @@ public class ExportAuthAnalyzerDataItem {
             requestBodyIsBase64 = true;
         } else {
             // Text data, convert bodyBytes to string with proper encoding
-            this.requestBody = new String(requestBodyBytes, determineCharset(requestHeaderList));
+            this.requestBody = new String(requestBodyBytes, StandardCharsets.UTF_8);
             requestBodyIsBase64 = false;
         }
 
@@ -95,7 +94,7 @@ public class ExportAuthAnalyzerDataItem {
             responseBodyIsBase64 = true;
         }else{
             // Text data, convert bodyBytes to string with proper encoding
-            this.responseBody = new String(responseBodyBytes, determineCharset(responseHeaderList));
+            this.responseBody = new String(responseBodyBytes, StandardCharsets.UTF_8);
             responseBodyIsBase64 = false;
         }
 
@@ -110,27 +109,6 @@ public class ExportAuthAnalyzerDataItem {
             }
         }
         return null;
-    }
-
-    private Charset determineCharset(List<String> headerList) {
-        // Try to detect the charset based on the Content-Type header
-        String contentTypeHeader = getHeaderValue(headerList, "Content-Type");
-        if (contentTypeHeader != null) {
-            String[] parts = contentTypeHeader.split(";");
-            for (String part : parts) {
-                if (part.trim().toLowerCase(Locale.ROOT).startsWith("charset=")) {
-                    String charsetName = part.trim().substring(8);
-                    try {
-                        return Charset.forName(charsetName);
-                    } catch (IllegalArgumentException e) {
-                        // Invalid charset name, continue to next part
-                    }
-                }
-            }
-        }
-
-        // Fallback to default charset if charset is not specified or invalid
-        return StandardCharsets.UTF_8;
     }
 
     public int getId() {
