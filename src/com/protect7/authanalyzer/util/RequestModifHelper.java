@@ -18,6 +18,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import java.util.regex.Pattern;
 import com.protect7.authanalyzer.entities.MatchAndReplace;
 import com.protect7.authanalyzer.entities.Session;
 import com.protect7.authanalyzer.entities.Token;
@@ -204,11 +205,20 @@ public class RequestModifHelper {
 			try {
 				String requestAsString = new String(request);
 				for(MatchAndReplace matchAndReplace : session.getMatchAndReplaceList()) {
-					int endIndex = requestAsString.indexOf(matchAndReplace.getMatch());
-					while(endIndex != -1) {
-						requestAsString = requestAsString.substring(0, endIndex) + matchAndReplace.getReplace()
-						+ requestAsString.substring(endIndex + matchAndReplace.getMatch().length(), requestAsString.length());
-						endIndex = requestAsString.indexOf(matchAndReplace.getMatch(), endIndex);
+					if(matchAndReplace.isRegex()) {
+						try {
+							// Replacement may reference capturing groups via $1, $2, ...
+							requestAsString = Pattern.compile(matchAndReplace.getMatch()).matcher(requestAsString).replaceAll(matchAndReplace.getReplace());
+						} catch (Exception ex) {
+							BurpExtender.callbacks.printError("Invalid Match and Replace regex \"" + matchAndReplace.getMatch() + "\": " + ex.getMessage());
+						}
+					} else {
+						int endIndex = requestAsString.indexOf(matchAndReplace.getMatch());
+						while(endIndex != -1) {
+							requestAsString = requestAsString.substring(0, endIndex) + matchAndReplace.getReplace()
+							+ requestAsString.substring(endIndex + matchAndReplace.getMatch().length(), requestAsString.length());
+							endIndex = requestAsString.indexOf(matchAndReplace.getMatch(), endIndex);
+						}
 					}
 				}
 				return requestAsString.getBytes();
