@@ -192,6 +192,13 @@ For instance, we don’t want to process a static JavaScript file because it is 
 *	Exclude Paths (specified Paths can be excluded)
 *	Exclude Queries / Params (specified Queries / Params can be excluded) 
 
+## PwnFox Container Sessions
+If you browse an application with several roles at the same time by using [PwnFox](https://github.com/yeswehack/PwnFox) Firefox containers, the Auth Analyzer can keep the sessions up to date on its own. Enable `Auto Create / Update Sessions per PwnFox Container (X-PwnFox-Color)` in the settings.
+
+Every proxy request tagged with the `X-PwnFox-Color` header then creates (if the Auth Analyzer is stopped) or updates a session named after the container color, e.g. `red`, `blue` and `yellow`. The headers listed in `Header(s) to take over for PwnFox Sessions` (default `Authorization,Cookie`, any custom header name can be used) are taken over as `Header(s) to Replace` of that session. Logging in again in one of the containers therefore refreshes the corresponding session automatically, no copy and paste needed.
+
+New sessions are only created while the Auth Analyzer is stopped, since a running setup can not be extended. Sessions which already exist are updated at any time, running or not.
+
 ## Automated Response Analysis
 *	The Response will be declared as SAME if `Both Responses have same Response Body` and `same Response Code`
 *	The Response will be declared as SIMILAR if `Both Responses have same Response Code` and `Both Responses have +-5% of response body length`
@@ -199,6 +206,7 @@ For instance, we don’t want to process a static JavaScript file because it is 
 
 ## Features
 *	Session Creation for each user role
+*	Automatic Session Creation / Update per PwnFox Container Color
 *	Renaming and Removing a Session
 *	Clone a Session
 *	Set any amount of Headers to replace / add

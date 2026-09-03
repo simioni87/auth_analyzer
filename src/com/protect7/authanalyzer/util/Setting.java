@@ -78,7 +78,11 @@ public class Setting {
 		STATUS_SIMILAR_RESPONSE_CODE("true", Type.BOOLEAN, 
 				"(Condition 1) Respect Response Code to flag with Status SIMILAR", null),
 		STATUS_SIMILAR_RESPONSE_LENGTH("5", Type.INTEGER, 
-				"(Condition 2) Deviation of Content-Length in percent to flag with Status SIMILAR", new Range(1,100));
+				"(Condition 2) Deviation of Content-Length in percent to flag with Status SIMILAR", new Range(1,100)),
+		PWNFOX_AUTO_SESSION("false", Type.BOOLEAN, 
+				"Auto Create / Update Sessions per PwnFox Container (X-PwnFox-Color)", null),
+		PWNFOX_HEADERS_TO_EXTRACT("Authorization,Cookie", Type.ARRAY, 
+				"Header(s) to take over for PwnFox Sessions", null);
 		
 		private final String defaultValue;
 		private final Type type;
