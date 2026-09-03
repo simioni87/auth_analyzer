@@ -644,8 +644,9 @@ public class ConfigurationPanel extends JPanel {
 				for (JsonElement matchAndReplaceElement : matchAndReplaceArray) {
 					JsonObject matchAndReplaceObject = matchAndReplaceElement.getAsJsonObject();
 					if(matchAndReplaceObject.get("match") != null && matchAndReplaceObject.get("replace") != null) {
+						boolean mnrRegex = matchAndReplaceObject.get("regex") != null && matchAndReplaceObject.get("regex").getAsBoolean();
 						matchAndReplaceList.add(new MatchAndReplace(matchAndReplaceObject.get("match").getAsString(), 
-								matchAndReplaceObject.get("replace").getAsString()));
+								matchAndReplaceObject.get("replace").getAsString(), mnrRegex));
 					}
 				}
 				sessionPanel.setMatchAndReplaceList(matchAndReplaceList);

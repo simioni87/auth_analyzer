@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -32,12 +33,13 @@ public class MatchAndReplaceDialog extends JDialog {
 	private final String INFO_TEXT;
 	private final PlaceholderTextField matchInputText = new PlaceholderTextField(TEXTFIELD_WIDH);
 	private final PlaceholderTextField replaceInputText = new PlaceholderTextField(TEXTFIELD_WIDH);
+	private final JCheckBox regexCheckBox = new JCheckBox("Regex");
 	private final JButton addEntryButton = new JButton("\u2795");
 	private final JButton okButton = new JButton("OK");
 	
 	public MatchAndReplaceDialog(SessionPanel sessionPanel) {
 		matchAndReplaceList = sessionPanel.getMatchAndReplaceList();
-		INFO_TEXT = "Specify Match and Replace rules (string literals) for all repeated requests of the session \""+sessionPanel.getSessionName()+"\"";
+		INFO_TEXT = "Specify Match and Replace rules for all repeated requests of the session \""+sessionPanel.getSessionName()+"\". Tick \"Regex\" to treat Match as a Java regex (use $1, $2 in Replace for capture groups).";
 		listPanel.setLayout(new GridBagLayout());
 		listPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
@@ -45,7 +47,7 @@ public class MatchAndReplaceDialog extends JDialog {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				addMatchAndReplace(matchInputText.getText(), replaceInputText.getText());
+				addMatchAndReplace(matchInputText.getText(), replaceInputText.getText(), regexCheckBox.isSelected());
 				updateMatchAndReplaceList();
 				SwingUtilities.getWindowAncestor((Component) e.getSource()).pack();
 			}
@@ -58,7 +60,7 @@ public class MatchAndReplaceDialog extends JDialog {
 		setLocationRelativeTo(sessionPanel);
 		
 		okButton.addActionListener(e -> {
-			addMatchAndReplace(matchInputText.getText(), replaceInputText.getText());
+			addMatchAndReplace(matchInputText.getText(), replaceInputText.getText(), regexCheckBox.isSelected());
 			dispose();
 		});
 			
@@ -90,12 +92,14 @@ public class MatchAndReplaceDialog extends JDialog {
 		c.gridx = 1;
 		listPanel.add(replaceInputText, c);
 		c.gridx = 2;
+		listPanel.add(regexCheckBox, c);
+		c.gridx = 3;
 		listPanel.add(addEntryButton, c);
 
 		c.gridy++;
 		for (MatchAndReplace matchAndReplace : matchAndReplaceList) {
 			c.gridx = 0;
-			listPanel.add(getFormattedLabel(matchAndReplace.getMatch()), c);
+			listPanel.add(getFormattedLabel((matchAndReplace.isRegex() ? "[regex] " : "") + matchAndReplace.getMatch()), c);
 			c.gridx = 1;
 			listPanel.add(getFormattedLabel(matchAndReplace.getReplace()), c);
 			JButton deleteEntryBtn = new JButton();
@@ -133,10 +137,10 @@ public class MatchAndReplaceDialog extends JDialog {
 		return label;
 	}
 	
-	private void addMatchAndReplace(String matchText, String replaceText) {
+	private void addMatchAndReplace(String matchText, String replaceText, boolean regex) {
 		if (!matchText.equals("") && !replaceText.equals("")) {
 			removeGivenMatch(matchText);
-			matchAndReplaceList.add(new MatchAndReplace(matchText, replaceText));
+			matchAndReplaceList.add(new MatchAndReplace(matchText, replaceText, regex));
 		}
 	}
 	
