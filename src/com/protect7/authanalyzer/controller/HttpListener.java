@@ -14,9 +14,14 @@ import burp.IResponseInfo;
 public class HttpListener implements IHttpListener, IProxyListener {
 
 	private final CurrentConfig config = CurrentConfig.getCurrentConfig();
+	private final PwnFoxController pwnFoxController = new PwnFoxController();
 
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
+		if(messageIsRequest && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY) {
+			// Only proxy requests, otherwise the repeated requests of the Auth Analyzer would overwrite the sessions
+			pwnFoxController.process(messageInfo);
+		}
 		if(config.isRunning() && (!messageIsRequest || (messageIsRequest && config.isDropOriginal() && toolFlag == IBurpExtenderCallbacks.TOOL_PROXY))) {		
 			if(!isFiltered(toolFlag, messageInfo)) {
 				config.performAuthAnalyzerRequest(messageInfo);

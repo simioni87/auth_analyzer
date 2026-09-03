@@ -79,16 +79,7 @@ public class StatusPanel extends JPanel{
 		c.insets = new Insets(5, 0, 0, 0);
 		headerToReplaceValue.putClientProperty("html.disable", null);
 		add(headerToReplaceValue, c);
-		if(session.getHeadersToReplace().equals("")) {
-			headerLabel.setText("                                  ");//Set ugly placeholder to keep match and replace distance
-			headerToReplaceValue.setVisible(false);
-		}
-		else {
-			headerToReplaceValue.setText(format(session.getHeadersToReplace(), session));
-			headerLabel.setText("<html><p><strong>Header(s) to Replace</strong></html>");
-			headerLabel.putClientProperty("html.disable", null);
-			headerToReplaceValue.setVisible(true);
-		}
+		updateHeadersToReplace(session);
 	
 		if(session.isRemoveHeaders()) {
 			c.gridy++;
@@ -226,6 +217,22 @@ public class StatusPanel extends JPanel{
 		}
 		return "<html><p style='width:500px'><strong>" + token.getName().replace("<", "&lt;").replace("\n", "<br>") + 
 				"</strong> ("+tokenInfo+")</p> <p style='width:500px'>" +  tokenValue.replace("\n", "<br>") + "</p></html>";
+	}
+	
+	// Refreshes the displayed "Header(s) to Replace" of a running session (e.g. taken over from a PwnFox container)
+	public void updateHeadersToReplace(Session session) {
+		if(session.getHeadersToReplace().equals("")) {
+			headerLabel.setText("                                  ");//Set ugly placeholder to keep match and replace distance
+			headerToReplaceValue.setVisible(false);
+		}
+		else {
+			headerToReplaceValue.setText(format(session.getHeadersToReplace(), session));
+			headerLabel.setText("<html><p><strong>Header(s) to Replace</strong></html>");
+			headerLabel.putClientProperty("html.disable", null);
+			headerToReplaceValue.setVisible(true);
+		}
+		revalidate();
+		repaint();
 	}
 	
 	private String format(String text, Session session) {

@@ -17,7 +17,8 @@ import com.protect7.authanalyzer.gui.entity.StatusPanel;
 public class Session {
 
 	private final String name;
-	private String headersToReplace;
+	// Can be updated from the GUI thread (e.g. PwnFox auto session) while requests are processed
+	private volatile String headersToReplace;
 	private String headersToRemove;
 	private boolean removeHeaders;
 	private boolean filterRequestsWithSameHeader;
